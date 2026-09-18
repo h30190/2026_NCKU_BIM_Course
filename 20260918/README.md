@@ -67,6 +67,11 @@
   7. 存檔：`組名_姓名_0918.rvt`，放本機
 - 常見卡關先講：門窗放不進去（沒選到牆）、牆沒圍起來房間放不下、樓層不對高度錯
 
+### 課後回放
+
+- 本日回放：<https://www.youtube.com/playlist?list=PLTahnp54kJ88>
+- Revit 基礎操作參考（往年）：<https://www.youtube.com/playlist?list=PLlhmsMKvLCG5KrJWQKJem8cIK6I_UEryN>
+
 ### Part 5｜收尾
 
 - 今天回顧：BIM＝帶資料的元件、視圖是窗口、Type vs Instance、schedule 是查資料
