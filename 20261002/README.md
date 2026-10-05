@@ -5,6 +5,7 @@
   （repo 內 `slides/` 有投影片可用；知識網站 https://shuotao.github.io/REVIT_MCP_study/ ）
 - 環境假設：Revit 2024 學生版、學生自備電腦、每組 3–4 人（暫定）、coding 0 經驗、agent 不限定
 - 本檔即簡報內容來源：每節對應投影片章節
+- 錄影：<https://youtu.be/87pOGb4bcr4>
 
 ## 課前準備
 
