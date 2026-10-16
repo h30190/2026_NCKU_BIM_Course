@@ -49,6 +49,11 @@ dotnet build -c Release.R24
 議題太多時在詳情按「封存」：列表預設不顯示，紀錄全留；要看按「顯示已封存」。
 API：`PATCH /api/issues/:id` 帶 `{"archived": true}`；列表 `?archived=1` 只看封存、`?archived=all` 全看。
 
+## 測試（改完先跑）
+
+- 冒煙：`.\scripts\smoke.ps1`（起乾淨後端打全鏈路：登入→建帳號→建議題→指派→封存→擋未登入/viewer，共 10 項）
+- 回歸：`.\scripts\regress.ps1`（後端 vet+test、前端 build、外掛按本機 Revit 版本編，沒裝就跳過）
+
 ## 常見卡關
 
 | 症狀 | 解法 |
