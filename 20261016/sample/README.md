@@ -1,6 +1,6 @@
 # RFI 議題追蹤圖台 sample（＝課上骨架，拿去改）
 
-對應教材：[`SPEC.md`](../SPEC.md)；課程說明見[上一層 README](../README.md)。
+對應教材：[`SPEC.md`](../SPEC.md)（框架願景）；骨架實作規格見 [`sample/SPEC.md`](SPEC.md)。
 這一包就是骨架：課上各組先把它跑起來，再改成自己的題目。
 
 ## 課前裝好（缺一不可，先驗過）
