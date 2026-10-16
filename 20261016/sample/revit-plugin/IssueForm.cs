@@ -11,15 +11,17 @@ namespace RfiPlugin
         private readonly TextBox _title = new TextBox();
         private readonly TextBox _desc = new TextBox();
         private readonly TextBox _reporter = new TextBox();
+        private readonly TextBox _token = new TextBox();
 
         public string IssueTitle => _title.Text.Trim();
         public string IssueDescription => _desc.Text.Trim();
         public string Reporter => _reporter.Text.Trim();
+        public string Token => _token.Text.Trim();
 
         public IssueForm(string defaultReporter = "")
         {
             Text = "建立 RFI 議題";
-            Size = new Size(500, 500);
+            Size = new Size(500, 580);
             MinimumSize = new Size(420, 400);
             StartPosition = FormStartPosition.CenterParent;
             // 可調大小＋右下角拖拉 grip（課上 demo 要大要小自己拉）
@@ -57,6 +59,15 @@ namespace RfiPlugin
             _reporter.Text = defaultReporter ?? ""; // 預設 Revit Username，可刪改
             y += 58;
 
+            var lbl4 = new Label { Text = "圖台 token（網頁個人頁複製，存本機下次自動帶）", Top = y, Left = left, Width = width, Height = 28 };
+            lbl4.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            y += 32;
+            _token.Top = y; _token.Left = left; _token.Width = width; _token.Height = 28;
+            _token.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            _token.Text = TokenStore.Load();
+            _token.UseSystemPasswordChar = true;
+            y += 58;
+
             var ok = new Button { Text = "送出", DialogResult = DialogResult.OK, Top = y, Left = left + width - 200, Width = 96, Height = 36 };
             var cancel = new Button { Text = "取消", DialogResult = DialogResult.Cancel, Top = y, Left = left + width - 96, Width = 96, Height = 36 };
             ok.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
@@ -70,7 +81,7 @@ namespace RfiPlugin
                 }
             };
 
-            Controls.AddRange(new Control[] { lbl1, _title, lbl2, _desc, lbl3, _reporter, ok, cancel });
+            Controls.AddRange(new Control[] { lbl1, _title, lbl2, _desc, lbl3, _reporter, lbl4, _token, ok, cancel });
             AcceptButton = ok;
             CancelButton = cancel;
         }

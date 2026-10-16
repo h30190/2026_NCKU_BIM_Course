@@ -30,13 +30,22 @@ func NewServer(db *sql.DB, dataDir string) *Server {
 }
 
 func (s *Server) routes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /api/issues", s.handleCreateIssue)
+	// 議題：讀開放（課堂投影），寫要登入（member 以上）
+	mux.HandleFunc("POST /api/issues", s.requireAuth("member", s.handleCreateIssue))
 	mux.HandleFunc("GET /api/issues", s.handleListIssues)
 	mux.HandleFunc("GET /api/issues/{id}", s.handleGetIssue)
-	mux.HandleFunc("PATCH /api/issues/{id}", s.handlePatchIssue)
-	mux.HandleFunc("POST /api/models", s.handleUploadModel)
+	mux.HandleFunc("PATCH /api/issues/{id}", s.requireAuth("member", s.handlePatchIssue))
+	// 模型：上傳要登入，下載/列表開放
+	mux.HandleFunc("POST /api/models", s.requireAuth("member", s.handleUploadModel))
 	mux.HandleFunc("GET /api/models/{id}/file", s.handleDownloadModel)
 	mux.HandleFunc("GET /api/models/{id}/elements", s.handleListElements)
+	// 帳號
+	mux.HandleFunc("POST /api/login", s.handleLogin)
+	mux.HandleFunc("POST /api/logout", s.handleLogout)
+	mux.HandleFunc("GET /api/me", s.requireAuth("", s.handleMe))
+	mux.HandleFunc("GET /api/users", s.requireAuth("admin", s.handleListUsers))
+	mux.HandleFunc("POST /api/users", s.requireAuth("admin", s.handleCreateUser))
+	mux.HandleFunc("PATCH /api/users/{username}", s.requireAuth("admin", s.handlePatchUser))
 	// 截圖靜態檔（第一版最簡，不做鑑權，僅課堂內網用）
 	mux.Handle("GET /screenshots/", http.StripPrefix("/screenshots/", http.FileServer(http.Dir(s.ScreenshotDir))))
 	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
@@ -231,6 +240,12 @@ func (s *Server) handlePatchIssue(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if body.Assignee != nil {
+		// 指派只接受存在的啟用帳號（P1：assignee = username）
+		var n int
+		if err := s.DB.QueryRow(`SELECT COUNT(*) FROM users WHERE username=? AND active=1`, *body.Assignee).Scan(&n); err != nil || n == 0 {
+			writeErr(w, http.StatusBadRequest, "指派對象不是啟用中的帳號")
+			return
+		}
 		if _, err := s.DB.Exec(`UPDATE issues SET assignee=?, updated_at=datetime('now') WHERE id=?`, *body.Assignee, id); err != nil {
 			writeErr(w, 500, err.Error())
 			return

@@ -71,12 +71,20 @@ namespace RfiPlugin
                 if (form.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                     return Result.Cancelled;
 
-                // 4. POST 到後端
+                // 4. POST 到後端（寫入要登入：token 從圖台登入後複製）
+                if (string.IsNullOrWhiteSpace(form.Token))
+                {
+                    TaskDialog.Show("RFI sample", "請先到圖台網頁登入，複製 token 貼上來（只貼一次，會記住）。");
+                    return Result.Cancelled;
+                }
                 try
                 {
                     using (var http = new HttpClient())
-                    using (var content = new MultipartFormDataContent())
                     {
+                        http.DefaultRequestHeaders.Authorization =
+                            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", form.Token);
+                        using (var content = new MultipartFormDataContent())
+                        {
                         content.Add(new StringContent(form.IssueTitle), "title");
                         content.Add(new StringContent(form.IssueDescription ?? ""), "description");
                         content.Add(new StringContent(form.Reporter ?? ""), "reporter");
@@ -101,7 +109,9 @@ namespace RfiPlugin
                         }
                         var m = System.Text.RegularExpressions.Regex.Match(body, @"""id""\s*:\s*(\d+)");
                         string newId = m.Success ? m.Groups[1].Value : "?";
+                        TokenStore.Save(form.Token); // token 有效才記
                         TaskDialog.Show("RFI", $"議題已送出！圖台編號 #{newId}\nElementId = {elementId}\n視圖 = {viewName}");
+                        }
                     }
                 }
                 catch (Exception ex)

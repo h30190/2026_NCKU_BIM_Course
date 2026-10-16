@@ -22,6 +22,16 @@ type Issue struct {
 	UpdatedAt     string `json:"updated_at"`
 }
 
+// User 最小帳號：角色只有 admin / member / viewer。
+type User struct {
+	Username  string `json:"username"`
+	Role      string `json:"role"`
+	Active    bool   `json:"active"`
+	CreatedAt string `json:"created_at"`
+}
+
+var validRole = map[string]bool{"admin": true, "member": true, "viewer": true}
+
 // Model mirrors SPEC Ch3 models 表.
 type Model struct {
 	ID           int64  `json:"id"`

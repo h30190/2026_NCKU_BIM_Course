@@ -56,6 +56,18 @@ func migrate(db *sql.DB) error {
 			storey TEXT NOT NULL DEFAULT '',
 			PRIMARY KEY (model_id, global_id)
 		)`,
+		`CREATE TABLE IF NOT EXISTS users (
+			username TEXT PRIMARY KEY,
+			password_hash TEXT NOT NULL,
+			role TEXT NOT NULL DEFAULT 'member',
+			active INTEGER NOT NULL DEFAULT 1,
+			created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+		)`,
+		`CREATE TABLE IF NOT EXISTS sessions (
+			token TEXT PRIMARY KEY,
+			username TEXT NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+		)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {

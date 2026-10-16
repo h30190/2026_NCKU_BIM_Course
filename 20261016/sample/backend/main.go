@@ -21,6 +21,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
+	SeedAdmin(db)
 
 	srv := NewServer(db, *dataDir)
 	mux := http.NewServeMux()
