@@ -23,7 +23,7 @@ export default function Procore() {
   const [me, setMe] = useState(() => currentUser())
   const [loginForm, setLoginForm] = useState({ username: '', password: '' })
   const [loginErr, setLoginErr] = useState('')
-  const [tab, setTab] = useState('issues') // issues | archived | users
+  const [tab, setTab] = useState('issues') // issues | kanban | archived | users
   const [showFilter, setShowFilter] = useState(true)
   const [q, setQ] = useState('')
   const [fStatus, setFStatus] = useState('')
@@ -123,8 +123,8 @@ export default function Procore() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <h2 style={{ margin: '4px 0' }}>RFIs</h2>
           <div style={{ display: 'flex', gap: 4, marginLeft: 12 }}>
-            {[['issues', '議題'], ['archived', '已封存'], ...(isAdmin ? [['users', '使用者管理']] : [])].map(([k, label]) => (
-              <button key={k} onClick={() => { setTab(k); setDetailId(null) }}
+            {[['issues', '議題'], ['kanban', '看板'], ['archived', '已封存'], ...(isAdmin ? [['users', '使用者管理']] : [])].map(([k, label]) => (
+              <button key={k} onClick={() => { setTab(k); setDetailId(null); if (k === 'kanban') setFStatus('') }}
                 style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '8px 12px',
                   borderBottom: tab === k ? '3px solid #0b5ed7' : '3px solid transparent',
                   fontWeight: tab === k ? 'bold' : 'normal' }}>{label}</button>
@@ -188,6 +188,72 @@ export default function Procore() {
               .then(() => { setNewUser({ username: '', password: '', role: 'member' }); return refreshUsers() }))}>
               新增
             </button>
+          </div>
+        </div>
+      ) : tab === 'kanban' ? (
+        /* 看板：三欄拖曳改狀態（原生 DnD，不加依賴） */
+        <div style={{ padding: 16 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="搜尋標題"
+              style={{ padding: 8, width: 260 }} />
+            {!canWrite && <span style={{ marginLeft: 'auto', color: '#999', fontSize: 13 }}>viewer 唯讀（不能拖）</span>}
+          </div>
+          {err && <p style={{ color: 'crimson' }}>{err}</p>}
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            {['open', 'in_progress', 'closed'].map((st) => {
+              const meta = { open: '待處理', in_progress: '處理中', closed: '已關閉' }[st]
+              const cards = rows.filter((i) => i.status === st)
+              return (
+                <div key={st} style={{ flex: 1, background: '#ebecf0', borderRadius: 8, padding: 8, minHeight: 200 }}
+                  onDragOver={(e) => { if (canWrite) e.preventDefault() }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    const id = Number(e.dataTransfer.getData('text/plain'))
+                    if (id) mutate(() => patchIssue(id, { status: st }))
+                  }}>
+                  <div style={{ fontWeight: 'bold', padding: '4px 8px' }}><Pill status={st} /> {meta}（{cards.length}）</div>
+                  {cards.map((it) => (
+                    <div key={it.id} draggable={canWrite}
+                      onDragStart={(e) => e.dataTransfer.setData('text/plain', String(it.id))}
+                      onClick={() => setDetailId(it.id)}
+                      style={{ background: '#fff', borderRadius: 6, padding: 10, margin: '8px 4px',
+                        boxShadow: '0 1px 2px rgba(0,0,0,.15)',
+                        cursor: canWrite ? 'grab' : 'pointer',
+                        outline: detailId === it.id ? '2px solid #0b5ed7' : 'none' }}>
+                      <div><b>#{it.id}</b> {it.title}</div>
+                      <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                        {it.model_name || '未分類'}{it.view_name ? ` · ${it.view_name}` : ''}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666' }}>
+                        {it.reporter}{it.assignee ? ` → ${it.assignee}` : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
+            {detail && (
+              <div style={{ width: 340, background: '#fff', border: '1px solid #ddd', padding: 16, flexShrink: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <b>#{detail.id} {detail.title}</b>
+                  <button onClick={() => setDetailId(null)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>✕</button>
+                </div>
+                <p style={{ color: '#666', fontSize: 13 }}>狀態 <Pill status={detail.status} /></p>
+                <p style={{ fontSize: 13 }}>檔案：{detail.model_name || '未分類'}　視圖：{detail.view_name || '—'}</p>
+                <p style={{ fontSize: 13 }}>回報：{detail.reporter}　指派：{detail.assignee || '—'}</p>
+                {detail.screenshot && (
+                  <img src={`/screenshots/${detail.screenshot}`} alt="issue screenshot"
+                    style={{ maxWidth: '100%', border: '1px solid #ccc' }} />
+                )}
+                {canWrite && (
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                    <button onClick={() => mutate(() => patchIssue(detail.id, { archived: !detail.archived }))}>
+                      {detail.archived ? '取消封存' : '封存'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       ) : (
