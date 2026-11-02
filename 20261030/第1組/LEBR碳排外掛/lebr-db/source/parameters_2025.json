@@ -1,0 +1,906 @@
+{
+  "_說明": "LEBR 2025 手冊第三～六章的參數表與公式常數，手動自 PDF 轉錄並對照原圖確認。page = 手冊印刷頁碼。範圍以 min_exclusive（不含）/ max_inclusive（含）表示，null 代表無上/下限。",
+  "wear_classes": {
+    "_source": {
+      "table": "表3-1",
+      "page": 18
+    },
+    "H": {
+      "label": "高耗損",
+      "building_types": [
+        "商店商場",
+        "旅館",
+        "餐廳",
+        "運動",
+        "醫療",
+        "娛樂",
+        "交通旅運設施"
+      ]
+    },
+    "M": {
+      "label": "中耗損",
+      "building_types": [
+        "出租辦公建築",
+        "工廠",
+        "公共廳舍",
+        "教育文化設施"
+      ]
+    },
+    "L": {
+      "label": "低耗損",
+      "building_types": [
+        "自用辦公建築",
+        "倉庫",
+        "住宅",
+        "住宿類建築"
+      ]
+    },
+    "S": {
+      "label": "46-6分戶樓板",
+      "building_types": [
+        "建築技術規則設計施工編第46-6條適用之新建連棟住宅或集合住宅分戶樓板"
+      ],
+      "note": "僅用於附表2-6室內地坪，更新次數同低耗損"
+    }
+  },
+  "life_cycle_renewal": {
+    "_source": {
+      "table": "表3-1",
+      "page": 18
+    },
+    "_說明": "LC = 生命週期（年），RT = 生命週期更新次數。本表適用 RC、SRC、S 構造；輕鋼構與木構造依 structure_multiplier 乘算。附錄二 B-LCC 的更新碳排已依本表換算。",
+    "structure_multiplier": {
+      "light_steel": 0.8,
+      "wood": 0.5
+    },
+    "items": [
+      {
+        "component": "地上層RC、SRC、S主結構體",
+        "layer": null,
+        "H": {
+          "LC": 60,
+          "RT": 0
+        },
+        "M": {
+          "LC": 60,
+          "RT": 0
+        },
+        "L": {
+          "LC": 60,
+          "RT": 0
+        },
+        "note": "輕鋼構為48年、木構造為30年"
+      },
+      {
+        "component": "一般外牆外裝：貼磁磚、鋼件掛石材",
+        "layer": "基層",
+        "H": {
+          "LC": 60,
+          "RT": 0
+        },
+        "M": {
+          "LC": 60,
+          "RT": 0
+        },
+        "L": {
+          "LC": 60,
+          "RT": 0
+        }
+      },
+      {
+        "component": "一般外牆外裝：貼磁磚、鋼件掛石材",
+        "layer": "表層",
+        "H": {
+          "LC": 30,
+          "RT": 1
+        },
+        "M": {
+          "LC": 30,
+          "RT": 1
+        },
+        "L": {
+          "LC": 30,
+          "RT": 1
+        }
+      },
+      {
+        "component": "一般外牆外裝：RC牆塗料外裝",
+        "layer": "基層",
+        "H": {
+          "LC": 60,
+          "RT": 0
+        },
+        "M": {
+          "LC": 60,
+          "RT": 0
+        },
+        "L": {
+          "LC": 60,
+          "RT": 0
+        }
+      },
+      {
+        "component": "一般外牆外裝：RC牆塗料外裝",
+        "layer": "表層",
+        "H": {
+          "LC": 15,
+          "RT": 3
+        },
+        "M": {
+          "LC": 15,
+          "RT": 3
+        },
+        "L": {
+          "LC": 15,
+          "RT": 3
+        }
+      },
+      {
+        "component": "外窗：金屬、塑鋼類外窗",
+        "layer": null,
+        "H": {
+          "LC": 60,
+          "RT": 0
+        },
+        "M": {
+          "LC": 60,
+          "RT": 0
+        },
+        "L": {
+          "LC": 60,
+          "RT": 0
+        }
+      },
+      {
+        "component": "外窗：木製外窗/牆",
+        "layer": null,
+        "H": {
+          "LC": 20,
+          "RT": 2
+        },
+        "M": {
+          "LC": 20,
+          "RT": 2
+        },
+        "L": {
+          "LC": 20,
+          "RT": 2
+        },
+        "note": "木製外牆視同外窗"
+      },
+      {
+        "component": "外窗：金屬、塑鋼類帷幕外窗",
+        "layer": null,
+        "H": {
+          "LC": 60,
+          "RT": 0
+        },
+        "M": {
+          "LC": 60,
+          "RT": 0
+        },
+        "L": {
+          "LC": 60,
+          "RT": 0
+        }
+      },
+      {
+        "component": "不透光帷幕外牆及一般外牆：金屬、PC類",
+        "layer": null,
+        "H": {
+          "LC": 60,
+          "RT": 0
+        },
+        "M": {
+          "LC": 60,
+          "RT": 0
+        },
+        "L": {
+          "LC": 60,
+          "RT": 0
+        }
+      },
+      {
+        "component": "內隔間（非結構牆）",
+        "layer": null,
+        "H": {
+          "LC": 20,
+          "RT": 2
+        },
+        "M": {
+          "LC": 30,
+          "RT": 1
+        },
+        "L": {
+          "LC": 60,
+          "RT": 0
+        }
+      },
+      {
+        "component": "室內地坪",
+        "layer": "基層",
+        "H": {
+          "LC": 30,
+          "RT": 1
+        },
+        "M": {
+          "LC": 60,
+          "RT": 0
+        },
+        "L": {
+          "LC": 60,
+          "RT": 0
+        }
+      },
+      {
+        "component": "室內地坪",
+        "layer": "表層",
+        "H": {
+          "LC": 15,
+          "RT": 3
+        },
+        "M": {
+          "LC": 20,
+          "RT": 2
+        },
+        "L": {
+          "LC": 40,
+          "RT": 0.5
+        }
+      },
+      {
+        "component": "戶外地坪：RC基層地坪",
+        "layer": "基層",
+        "H": {
+          "LC": 60,
+          "RT": 0
+        },
+        "M": {
+          "LC": 60,
+          "RT": 0
+        },
+        "L": {
+          "LC": 60,
+          "RT": 0
+        }
+      },
+      {
+        "component": "戶外地坪：RC基層地坪",
+        "layer": "表層",
+        "H": {
+          "LC": 15,
+          "RT": 3
+        },
+        "M": {
+          "LC": 20,
+          "RT": 2
+        },
+        "L": {
+          "LC": 30,
+          "RT": 1
+        }
+      },
+      {
+        "component": "戶外地坪：碎石基層地坪",
+        "layer": "基層",
+        "H": {
+          "LC": 60,
+          "RT": 0
+        },
+        "M": {
+          "LC": 60,
+          "RT": 0
+        },
+        "L": {
+          "LC": 60,
+          "RT": 0
+        }
+      },
+      {
+        "component": "戶外地坪：碎石基層地坪",
+        "layer": "表層",
+        "H": {
+          "LC": 10,
+          "RT": 5
+        },
+        "M": {
+          "LC": 15,
+          "RT": 3
+        },
+        "L": {
+          "LC": 20,
+          "RT": 2
+        }
+      }
+    ]
+  },
+  "structure_factor_W": {
+    "_source": {
+      "table": "表4-1",
+      "page": 29
+    },
+    "_說明": "構造係數 W，以建築執照標註認定；混合構造以面積加權。RC 構造上設大跨距鋼架屋頂之樓層以 RC 與鋼構各半計。",
+    "items": {
+      "masonry": {
+        "label": "磚石構造",
+        "W": 1.2
+      },
+      "RC": {
+        "label": "RC構造",
+        "W": 1.0
+      },
+      "SRC": {
+        "label": "SRC構造",
+        "W": 1.05
+      },
+      "S": {
+        "label": "S構造",
+        "W": 0.9
+      },
+      "light_steel": {
+        "label": "輕鋼構造",
+        "W": 0.8
+      },
+      "wood": {
+        "label": "木構造",
+        "W": 0.7
+      }
+    }
+  },
+  "extra_dead_load_D0": {
+    "_source": {
+      "table": "表4-2",
+      "page": 29
+    },
+    "_說明": "額外靜載重 D0（kgf/m2），參考值，可依隔間密度與材料自行調整。",
+    "items": [
+      {
+        "label": "體育館、展覽館、商場類、交通運輸等很少固定隔間之建築物",
+        "D0": 275
+      },
+      {
+        "label": "辦公、住宿、旅館、醫院、社福機構等多隔間之建築物：輕質隔間",
+        "D0": 300
+      },
+      {
+        "label": "辦公、住宿、旅館、醫院、社福機構等多隔間之建築物：磚牆",
+        "D0": 350
+      },
+      {
+        "label": "辦公、住宿、旅館、醫院、社福機構等多隔間之建築物：RC牆",
+        "D0": 375
+      }
+    ]
+  },
+  "shape_factor_f1": {
+    "_source": {
+      "table": "表4-3",
+      "page": 30,
+      "equation": "式9"
+    },
+    "_說明": "平面形狀不規則修正係數 f1，依周長面積比係數 PAr = 0.282 × P / √A（P 標準層周長 m，A 標準層面積 m2）。",
+    "pa_ratio_coefficient": 0.282,
+    "ranges": [
+      {
+        "min_exclusive": null,
+        "max_inclusive": 1.2,
+        "value": 1.0
+      },
+      {
+        "min_exclusive": 1.2,
+        "max_inclusive": 1.4,
+        "value": 1.03
+      },
+      {
+        "min_exclusive": 1.4,
+        "max_inclusive": 1.6,
+        "value": 1.05
+      },
+      {
+        "min_exclusive": 1.6,
+        "max_inclusive": null,
+        "value": 1.08
+      }
+    ]
+  },
+  "aspect_factor_f2": {
+    "_source": {
+      "table": "表4-4",
+      "page": 31
+    },
+    "_說明": "平面長寬比修正係數 f2，b = L / B（平面相距最遠對邊延長線構成之矩形長邊/短邊）。出挑深度大於出挑方向總跨距 15% 時需納入出挑區域。",
+    "ranges": [
+      {
+        "min_exclusive": null,
+        "max_inclusive": 4,
+        "value": 1.0
+      },
+      {
+        "min_exclusive": 4,
+        "max_inclusive": 6,
+        "value": 1.05
+      },
+      {
+        "min_exclusive": 6,
+        "max_inclusive": null,
+        "value": 1.1
+      }
+    ]
+  },
+  "cantilever_factor_f3": {
+    "_source": {
+      "table": "表4-5",
+      "page": 32
+    },
+    "_說明": "平面出挑修正係數 f3，Rc = 出挑部分面積 / 當層總樓地板面積（含出挑）。出挑深度大於 4m 時不適用，應改用對比模型結構分析法。",
+    "max_cantilever_depth_m": 4,
+    "ranges": [
+      {
+        "min_exclusive": null,
+        "max_inclusive": 0.1,
+        "value": 1.0
+      },
+      {
+        "min_exclusive": 0.1,
+        "max_inclusive": 0.2,
+        "value": 0.98
+      },
+      {
+        "min_exclusive": 0.2,
+        "max_inclusive": null,
+        "value": 0.93
+      }
+    ]
+  },
+  "baseline_structure_scenario": {
+    "_source": {
+      "table": "表4-6",
+      "page": 32
+    },
+    "_說明": "基準案地上層主結構碳排 CFsc 的計算情境。設計案依實際設計。樓層數 S 為地上樓層數（不含屋突）。AFa = 地上單層平均樓地板面積。AFb、AFu、BH、D0、Fu、I、L、Rs、SaD、S 設計案與基準案相同。",
+    "W": [
+      {
+        "floors_min": 1,
+        "floors_max": 25,
+        "value": 1.0
+      },
+      {
+        "floors_min": 26,
+        "floors_max": null,
+        "value": 0.9
+      }
+    ],
+    "LCCR": 1.0,
+    "Sp": [
+      {
+        "AFa_min_exclusive": 500,
+        "AFa_max_inclusive": null,
+        "floors_min": 1,
+        "floors_max": 8,
+        "value": 2.0
+      },
+      {
+        "AFa_min_exclusive": 500,
+        "AFa_max_inclusive": null,
+        "floors_min": 9,
+        "floors_max": 16,
+        "value": 1.8
+      },
+      {
+        "AFa_min_exclusive": 500,
+        "AFa_max_inclusive": null,
+        "floors_min": 17,
+        "floors_max": 25,
+        "value": 1.6
+      },
+      {
+        "AFa_min_exclusive": 500,
+        "AFa_max_inclusive": null,
+        "floors_min": 26,
+        "floors_max": null,
+        "value": 1.4
+      },
+      {
+        "AFa_min_inclusive": 200,
+        "AFa_max_inclusive": 500,
+        "floors_min": 1,
+        "floors_max": 8,
+        "value": 1.8
+      },
+      {
+        "AFa_min_inclusive": 200,
+        "AFa_max_inclusive": 500,
+        "floors_min": 9,
+        "floors_max": 16,
+        "value": 1.6
+      },
+      {
+        "AFa_min_inclusive": 200,
+        "AFa_max_inclusive": 500,
+        "floors_min": 17,
+        "floors_max": null,
+        "value": 1.4
+      },
+      {
+        "AFa_min_exclusive": null,
+        "AFa_max_exclusive": 200,
+        "floors_min": 1,
+        "floors_max": 8,
+        "value": 1.6
+      },
+      {
+        "AFa_min_exclusive": null,
+        "AFa_max_exclusive": 200,
+        "floors_min": 9,
+        "floors_max": null,
+        "value": 1.4
+      }
+    ],
+    "F": [
+      {
+        "floors_min": 1,
+        "floors_max": 8,
+        "value": 1.2
+      },
+      {
+        "floors_min": 9,
+        "floors_max": 16,
+        "value": 1.15
+      },
+      {
+        "floors_min": 17,
+        "floors_max": 25,
+        "value": 1.1
+      },
+      {
+        "floors_min": 26,
+        "floors_max": null,
+        "value": 1.05
+      }
+    ]
+  },
+  "waste_density_Wd": {
+    "_source": {
+      "table": "表4-7",
+      "page": 40
+    },
+    "_說明": "新建與拆除廢棄物量密度 Wd（kg/m2，新建與拆除合計）。木構造以輕鋼構造數據代用。use_type：residential = 住宿類與旅館、醫院類；factory = 廠房類；other = 其他非住宿類。",
+    "items": [
+      {
+        "structure": "RC",
+        "use_type": "residential",
+        "new_m3_per_m2": 0.12,
+        "new_kg_per_m2": 52,
+        "Wd": 390
+      },
+      {
+        "structure": "RC",
+        "use_type": "factory",
+        "new_m3_per_m2": 0.08,
+        "new_kg_per_m2": 32,
+        "Wd": 240
+      },
+      {
+        "structure": "RC",
+        "use_type": "other",
+        "new_m3_per_m2": 0.098,
+        "new_kg_per_m2": 39.2,
+        "Wd": 294
+      },
+      {
+        "structure": "SRC",
+        "use_type": "residential",
+        "new_m3_per_m2": 0.135,
+        "new_kg_per_m2": 54,
+        "Wd": 405
+      },
+      {
+        "structure": "SRC",
+        "use_type": "factory",
+        "new_m3_per_m2": 0.105,
+        "new_kg_per_m2": 42,
+        "Wd": 315
+      },
+      {
+        "structure": "SRC",
+        "use_type": "other",
+        "new_m3_per_m2": 0.107,
+        "new_kg_per_m2": 42.8,
+        "Wd": 321
+      },
+      {
+        "structure": "S",
+        "use_type": "residential",
+        "new_m3_per_m2": 0.103,
+        "new_kg_per_m2": 41.2,
+        "Wd": 309
+      },
+      {
+        "structure": "S",
+        "use_type": "factory",
+        "new_m3_per_m2": 0.106,
+        "new_kg_per_m2": 42.4,
+        "Wd": 318
+      },
+      {
+        "structure": "S",
+        "use_type": "other",
+        "new_m3_per_m2": 0.09,
+        "new_kg_per_m2": 36,
+        "Wd": 270
+      },
+      {
+        "structure": "light_steel",
+        "use_type": "factory",
+        "new_m3_per_m2": 0.102,
+        "new_kg_per_m2": 40.8,
+        "Wd": 306
+      },
+      {
+        "structure": "light_steel",
+        "use_type": "other",
+        "new_m3_per_m2": 0.09,
+        "new_kg_per_m2": 36,
+        "Wd": 270
+      }
+    ]
+  },
+  "grade_scale": {
+    "_source": {
+      "table": "表5-1、表6-1",
+      "page": 44
+    },
+    "_說明": "LEBR 分級：依碳排減碳率 CFR（小數，0.2 = 20%）判定。scale_factor = 表6-1 等級刻度碳排密度 = ECIs × scale_factor。",
+    "grades": [
+      {
+        "grade": "1+",
+        "cfr_min_exclusive": 0.2,
+        "cfr_max_inclusive": null,
+        "scale_factor": 0.8
+      },
+      {
+        "grade": "1",
+        "cfr_min_exclusive": 0.16,
+        "cfr_max_inclusive": 0.2,
+        "scale_factor": 0.84
+      },
+      {
+        "grade": "2",
+        "cfr_min_exclusive": 0.12,
+        "cfr_max_inclusive": 0.16,
+        "scale_factor": 0.88
+      },
+      {
+        "grade": "3",
+        "cfr_min_exclusive": 0.08,
+        "cfr_max_inclusive": 0.12,
+        "scale_factor": 0.92
+      },
+      {
+        "grade": "4",
+        "cfr_min_exclusive": 0.03,
+        "cfr_max_inclusive": 0.08,
+        "scale_factor": 0.97
+      },
+      {
+        "grade": "5",
+        "cfr_min_exclusive": -0.1,
+        "cfr_max_inclusive": 0.03,
+        "scale_factor": 1.1
+      },
+      {
+        "grade": "6",
+        "cfr_min_exclusive": -0.2,
+        "cfr_max_inclusive": -0.1,
+        "scale_factor": 1.2
+      },
+      {
+        "grade": "7",
+        "cfr_min_exclusive": null,
+        "cfr_max_inclusive": -0.2,
+        "scale_factor": null
+      }
+    ]
+  },
+  "life_extension_LL": {
+    "_source": {
+      "table": "表5-2",
+      "page": 44
+    },
+    "_說明": "建築延壽優惠係數 LL。項目 1、2 擇一，與項目 3、4 擇一可累加，合計不得超過 max_total；3、4 不能累加。須檢附證明文件，無則 LL = 0。基準案 LL = 0。",
+    "max_total": 0.08,
+    "items": [
+      {
+        "id": 1,
+        "group": "耐久設計",
+        "label": "RC柱梁與RC樓板兩者均完全無埋設管線",
+        "LL": 0.04,
+        "rc_only": true,
+        "exclusive_with": [
+          2
+        ]
+      },
+      {
+        "id": 2,
+        "group": "耐久設計",
+        "label": "RC柱梁與RC樓板兩者之一完全無埋設管線",
+        "LL": 0.02,
+        "rc_only": true,
+        "exclusive_with": [
+          1
+        ]
+      },
+      {
+        "id": 3,
+        "group": "高品質施工",
+        "label": "五年內獲行政院公共工程金質獎（公共工程品質優良類）特優之營造廠",
+        "LL": 0.05,
+        "rc_only": false,
+        "exclusive_with": [
+          4
+        ]
+      },
+      {
+        "id": 4,
+        "group": "高品質施工",
+        "label": "獲ISO14000認證之營造廠（具效期內之第三方認證），或五年內獲行政院公共工程金質獎（公共工程品質優良類）優等之營造廠",
+        "LL": 0.04,
+        "rc_only": false,
+        "exclusive_with": [
+          3
+        ]
+      }
+    ]
+  },
+  "formula_constants": {
+    "_說明": "第四、五章公式中的常數。變數意義見手冊；外掛應讀這裡的常數，不要寫死在程式裡。",
+    "items": {
+      "structure_C": {
+        "_source": {
+          "equation": "式4",
+          "page": 26
+        },
+        "formula": "C = [base + s_coef×(S−s_ref) + seismic_coef×(I×SaD/Fu − seismic_ref) + sp_coef×(Sp−sp_ref) + d0_coef×(D0−d0_ref) + l_coef×(L−l_ref) + bh_coef×(BH−bh_ref)] × Rs × F，且 C ≥ min_C",
+        "base": 224,
+        "s_coef": 4.11,
+        "s_ref": 10,
+        "seismic_coef": 300,
+        "seismic_ref": 0.192,
+        "sp_coef": 68.74,
+        "sp_ref": 1.0,
+        "d0_coef": 0.17,
+        "d0_ref": 300,
+        "l_coef": 0.13,
+        "l_ref": 300,
+        "bh_coef": 1.05,
+        "bh_ref": 3.5,
+        "min_C": 165,
+        "Rs_static": 0.95,
+        "Rs_dynamic": 1.0,
+        "Rs_note": "依建築物耐震設計規範 2.1 節，不需進行動力分析者 Rs = 0.95，反之 1.0"
+      },
+      "low_carbon_concrete_LCCR": {
+        "_source": {
+          "equation": "式5",
+          "page": 26
+        },
+        "formula": "LCCR = 1.0 − CSER × cser_coef；CSER = (28天抗壓強度 psi ÷ 每m3水泥用量 kg) ÷ cser_benchmark",
+        "cser_coef": 0.05,
+        "cser_benchmark": 10.0,
+        "note": "僅對 RC、SRC、S 構造優惠；輕鋼構與木構造 LCCR = 1.0；基準案 CSER = 0"
+      },
+      "basement_structure_CFs_prime": {
+        "_source": {
+          "equation": "式2",
+          "page": 26
+        },
+        "formula": "CFs' = afb_coef × AFb + total_coef × (AFu + AFb)",
+        "afb_coef": 330,
+        "total_coef": 45.5
+      },
+      "construction_above_CFc": {
+        "_source": {
+          "equation": "式12",
+          "page": 37
+        },
+        "formula": "CFc = (a + b × S) × AFu × (1.0 + CFrm / CFum)，以設計案 CFum、CFrm 計算",
+        "a": 0.14,
+        "b": 0.95
+      },
+      "construction_below_CFc_prime": {
+        "_source": {
+          "equation": "式13",
+          "page": 38
+        },
+        "formula": "CFc' = (a + b × Sb) × AF，AF = AFu + AFb",
+        "a": 0.14,
+        "b": 2.14
+      },
+      "demolition_above": {
+        "_source": {
+          "equation": "式14～16",
+          "page": 38
+        },
+        "formula": "CFdw = (CFd + CFwa) × (1.0 + CFrm / CFum)；CFd = (d_a × S + d_b) × AFu；CFwa = wa_coef × Wd × AFu",
+        "d_a": 0.06,
+        "d_b": 2.01,
+        "wa_coef": 0.055
+      },
+      "demolition_below": {
+        "_source": {
+          "equation": "式17～19",
+          "page": 39
+        },
+        "formula": "CFdw' = CFd' + CFwa'；CFd' = (d_a × Sb + d_b) × AFb；CFwa' = wa_coef × Wd × AFb",
+        "d_a": 0.15,
+        "d_b": 2.01,
+        "wa_coef": 0.135
+      },
+      "evaluation": {
+        "_source": {
+          "equation": "式20～27",
+          "page": 41
+        },
+        "formula": "EECc = CFum + CFrm + CFc + CFdw（基準案變數串）；EEC = ((CFum + CFrm + CFc + CFdw) − (Σ舊建材再利用 + Σ低碳循環建材 + Σ低碳工法)) / (1.0 + LL)（設計案變數串）；TEC = EEC + CFs' + CFc' + CFdw'；ECIs = EECc / AFu；ECI = EEC / AFu；ΔCF = EECc − EEC；CFR = ΔCF / EECc",
+        "note": "CFc、CFdw 基準案與設計案相同（皆以設計案 CFum、CFrm 計算）。LCCR 與低碳循環建材 LCRk 不得重複計入。"
+      }
+    }
+  },
+  "component_groups": {
+    "_source": {
+      "section": "4-2 式8～11",
+      "page": 33
+    },
+    "_說明": "六類非結構構件與附錄二附表的對應、面積計算規則與基準構件。",
+    "OW": {
+      "label": "一般外牆外裝",
+      "table": "附表2-1",
+      "symbol": "Fowj",
+      "area": "一般外牆外裝面積 Aowj，不含帷幕式外牆",
+      "baseline": "RC外牆貼磁磚"
+    },
+    "W": {
+      "label": "外窗",
+      "table": "附表2-2",
+      "symbol": "Fwj",
+      "area": "外窗立面積 Awj，以外框邊尺寸計（含窗框與玻璃）",
+      "baseline": "同玻璃之崁入式鋁框"
+    },
+    "CWW": {
+      "label": "透光帷幕外窗",
+      "table": "附表2-3",
+      "symbol": "Fwj",
+      "area": "透光帷幕外窗立面積 Awj，以外框邊尺寸計",
+      "baseline": "同玻璃之帷幕牆式鋁框或塑鋼框"
+    },
+    "CW": {
+      "label": "不透光帷幕外牆及一般外牆",
+      "table": "附表2-4",
+      "symbol": "Fcwj",
+      "area": "不透光帷幕外牆面積 Acwj",
+      "baseline": "傳統15cm RC外牆"
+    },
+    "IW": {
+      "label": "內隔間",
+      "table": "附表2-5",
+      "symbol": "Fiwj",
+      "area": "內隔間面積 Aiwj，只算非承重泥作隔間；不含承重牆、結構牆、耐震壁、樓梯間牆、電梯間、集合住宅分戶牆、學校教室隔間牆、木隔間、玻璃隔屏、預鑄組裝型隔屏",
+      "baseline": "磚牆雙面粉刷"
+    },
+    "F": {
+      "label": "室內地坪",
+      "table": "附表2-6",
+      "symbol": "Ffj",
+      "area": "室內地坪面積 Afj，不含停車場、設備室、儲藏空間、機能性運動場地及無地坪裝修空間；陽台露臺地坪視為室內地坪",
+      "baseline": "一般地坪：貼磁磚地坪；木作地坪：水泥砂漿地坪+角材墊高平鋪超耐磨地板",
+      "note": "手冊 p.35 文字寫木作地坪基準為「角材墊高平鋪實木板、美耐板」，但附表2-6 標示的基準值（灰底、ΔF=0）是「角材墊高平鋪超耐磨地板」；本資料庫依附表。"
+    },
+    "P": {
+      "label": "戶外地坪",
+      "table": "附表2-7",
+      "symbol": "Fpj",
+      "area": "戶外地坪面積 Apj，只算有基層結構與表層鋪面者，不含簡易步道或簡易廣場",
+      "baseline": "RC基礎：貼磁磚；碎石基礎：乾砌植草磚"
+    }
+  }
+}

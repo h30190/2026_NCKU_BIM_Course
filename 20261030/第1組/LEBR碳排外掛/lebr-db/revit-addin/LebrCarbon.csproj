@@ -1,0 +1,43 @@
+<Project Sdk="Nice3point.Revit.Sdk/6.2.3">
+
+  <!-- LEBR 碳排計算外掛：「開始計算」按鈕、計算前檢查、結果視窗。計算引擎與資料庫讀取共用 ../csharp。 -->
+  <PropertyGroup>
+    <RootNamespace>LebrCarbon</RootNamespace>
+    <AssemblyName>LebrCarbon</AssemblyName>
+    <UseWPF>true</UseWPF>
+    <Nullable>disable</Nullable>
+    <!-- 部署請用 install.ps1，避免 SDK 自動產生 .addin -->
+    <DeployAddin>false</DeployAddin>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Configurations>
+      Debug.R24;Debug.R25;Debug.R26;Debug.R27;
+      Release.R24;Release.R25;Release.R26;Release.R27
+    </Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Preview\**" />
+    <Page Remove="Preview\**" />
+    <None Remove="Preview\**" />
+    <Compile Include="..\csharp\LebrDatabase.cs" Link="Lebr\LebrDatabase.cs" />
+    <Compile Include="..\csharp\LebrEngine.cs" Link="Lebr\LebrEngine.cs" />
+    <Compile Include="..\csharp\ProjectSettingsRules.cs" Link="Lebr\ProjectSettingsRules.cs" />
+    <Compile Include="..\csharp\Estimate\PLccTable.cs" Link="Lebr\Estimate\PLccTable.cs" />
+    <Compile Include="..\csharp\Estimate\StructureEstimator.cs" Link="Lebr\Estimate\StructureEstimator.cs" />
+    <Compile Include="..\csharp\Estimate\EstimateQuantities.cs" Link="Lebr\Estimate\EstimateQuantities.cs" />
+    <Compile Include="..\csharp\Estimate\EstimateRecord.cs" Link="Lebr\Estimate\EstimateRecord.cs" />
+    <Compile Include="..\csharp\Estimate\StructureBim.cs" Link="Lebr\Estimate\StructureBim.cs" />
+    <Compile Include="..\csharp\Estimate\EstimateRefresh.cs" Link="Lebr\Estimate\EstimateRefresh.cs" />
+    <Compile Include="..\csharp\DashboardLink.cs" Link="Lebr\DashboardLink.cs" />
+    <None Include="..\data\estimate\附錄一_P-LCC_2022.csv" Link="data\estimate\附錄一_P-LCC_2022.csv" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\dist\lebr_2025.json" Link="lebr_2025.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\samples\appendix3_quantities.json" Link="samples\appendix3_quantities.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

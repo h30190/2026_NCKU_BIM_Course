@@ -1,0 +1,383 @@
+{
+  "project": {
+    "source": "手冊附錄三範例：高雄市 Z 社會住宅（地上 14 層、地下 3 層、RC 住宅）",
+    "AFu": 56259.8,
+    "AFb": 23120.49,
+    "floors": 14.0,
+    "basement_floors": 3.0,
+    "wear_class": "L",
+    "LL": 0.05
+  },
+  "result": {
+    "complete": true,
+    "TEC": 35793238.772339635,
+    "TECc": 41666197.03642567,
+    "EEC": 22756768.971039638,
+    "EECc": 28629727.235125676,
+    "delta_CF": 5872958.264086038,
+    "CFR": 0.20513497092911642,
+    "grade": "1+",
+    "ECI": 404.49430980984,
+    "ECIs": 508.8842696761395
+  },
+  "grade_scale": [
+    {
+      "grade": "1+",
+      "eci": 407.1074157409116
+    },
+    {
+      "grade": "1",
+      "eci": 427.4627865279572
+    },
+    {
+      "grade": "2",
+      "eci": 447.8181573150028
+    },
+    {
+      "grade": "3",
+      "eci": 468.1735281020484
+    },
+    {
+      "grade": "4",
+      "eci": 493.6177415858553
+    },
+    {
+      "grade": "5",
+      "eci": 559.7726966437535
+    },
+    {
+      "grade": "6",
+      "eci": 610.6611236113674
+    },
+    {
+      "grade": "7",
+      "eci": null
+    }
+  ],
+  "by_stage": [
+    {
+      "stage": "資材製造運輸",
+      "design": 20138570.479955945,
+      "baseline": 24906477.538089998
+    },
+    {
+      "stage": "施工",
+      "design": 811590.166674709,
+      "baseline": 811590.166674709
+    },
+    {
+      "stage": "更新修繕",
+      "design": 1477062.76625,
+      "baseline": 1444275.5236499996
+    },
+    {
+      "stage": "拆除廢棄",
+      "design": 1467384.0067109691,
+      "baseline": 1467384.0067109691
+    }
+  ],
+  "by_component": [
+    {
+      "key": "structure",
+      "label": "主結構體",
+      "design": 12934138.387555946,
+      "baseline": 16563984.99909
+    },
+    {
+      "key": "OW",
+      "label": "一般外牆外裝",
+      "design": 1547700.8099999998,
+      "baseline": 1904105.1949999998
+    },
+    {
+      "key": "W",
+      "label": "外窗與透光帷幕外窗",
+      "design": 278983.227,
+      "baseline": 278983.227
+    },
+    {
+      "key": "CW",
+      "label": "不透光帷幕外牆及一般外牆",
+      "design": 2901249.8389999997,
+      "baseline": 2901249.8389999997
+    },
+    {
+      "key": "IW",
+      "label": "內隔間",
+      "design": 1061148.1926,
+      "baseline": 1874057.5896
+    },
+    {
+      "key": "F",
+      "label": "室內地坪",
+      "design": 2304274.6016499996,
+      "baseline": 2308881.3856499996
+    },
+    {
+      "key": "P",
+      "label": "戶外地坪",
+      "design": 588138.1884,
+      "baseline": 519490.82639999996
+    }
+  ],
+  "underground": {
+    "structure": 11241564.895,
+    "construction": 520734.7024,
+    "demolition": 1274170.2039000003
+  },
+  "structure": {
+    "method": "standard",
+    "design_CFs": 12934138.387555946,
+    "baseline_CFsc": 16563984.99909,
+    "intensity": 229.90018428000002,
+    "AFu": 56259.8,
+    "underground_CFs": 11241564.895,
+    "standard": {
+      "I": 1.0,
+      "SaD": 0.298,
+      "Fu": 3.0,
+      "L": 205.0,
+      "D0": 300.0,
+      "Rs": 1.0,
+      "BH": 4.2,
+      "Sp": 1.46,
+      "F": 1.08,
+      "Rn": 1.0,
+      "LCCR": 0.915,
+      "C": 251.257032,
+      "W": 1.0,
+      "baseline_Sp": 1.8,
+      "baseline_F": 1.15,
+      "baseline_C": 294.41954999999996,
+      "baseline_W": 1.0
+    },
+    "bim": null
+  },
+  "inputs": {
+    "building": {
+      "AFu": 56259.8,
+      "AFb": 23120.49,
+      "S": 14.0,
+      "Sb": 3.0,
+      "BH": 4.2,
+      "Sp": 1.46,
+      "F": 1.08
+    },
+    "project": {
+      "wear_class": "L",
+      "structure": "RC",
+      "use_type": "residential",
+      "I": 1.0,
+      "SaD": 0.298,
+      "Fu": 3.0,
+      "L": 205.0,
+      "D0": 300.0,
+      "Rs": 1.0,
+      "CSER": 1.7,
+      "LL": 0.05,
+      "EBF": 0.0,
+      "reuse_reduction": 0.0,
+      "low_carbon_material_reduction": 0.0,
+      "low_carbon_method_reduction": 0.0,
+      "structure_CFs": null
+    }
+  },
+  "items": [
+    {
+      "code": "OW-04",
+      "name": "金屬模板搗灌RC外牆（免砂漿粉刷）貼磁磚",
+      "group": "OW",
+      "area_m2": 39381.7,
+      "design_new": 773850.4049999999,
+      "design_renew": 773850.4049999999,
+      "baseline_code": "OW-01",
+      "baseline_new": 1130254.7899999998,
+      "baseline_renew": 773850.4049999999,
+      "element_ids": []
+    },
+    {
+      "code": "CW-00",
+      "name": "傳統15cm RC外牆（外牆本體）",
+      "group": "CW",
+      "area_m2": 39381.7,
+      "design_new": 2901249.8389999997,
+      "design_renew": 0.0,
+      "baseline_code": "CW-00",
+      "baseline_new": 2901249.8389999997,
+      "baseline_renew": 0.0,
+      "element_ids": []
+    },
+    {
+      "code": "W-G11-AL",
+      "name": "鋁框 + 5+5mm 玻璃",
+      "group": "W",
+      "area_m2": 2685.07,
+      "design_new": 131138.8188,
+      "design_renew": 0.0,
+      "baseline_code": "W-G11-AL",
+      "baseline_new": 131138.8188,
+      "baseline_renew": 0.0,
+      "element_ids": []
+    },
+    {
+      "code": "W-G12-AL",
+      "name": "鋁框 + 6+6mm 玻璃",
+      "group": "W",
+      "area_m2": 1892.1,
+      "design_new": 101492.24399999999,
+      "design_renew": 0.0,
+      "baseline_code": "W-G12-AL",
+      "baseline_new": 101492.24399999999,
+      "baseline_renew": 0.0,
+      "element_ids": []
+    },
+    {
+      "code": "W-G03-AL",
+      "name": "鋁框 + 清10mm",
+      "group": "W",
+      "area_m2": 494.07,
+      "design_new": 22401.1338,
+      "design_renew": 0.0,
+      "baseline_code": "W-G03-AL",
+      "baseline_new": 22401.1338,
+      "baseline_renew": 0.0,
+      "element_ids": []
+    },
+    {
+      "code": "CUSTOM-W-5MM",
+      "name": "鋁框 + 清5mm（附表無 5mm，依註1以厚度比例推算）",
+      "group": "W",
+      "area_m2": 682.56,
+      "design_new": 23951.0304,
+      "design_renew": 0.0,
+      "baseline_code": "（自訂）",
+      "baseline_new": 23951.0304,
+      "baseline_renew": 0.0,
+      "element_ids": []
+    },
+    {
+      "code": "IW-L-02",
+      "name": "輕質灌漿牆",
+      "group": "IW",
+      "area_m2": 33266.42,
+      "design_new": 1058870.1486,
+      "design_renew": 0.0,
+      "baseline_code": "IW-L-01",
+      "baseline_new": 1872234.1176,
+      "baseline_renew": 0.0,
+      "element_ids": []
+    },
+    {
+      "code": "IW-L-04",
+      "name": "RC 隔間牆",
+      "group": "IW",
+      "area_m2": 32.4,
+      "design_new": 2278.044,
+      "design_renew": 0.0,
+      "baseline_code": "IW-L-01",
+      "baseline_new": 1823.472,
+      "baseline_renew": 0.0,
+      "element_ids": []
+    },
+    {
+      "code": "F-L-G06",
+      "name": "Epoxy 地坪",
+      "group": "F",
+      "area_m2": 253.12,
+      "design_new": 5340.832,
+      "design_renew": 951.7312,
+      "baseline_code": "F-L-G01",
+      "baseline_new": 8411.177599999999,
+      "baseline_renew": 2488.1696,
+      "element_ids": []
+    },
+    {
+      "code": "F-L-G01",
+      "name": "貼磁磚地坪",
+      "group": "F",
+      "area_m2": 21675.52,
+      "design_new": 720277.5295999999,
+      "design_renew": 213070.3616,
+      "baseline_code": "F-L-G01",
+      "baseline_new": 720277.5295999999,
+      "baseline_renew": 213070.3616,
+      "element_ids": []
+    },
+    {
+      "code": "F-S-G01",
+      "name": "橡膠緩衝墊水泥砂漿 + 貼地磚（46-6 分戶樓板）",
+      "group": "F",
+      "area_m2": 30001.85,
+      "design_new": 1069865.971,
+      "design_renew": 294768.17624999996,
+      "baseline_code": "F-S-G01",
+      "baseline_new": 1069865.971,
+      "baseline_renew": 294768.17624999996,
+      "element_ids": []
+    },
+    {
+      "code": "P-L-RC05",
+      "name": "RC 底 + 抿石子",
+      "group": "P",
+      "area_m2": 233.89,
+      "design_new": 22556.351599999998,
+      "design_renew": 8499.562600000001,
+      "baseline_code": "P-L-RC01",
+      "baseline_new": 25348.998199999998,
+      "baseline_renew": 11292.2092,
+      "element_ids": []
+    },
+    {
+      "code": "P-L-RC02",
+      "name": "RC 底 + 高壓磚",
+      "group": "P",
+      "area_m2": 1066.32,
+      "design_new": 154243.188,
+      "design_renew": 90157.35599999999,
+      "baseline_code": "P-L-RC01",
+      "baseline_new": 115567.76159999998,
+      "baseline_renew": 51481.929599999996,
+      "element_ids": []
+    },
+    {
+      "code": "P-L-RC01",
+      "name": "RC 底 + 磁磚",
+      "group": "P",
+      "area_m2": 1964.17,
+      "design_new": 212876.7446,
+      "design_renew": 94830.1276,
+      "baseline_code": "P-L-RC01",
+      "baseline_new": 212876.7446,
+      "baseline_renew": 94830.1276,
+      "element_ids": []
+    },
+    {
+      "code": "P-L-RC03",
+      "name": "RC 底 + 水泥粉刷",
+      "group": "P",
+      "area_m2": 51.66,
+      "design_new": 4039.812,
+      "design_renew": 935.046,
+      "baseline_code": "P-L-RC01",
+      "baseline_new": 5598.9108,
+      "baseline_renew": 2494.1448,
+      "element_ids": []
+    }
+  ],
+  "unmapped": [],
+  "issues": [
+    {
+      "level": "warning",
+      "message": "資料庫尚未完成人工核對（review_status = draft），結果僅供參考。"
+    },
+    {
+      "level": "info",
+      "message": "「鋁框 + 清5mm（附表無 5mm，依註1以厚度比例推算）」使用自訂係數（手冊附表2-2 註1；附錄三 p.81），送審需附計算資料。"
+    }
+  ],
+  "database": {
+    "manual_version": "2025",
+    "review_status": "draft"
+  },
+  "calculated_at": "2026-10-30T12:07:39"
+}

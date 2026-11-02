@@ -1,0 +1,77 @@
+<Window x:Class="LebrCarbon.UI.PrecheckWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LEBR 碳排計算：計算前檢查" Width="680" Height="560"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip"
+        FontFamily="Microsoft JhengHei UI" FontSize="13" Background="#F6F5F2">
+    <Window.Resources>
+        <ResourceDictionary Source="Styles.xaml"/>
+    </Window.Resources>
+
+    <DockPanel Margin="18">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="取消" Style="{StaticResource Secondary}" IsCancel="True" Margin="0,0,8,0"/>
+            <Button x:Name="StartButton" Content="開始計算" Style="{StaticResource Primary}" IsDefault="True" Click="OnStart"/>
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Top">
+            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="數量來源" Style="{StaticResource SectionTitle}"/>
+                    <RadioButton x:Name="ModelSource" GroupName="Source" IsEnabled="False" Margin="0,2" Checked="OnSourceChanged">
+                        <StackPanel>
+                            <TextBlock x:Name="ModelTitle" Text="從目前的 Revit 模型擷取"/>
+                            <TextBlock x:Name="ModelHint" Text="需要在 Revit 中開啟專案" Style="{StaticResource Sub}"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="SampleSource" GroupName="Source" IsChecked="True" Margin="0,8,0,2" Checked="OnSourceChanged">
+                        <StackPanel>
+                            <TextBlock Text="手冊附錄三範例：高雄市 Z 社會住宅"/>
+                            <TextBlock Text="地上 14 層、RC 住宅，用來確認計算結果與手冊一致（CFR 20.51%、1+ 級）" Style="{StaticResource Sub}"/>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="FileSource" GroupName="Source" Margin="0,8,0,2" Checked="OnSourceChanged">
+                        <StackPanel>
+                            <TextBlock Text="載入數量檔（JSON，計畫書第十一章的數量格式）"/>
+                            <DockPanel Margin="0,4,0,0">
+                                <Button DockPanel.Dock="Right" Content="瀏覽…" Style="{StaticResource Secondary}" Padding="10,3" Margin="6,0,0,0" Click="OnBrowse"/>
+                                <TextBox x:Name="FilePath" IsReadOnly="True" Width="440" VerticalContentAlignment="Center" Padding="4,2"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </RadioButton>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <Border Style="{StaticResource Card}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="計算前檢查" Style="{StaticResource SectionTitle}"/>
+                <TextBlock DockPanel.Dock="Top" x:Name="Summary" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="IssueList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,8">
+                                    <Border x:Name="Chip" DockPanel.Dock="Left" CornerRadius="4" Padding="6,1" Margin="0,1,10,0"
+                                            VerticalAlignment="Top" Background="#EEF1F4">
+                                        <TextBlock x:Name="ChipText" Text="{Binding LevelText}" FontSize="12"/>
+                                    </Border>
+                                    <TextBlock Text="{Binding Message}" TextWrapping="Wrap"/>
+                                </DockPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Level}" Value="Error">
+                                        <Setter TargetName="Chip" Property="Background" Value="#FBE4E2"/>
+                                        <Setter TargetName="ChipText" Property="Foreground" Value="{StaticResource ErrorInk}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Level}" Value="Warning">
+                                        <Setter TargetName="Chip" Property="Background" Value="{StaticResource WarnSoft}"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </DockPanel>
+</Window>

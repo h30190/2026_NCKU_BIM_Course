@@ -1,0 +1,174 @@
+<!doctype html>
+<!-- 首頁外層是英文、點開的說明是中文：關掉瀏覽器自動翻譯，避免 Chrome 把英文翻成怪中文 -->
+<html lang="en" translate="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google" content="notranslate">
+  <title>LEBR Carbon | Group 1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/home3d.css">
+  <link rel="stylesheet" href="css/visitor.css">
+</head>
+<body class="home3d">
+  <header class="intro-nav">
+    <a class='logo' href='/'>
+      <span class="logo-mark">L</span>
+      <span><b>LEBR Carbon</b></span>
+    </a>
+    <nav id="topnav" class="glass">
+      <a href="#home" class="active">Home</a>
+      <a href="#intro">About LEBR<em class="new">New</em></a>
+      <a href="#problem">Challenges</a>
+      <a href="#features">Features</a>
+      <a href="#flow">Workflow</a>
+      <a href="#team">Team</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn" id="btn-login">Log in</button>
+      <a class='btn' data-open-dashboard href='/dashboard'>Open Results →</a>
+    </div>
+  </header>
+
+  <!-- 3D 模型（effect 3：藍圖線框＋流光粒子） -->
+  <div class="stage" id="stage" aria-label="Interactive 3D building model: drag to rotate, scroll to zoom, click a component to see its carbon"></div>
+  <div class="scan-tag" id="scan-tag" hidden></div>
+  <div class="hover-tag" id="hover-tag" hidden></div>
+
+  <main class="hero3d">
+    <span class="chip">NCKU Architecture · BIM 115-1 · Group 1</span>
+    <h1><span class="h1-title">See Embodied Carbon</span><br><em>at the design stage.</em></h1>
+    <p>Concrete and rebar quantities for columns, beams, slabs and structural walls are taken from Revit and calculated with Appendix 1 of the 2025 LEBR manual. <b>Click a component on the right</b> to see its result.</p>
+    <div class="actions">
+      <a class='btn light' data-open-dashboard href='/dashboard'>Open Results</a>
+      <a class="btn" href="#flow">See Workflow</a>
+    </div>
+    <div class="glass stats" id="stats"></div>
+  </main>
+
+  <!-- 模型工具列 -->
+  <div class="glass model-bar" id="model-bar">
+    <div class="filters" id="filters"></div>
+    <span class="sep"></span>
+    <button class="btn mini" id="btn-explode" aria-pressed="false">Explode</button>
+    <button class="btn mini" id="btn-reset">Reset View</button>
+    <label class="btn mini" for="file" title="Load the file from the plugin's “Export result JSON…”">Load JSON</label>
+    <input type="file" id="file" accept=".json,application/json" hidden>
+  </div>
+  <div class="source-pill" id="source-pill"></div>
+
+  <!-- 構件詳情（沿用 Dashboard 右欄樣式，內容中文） -->
+  <aside class="panel glass comp-panel" id="comp-panel" lang="zh-Hant" hidden></aside>
+
+  <!-- 上方條列的詳細說明（內容中文） -->
+  <div class="modal-bg" id="sheet-bg" lang="zh-Hant">
+    <div class="sheet-wrap">
+    <button class="sheet-arrow prev" id="sheet-prev" aria-label="上一頁"><span>‹</span></button>
+    <button class="sheet-arrow next" id="sheet-next" aria-label="下一頁"><span>›</span></button>
+    <div class="glass sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <div class="sheet-head">
+        <h2 id="sheet-title"></h2>
+        <button class="icon-btn" id="sheet-close" aria-label="關閉">✕</button>
+      </div>
+      <div id="sheet-body"></div>
+    </div>
+    </div>
+  </div>
+
+  <template id="tpl-intro">
+    <div class="intro-head">
+      <p class="intro-title">低碳（低蘊含碳）建築評估 LEBR</p>
+      <p class="sub">在設計前期就估算建築的蘊含碳排，及早因應公有新建建築的導入時程。</p>
+    </div>
+    <div class="grid-2 intro-grid">
+      <div class="glass card intro-card">
+        <div class="intro-card-top"><div class="ico">🏢</div><span class="tag blue">基本定義</span></div>
+        <h3>什麼是 LEBR？</h3>
+        <p>Low Embodied-carbon Building Rating，依內政部建築研究所《低碳（低蘊含碳）建築評估手冊》評估，2024 年起實施低碳建築標示。算的是建材從生產運輸、施工、60 年更新修繕到拆除廢棄的<b>蘊含碳排</b>，不含使用時的用電。</p>
+      </div>
+      <div class="glass card intro-card">
+        <div class="intro-card-top"><div class="ico">🧱</div><span class="tag green">評估範疇</span></div>
+        <h3>四個階段、七類構件</h3>
+        <p>階段：資材製造運輸、施工、更新修繕、拆除廢棄。構件：主結構，以及外牆、外窗、帷幕、內隔間、室內與戶外地坪；地下層只揭露、不評分。手冊範例中主結構約占構件碳排的 6 成，所以本系統先從 Revit 抓柱、梁、樓板、結構牆。</p>
+      </div>
+      <div class="glass card intro-card">
+        <div class="intro-card-top"><div class="ico">🏅</div><span class="tag amber">評級機制</span></div>
+        <h3>等級判定：減碳率 CFR</h3>
+        <p>CFR ＝（基準案 − 設計案）÷ 基準案，基準案是同一棟建築改用手冊規定的一般做法。依表 5-1 分 8 級：</p>
+        <div class="cfr-scale">
+          <span><b>1+</b>＞20%</span><span><b>1</b>16～20%</span><span><b>2</b>12～16%</span><span><b>3</b>8～12%</span>
+          <span><b>4</b>3～8%</span><span><b>5</b>−10～3%</span><span><b>6</b>−20～−10%</span><span><b>7</b>≤−20%</span>
+        </div>
+      </div>
+      <div class="glass card intro-card">
+        <div class="intro-card-top"><div class="ico">📅</div><span class="tag purple">法規時程</span></div>
+        <h3>公有新建建築分年導入</h3>
+        <p>申請綠建築標章及建築能效評估時，須併同申請低碳建築標示（表 1-1，正式日期以函頒為準）：</p>
+        <ul class="intro-list">
+          <li><b>116 年 7 月</b>　G-1 金融證券、G-2 辦公場所</li>
+          <li><b>117 年 7 月</b>　公共集會、商業、休閒文教類</li>
+          <li><b>118 年 7 月</b>　醫療照護、住宿類</li>
+          <li><b>119 年 7 月</b>　其他建築類組</li>
+        </ul>
+        <p>等級要求：118 年底前至少 2 級，119 年起至少 1 級。</p>
+      </div>
+    </div>
+    <div class="glass intro-highlight">
+      <div class="ico">💡</div>
+      <div>
+        <h3>解決前期設計的痛點</h3>
+        <p>傳統試算步驟繁多，常到設計後期才算，來不及影響設計。透過 Revit 外掛一鍵擷取與計算，草案階段就能比較材料與做法、預估 LEBR 等級。</p>
+      </div>
+    </div>
+    <p class="muted small intro-src">資料來源：內政部建築研究所《低碳（低蘊含碳）建築評估手冊》2025 年版，第 6 頁表 1-1、第 44 頁表 5-1。</p>
+  </template>
+
+  <template id="tpl-problem">
+    <p class="sub">手冊有 120+187 筆構件資料與 27 道公式，手算又慢又容易錯。</p>
+    <div class="grid-3">
+      <div class="glass card"><div class="ico">🧮</div><h3>公式繁複</h3><p>式 1～27、七類構件、四個生命週期階段，手算難以重複驗證。</p></div>
+      <div class="glass card"><div class="ico">🔁</div><h3>方案一改就要重算</h3><p>換一種外牆或地坪做法，等級會怎麼變，很難即時知道。</p></div>
+      <div class="glass card"><div class="ico">🔍</div><h3>看不出碳排花在哪</h3><p>只有一個總數，找不到該優先改善的構件。</p></div>
+    </div>
+  </template>
+
+  <template id="tpl-features">
+    <p class="sub">擷取、計算、視覺化，三件事串成一條線。</p>
+    <div class="grid-3">
+      <div class="glass card"><div class="ico">📐</div><h3>Revit 一鍵擷取</h3><p>結構柱、梁、樓板、結構牆的體積與鋼筋量，依樓層標高分地上、地下。</p></div>
+      <div class="glass card"><div class="ico">🧾</div><h3>算式攤開來看</h3><p>每一步列出手冊公式、代入數字與係數來源，並標示精算或估算。</p></div>
+      <div class="glass card"><div class="ico">🧱</div><h3>構件下鑽</h3><p>點模型構件或圖表，看到該樓層、該類別的數量、材料與碳排。</p></div>
+    </div>
+  </template>
+
+  <template id="tpl-flow">
+    <p class="sub">三步完成，從模型到結果。</p>
+    <div class="grid-3 steps">
+      <div class="glass card"><h3>專案設定</h3><p>每個專案填一次建築類別與結構參數。</p></div>
+      <div class="glass card"><h3>模型資訊計算 / 數量估算</h3><p>使用者可選擇使用模型資訊並搭配LEBR手冊提供的公式計算，也可以使用估算選項，依照「材料數量*單位碳排係數」的原則進行主結構部分碳排估算</p></div>
+      <div class="glass card"><h3>圖台呈現與分析</h3><p>總覽、數量報告、碳排報告、提醒與查核集中在同一個畫面。</p></div>
+    </div>
+  </template>
+
+  <template id="tpl-team">
+    <p class="sub">第1組</p>
+    <div class="grid-4">
+      <div class="glass card member"><div class="avatar">誠</div><h3>張晁誠</h3></div>
+      <div class="glass card member"><div class="avatar">晴</div><h3>林以晴</h3></div>
+      <div class="glass card member"><div class="avatar">煒</div><h3>黃啟煒</h3></div>
+      <div class="glass card member"><div class="avatar">瑋</div><h3>黃冠瑋</h3></div>
+    </div>
+  </template>
+
+  <footer class="home3d-foot">© 2026 NCKU Architecture · BIM 115-1 · Group 1 · MIT　|　For design reference only, not a certified rating</footer>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="js/vendor/three.min.js"></script>
+  <script src="js/visitor.js"></script>
+  <script src="js/home3d.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 驗證 LebrDatabase.cs 在 Revit 2022～2024（net48）與 2025+（net8.0）兩種環境都能編譯並正確讀取資料庫 -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net8.0;net48</TargetFrameworks>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\LebrDatabase.cs" Link="LebrDatabase.cs" />
+    <!-- 資料庫交接包沒有 LebrEngine.cs，此時只跑資料庫測試 -->
+    <Compile Include="..\LebrEngine.cs" Link="LebrEngine.cs" Condition="Exists('..\LebrEngine.cs')" />
+    <Compile Include="..\ProjectSettingsRules.cs" Link="ProjectSettingsRules.cs" />
+    <Compile Include="..\Estimate\PLccTable.cs" Link="Estimate\PLccTable.cs" />
+    <Compile Include="..\Estimate\StructureEstimator.cs" Link="Estimate\StructureEstimator.cs" />
+    <Compile Include="..\Estimate\EstimateQuantities.cs" Link="Estimate\EstimateQuantities.cs" />
+    <Compile Include="..\Estimate\EstimateRecord.cs" Link="Estimate\EstimateRecord.cs" />
+    <Compile Include="..\Estimate\StructureBim.cs" Link="Estimate\StructureBim.cs" />
+    <Compile Include="..\Estimate\EstimateRefresh.cs" Link="Estimate\EstimateRefresh.cs" />
+    <Compile Include="..\DashboardLink.cs" Link="DashboardLink.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" Condition="'$(TargetFramework)' == 'net48'" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

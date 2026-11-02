@@ -1,0 +1,262 @@
+/* ===== 3D 首頁（疊在 styles.css 之上；tokens 沿用 styles.css） ===== */
+[hidden] { display: none !important; }
+.small { font-size: 12px; }
+.home3d { height: 100vh; overflow: hidden; }
+.home3d .intro-nav { position: fixed; left: clamp(16px, 2.5vw, 48px); right: clamp(16px, 2.5vw, 48px); top: 16px; margin: 0; max-width: none; z-index: 30; }
+.intro-nav nav a { position: relative; }
+.intro-nav nav a.active { color: var(--text); }
+.intro-nav .new {
+  font-style: normal; font-size: 10px; margin-left: 4px; padding: 1px 6px; border-radius: 999px;
+  background: var(--blue-soft); color: #8bb8ff; vertical-align: 1px;
+}
+
+.stage { position: fixed; inset: 0; z-index: 1; cursor: grab; touch-action: none; }
+.stage.dragging { cursor: grabbing; }
+.stage.pointing { cursor: pointer; }
+.stage canvas { display: block; }
+
+/* Hero 文字：左側，不擋模型 */
+.hero3d {
+  position: fixed; z-index: 10; left: clamp(24px, 4.5vw, 96px); top: 50%; transform: translateY(-44%);
+  width: min(600px, 40vw); pointer-events: none;
+}
+.hero3d > * { pointer-events: auto; }
+.hero3d .chip {
+  display: inline-block; padding: 6px 14px; border-radius: 999px; font-size: 12px;
+  background: var(--blue-soft); color: #8bb8ff; margin-bottom: 20px;
+}
+.hero3d h1 { font-size: clamp(40px, 5vw, 76px); line-height: 1.15; letter-spacing: -1px; }
+.hero3d h1 em { font-style: normal; color: var(--blue); }
+.hero3d p { margin: 22px 0 30px; color: var(--muted); font-size: clamp(16px, 1.25vw, 20px); max-width: 540px; }
+.hero3d p b { color: var(--text); font-weight: 600; }
+.hero3d .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.stats { margin-top: 28px; padding: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; border-radius: 20px; }
+.stats > div { padding: 8px 10px; border-radius: 14px; background: rgba(255,255,255,.05); }
+.stats small { display: block; color: var(--muted); font-size: 12px; }
+.stats b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.stats b em { font-style: normal; font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+
+/* 模型工具列 */
+.model-bar {
+  position: fixed; z-index: 20; left: 50%; bottom: 20px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 6px; padding: 8px; border-radius: 999px; max-width: calc(100vw - 24px); flex-wrap: wrap; justify-content: center;
+}
+.filters { display: flex; gap: 4px; }
+.fchip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
+  font-size: 13px; color: var(--muted); border: 1px solid transparent; transition: background .15s, color .15s; white-space: nowrap;
+}
+.fchip i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.fchip.on { color: var(--text); background: rgba(255,255,255,.1); border-color: var(--stroke); }
+.fchip:hover { color: var(--text); }
+.model-bar .sep { width: 1px; height: 22px; background: var(--stroke); margin: 0 4px; }
+.btn.mini { padding: 6px 14px; font-size: 13px; }
+.btn[aria-pressed="true"] { background: var(--blue); border-color: transparent; }
+.source-pill {
+  position: fixed; z-index: 20; right: 20px; bottom: 26px; font-size: 12px; color: var(--muted);
+  padding: 6px 12px; border-radius: 999px; background: var(--glass); border: 1px solid var(--stroke);
+}
+.source-pill .dot { margin-right: 6px; }
+.source-pill button { margin-left: 10px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+.source-pill button:hover { color: var(--text, #fff); }
+.dot.g { background: var(--green); } .dot.a { background: var(--amber); }
+
+/* 3D 上的小標籤 */
+.scan-tag, .hover-tag {
+  position: fixed; z-index: 5; pointer-events: none; transform: translate(-50%, -130%);
+  font-size: 12px; padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  background: rgba(20, 22, 28, .82); border: 1px solid var(--stroke);
+}
+.scan-tag { color: #8bb8ff; transform: translate(0, -50%); }
+.scan-tag b { color: var(--text); font-weight: 600; margin-left: 6px; }
+.hover-tag { transform: translate(14px, 14px); }
+
+/* 構件詳情（styles.css 的 .panel） */
+.comp-panel {
+  position: fixed; z-index: 25; right: 20px; top: 96px; width: 380px; max-height: calc(100vh - 186px);
+  animation: slide-in .2s ease-out;
+}
+/* 面板是 flex 直排，避免公式框被壓扁 */
+.comp-panel > * { flex-shrink: 0; }
+@keyframes slide-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+.comp-panel .meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.big-num { font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.big-num small { font-size: 13px; font-weight: 400; color: var(--muted); margin-left: 4px; }
+.share { display: grid; gap: 6px; }
+.share .bar-bg { height: 8px; border-radius: 999px; background: rgba(255,255,255,.1); overflow: hidden; }
+.share .bar-bg i { display: block; height: 100%; background: var(--blue); border-radius: 999px; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.info-grid > div { padding: 12px; border-radius: 14px; background: rgba(255,255,255,.06); border: 1px solid var(--stroke); }
+.info-grid small { display: block; color: var(--muted); font-size: 12px; }
+.info-grid b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.formula {
+  padding: 12px 14px; border-radius: 14px; font-size: 13px; line-height: 1.7;
+  background: rgba(26, 115, 255, .1); border: 1px solid rgba(26, 115, 255, .35);
+  font-variant-numeric: tabular-nums; overflow-x: auto;
+}
+.formula code { font-family: "JetBrains Mono", Consolas, monospace; font-size: 12px; color: #8bb8ff; }
+.formula .res { color: var(--text); font-weight: 600; }
+details.more { border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid var(--stroke); }
+details.more summary {
+  list-style: none; cursor: pointer; padding: 10px 14px; font-size: 14px; display: flex; align-items: center; gap: 10px;
+}
+details.more summary::-webkit-details-marker { display: none; }
+details.more summary::before {
+  content: "+"; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: var(--glass-strong); font-weight: 600;
+}
+details.more[open] summary::before { content: "−"; }
+details.more .inner { padding: 0 14px 12px; }
+.mini-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mini-table th { text-align: left; font-weight: 500; color: var(--muted); padding: 6px 4px; }
+.mini-table td { padding: 6px 4px; border-top: 1px solid var(--stroke); font-variant-numeric: tabular-nums; }
+.mini-table .num { text-align: right; }
+.hint { padding: 12px 14px; border-radius: 14px; font-size: 13px; color: var(--muted); background: rgba(255,255,255,.04); border: 1px dashed var(--stroke); }
+
+/* 條列說明（styles.css 的 .modal-bg） */
+.sheet { width: min(980px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; padding: 28px; background: rgba(42, 43, 47, .92); }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.sheet-head h2 { font-size: 26px; }
+.sheet .icon-btn { width: 36px; height: 36px; flex: none; }
+.slot { padding: 36px 20px; text-align: center; border: 1.5px dashed rgba(255,255,255,.28); border-radius: 20px; background: rgba(255,255,255,.03); }
+.slot.tall { padding: 80px 20px; }
+.slot-ico { font-size: 30px; margin-bottom: 8px; opacity: .8; }
+.slot p { margin-top: 6px; }
+
+.home3d-foot { position: fixed; z-index: 4; left: 0; right: 0; bottom: 0; padding: 0 0 4px; font-size: 11px; opacity: .6; pointer-events: none; }
+.toast { position: fixed; z-index: 70; left: 50%; bottom: 84px; transform: translateX(-50%); padding: 12px 20px; border-radius: 999px; font-size: 14px; background: #2a2b2f; border: 1px solid var(--stroke); box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+
+@media (max-width: 1100px) {
+  .hero3d { top: 96px; transform: none; width: min(560px, calc(100vw - 48px)); }
+  .hero3d h1 { font-size: 34px; }
+  .hero3d p { font-size: 14px; margin: 12px 0 18px; }
+  .stats { display: none; }
+  .comp-panel { top: auto; bottom: 84px; max-height: 55vh; }
+}
+@media (max-width: 720px) {
+  .home3d .intro-nav { left: 12px; right: 12px; top: 12px; padding: 8px 12px; }
+  .home3d .intro-nav nav { display: flex; position: fixed; left: 12px; right: 12px; top: 72px; justify-content: space-between; gap: 6px; font-size: 13px; overflow-x: auto; }
+  .home3d .intro-nav > .btn { padding: 8px 12px; font-size: 13px; }
+  .hero3d { top: 108px; left: 16px; width: calc(100vw - 32px); }
+  .hero3d h1 { font-size: 26px; }
+  .hero3d .chip, .hero3d .actions { display: none; }
+  .comp-panel { left: 12px; right: 12px; width: auto; bottom: 120px; max-height: 50vh; }
+  .model-bar { bottom: 12px; border-radius: 22px; gap: 4px; padding: 6px; }
+  .model-bar .sep { display: none; }
+  .fchip { padding: 5px 9px; font-size: 12px; }
+  .btn.mini { padding: 5px 10px; font-size: 12px; }
+  .home3d-foot { display: none; }
+  .source-pill { display: none; }
+  .sheet { padding: 20px; }
+  .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* LEBR 簡介 */
+.intro-head { margin-bottom: 4px; }
+.intro-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.intro-head .sub { margin-bottom: 18px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.intro-card h3 { margin-bottom: 6px; }
+.intro-card p { line-height: 1.7; }
+.intro-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.intro-card-top .ico { margin-bottom: 0; }
+.tag { font-size: 11px; padding: 2px 9px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+.tag.blue { color: #8bb8ff; background: rgba(26, 115, 255, .12); border-color: rgba(26, 115, 255, .3); }
+.tag.green { color: #5ee08a; background: rgba(52, 199, 89, .12); border-color: rgba(52, 199, 89, .3); }
+.tag.amber { color: #ffc86b; background: rgba(255, 179, 64, .12); border-color: rgba(255, 179, 64, .3); }
+.tag.purple { color: #d6a4ff; background: rgba(191, 90, 242, .12); border-color: rgba(191, 90, 242, .3); }
+.cfr-scale { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.cfr-scale span { display: flex; flex-direction: column; align-items: center; padding: 6px 4px; border-radius: 10px; background: rgba(255, 255, 255, .05); font-size: 12px; color: var(--muted); }
+.cfr-scale b { font-size: 15px; color: var(--text, #fff); }
+.cfr-scale span:first-child { background: rgba(26, 115, 255, .18); }
+.intro-list { margin: 8px 0 8px 18px; line-height: 1.8; font-size: 14px; }
+.intro-highlight { display: flex; gap: 14px; align-items: flex-start; margin-top: 14px; padding: 18px; border-radius: 18px; border: 1px solid rgba(26, 115, 255, .3); background: rgba(26, 115, 255, .1); }
+.intro-highlight .ico { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--blue-soft); font-size: 22px; }
+.intro-highlight h3 { margin-bottom: 4px; }
+.intro-src { margin-top: 12px; }
+@media (max-width: 720px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* ===== 英文版首頁（2026-11-02）：只有首頁外層是英文；說明頁與構件詳情維持中文 ===== */
+.home3d { --display: "Inter", "Noto Sans TC", system-ui, sans-serif; --spring: cubic-bezier(.32, 1.4, .45, 1); }
+
+/* 導覽列：logo、中間膠囊、右側按鈕分開，不再是一整條玻璃條 */
+.home3d .intro-nav { padding: 0; background: none; border: 0; box-shadow: none; backdrop-filter: none; }
+.home3d .intro-nav .logo b { font-family: var(--display); font-size: 17px; letter-spacing: -.2px; }
+.home3d .intro-nav > .btn { border-radius: 999px; padding: 9px 18px; transition: transform .25s var(--spring), background .2s; }
+.home3d .intro-nav > .btn:hover { transform: translateY(-1px); }
+.home3d .intro-nav > .btn:active { transform: scale(.95); }
+
+/* 仿 iOS 分段控制：白色膠囊跟著游標彈性滑動，按下去會縮一下 */
+.home3d .intro-nav nav { position: relative; gap: 2px; padding: 5px; border-radius: 999px; font-family: var(--display); font-weight: 500; }
+.home3d .intro-nav nav a {
+  position: relative; z-index: 1; padding: 7px 16px; border-radius: 999px;
+  transition: color .25s ease, transform .3s var(--spring);
+}
+.home3d .intro-nav nav a:hover, .home3d .intro-nav nav a.active { color: var(--text); }
+.home3d .intro-nav nav a:active { transform: scale(.92); }
+.home3d .intro-nav nav a.active { font-weight: 600; }
+.nav-pill {
+  position: absolute; z-index: 0; left: 0; top: 5px; bottom: 5px; width: 0; border-radius: 999px; pointer-events: none;
+  background: rgba(255, 255, 255, .16); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), 0 4px 14px rgba(0, 0, 0, .25);
+  transition: transform .5s var(--spring), width .5s var(--spring);
+}
+.home3d .intro-nav nav:active .nav-pill { background: rgba(255, 255, 255, .22); }
+
+/* 標題：白字每個字首大寫、藍字全大寫；字小一點，用 Inter Tight 做出排版感 */
+.home3d .hero3d .chip {
+  padding: 0; background: none; color: var(--muted); margin-bottom: 18px;
+  font-family: var(--display); font-size: 11px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase;
+}
+.home3d .hero3d h1 { font-family: var(--display); font-size: clamp(30px, 3.2vw, 54px); font-weight: 700; letter-spacing: -.035em; line-height: 1.04; }
+.home3d .hero3d h1 .h1-title { text-transform: capitalize; }
+.home3d .hero3d h1 em { font-weight: 800; text-transform: uppercase; letter-spacing: -.01em; }
+.home3d .hero3d p { font-size: clamp(14px, 1.05vw, 17px); margin: 20px 0 28px; }
+.home3d .stats small, .home3d .model-bar, .home3d .source-pill { font-family: var(--display); }
+.home3d .stats b { font-family: var(--display); letter-spacing: -.02em; }
+.btn.light { background: #fff; color: #111; border-color: transparent; font-weight: 600; transition: transform .25s var(--spring), background .2s; }
+.btn.light:hover { background: #e9ecf2; transform: translateY(-1px); }
+.btn.light:active { transform: scale(.95); }
+.home3d .hero3d { width: min(640px, 42vw); }
+
+/* 標題區放鬆一點（2026-11-02）：字距回到正常、行距加大，照組員英文版截圖 */
+.home3d .hero3d { width: min(820px, 48vw); }
+.home3d .hero3d h1 em { white-space: nowrap; }
+.home3d .hero3d .chip { color: var(--text); font-size: 13px; font-weight: 500; letter-spacing: .01em; text-transform: none; margin-bottom: 14px; }
+.home3d .hero3d h1 { font-size: clamp(34px, 3.7vw, 64px); font-weight: 800; letter-spacing: -.01em; line-height: 1.12; }
+.home3d .hero3d h1 em { color: #5b93ff; font-weight: 800; letter-spacing: .005em; }
+.home3d .hero3d p { font-size: clamp(15px, 1.15vw, 18px); line-height: 1.6; color: rgba(235, 240, 250, .82); margin: 22px 0 30px; max-width: 520px; }
+.home3d .hero3d .actions { gap: 14px; }
+.home3d .hero3d .actions .btn { padding: 13px 26px; font-size: 15px; font-weight: 600; border-radius: 999px; }
+.home3d .stats { margin-top: 30px; padding: 18px 22px; gap: 22px; max-width: 470px; }
+.home3d .stats > div { padding: 0; background: none; }
+.home3d .stats small { font-size: 12.5px; margin-bottom: 2px; }
+.home3d .stats b { font-size: 22px; letter-spacing: 0; }
+
+/* 說明視窗左右箭頭：貼在視窗左右兩側外面，點了直接換頁 */
+.sheet-wrap { position: relative; width: min(980px, 100%); display: grid; }
+.sheet-wrap .sheet { width: 100%; }
+.sheet-arrow {
+  position: absolute; top: 50%; z-index: 2; width: 48px; height: 48px; margin-top: -24px; border-radius: 50%;
+  display: grid; place-items: center; border: 1px solid rgba(255, 255, 255, .16); color: #fff; cursor: pointer;
+  background: rgba(42, 43, 47, .82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  font-size: 30px; line-height: 1; transition: transform .3s var(--spring, ease), background .2s;
+}
+.sheet-arrow span { margin-top: -4px; }
+.sheet-arrow.prev { left: -64px; }
+.sheet-arrow.next { right: -64px; }
+.sheet-arrow:hover { background: rgba(70, 72, 80, .92); transform: scale(1.08); }
+.sheet-arrow:active { transform: scale(.92); }
+@media (max-width: 1120px) { .sheet-arrow.prev { left: 8px; } .sheet-arrow.next { right: 8px; } }
+
+/* 右上按鈕組（Log in + Open Results） */
+.home3d .intro-nav .nav-actions { display: flex; gap: 10px; }
+.home3d .intro-nav .nav-actions .btn { border-radius: 999px; padding: 9px 18px; transition: transform .25s var(--spring), background .2s; }
+.home3d .intro-nav .nav-actions .btn:hover { transform: translateY(-1px); }
+.home3d .intro-nav .nav-actions .btn:active { transform: scale(.95); }
+
+.home3d .intro-nav .who-dot {
+  display: inline-grid; place-items: center; width: 22px; height: 22px; margin: -2px 8px -2px -6px; border-radius: 50%;
+  background: linear-gradient(135deg, #5b93ff, #8b7cf6); font-size: 11px; font-weight: 700;
+}

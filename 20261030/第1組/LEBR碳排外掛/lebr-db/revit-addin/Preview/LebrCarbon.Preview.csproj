@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 在 Revit 外開啟計算前檢查與結果視窗，並輸出截圖，供開發時確認畫面。不會部署到 Revit。 -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>LebrCarbon</RootNamespace>
+    <EnableDefaultPageItems>false</EnableDefaultPageItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\csharp\LebrDatabase.cs" Link="Lebr\LebrDatabase.cs" />
+    <Compile Include="..\..\csharp\LebrEngine.cs" Link="Lebr\LebrEngine.cs" />
+    <Compile Include="..\..\csharp\ProjectSettingsRules.cs" Link="Lebr\ProjectSettingsRules.cs" />
+    <Compile Include="..\..\csharp\DashboardLink.cs" Link="Lebr\DashboardLink.cs" />
+    <Compile Include="..\..\csharp\Estimate\*.cs" Link="Lebr\Estimate\%(Filename)%(Extension)" />
+    <Compile Include="..\UI\*.xaml.cs" Link="UI\%(Filename)%(Extension)" />
+    <Page Include="..\UI\*.xaml" Link="UI\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>

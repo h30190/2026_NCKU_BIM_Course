@@ -1,0 +1,198 @@
+<Window x:Class="LebrCarbon.UI.ResultWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LEBR 碳排計算結果" Width="1200" Height="780" MinWidth="860" MinHeight="600"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip"
+        FontFamily="Microsoft JhengHei UI" FontSize="13" Background="#F6F5F2">
+    <Window.Resources>
+        <ResourceDictionary Source="Styles.xaml"/>
+    </Window.Resources>
+
+    <DockPanel Margin="18">
+        <!-- 底部：狀態與按鈕 -->
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="在圖台開啟" Style="{StaticResource Secondary}" Margin="0,0,8,0" Click="OnOpenDashboard"
+                        ToolTip="用預設瀏覽器開啟碳排圖台並帶入這次的結果；網址也會複製到剪貼簿"/>
+                <Button Content="匯出結果 JSON…" Style="{StaticResource Secondary}" Margin="0,0,8,0" Click="OnExport"/>
+                <Button Content="關閉" Style="{StaticResource Primary}" IsCancel="True" Click="OnClose"/>
+            </StackPanel>
+            <TextBlock x:Name="Status" Style="{StaticResource Sub}" VerticalAlignment="Center" Text="{Binding SourceText}"/>
+        </DockPanel>
+
+        <!-- 提醒列 -->
+        <Border DockPanel.Dock="Top" Background="{StaticResource WarnSoft}" BorderBrush="{StaticResource WarnLine}" BorderThickness="1"
+                CornerRadius="6" Padding="12,8" Margin="0,0,0,12" Visibility="{Binding BannerVisibility}">
+            <TextBlock Text="{Binding BannerText}" TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- 四張重點卡片 -->
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.1*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" Style="{StaticResource Card}" Background="{StaticResource AccentSoft}" BorderBrush="{StaticResource Accent}">
+                <StackPanel>
+                    <TextBlock Text="LEBR 等級" Style="{StaticResource Caption}"/>
+                    <TextBlock Text="{Binding GradeText}" FontSize="30" FontWeight="Bold" Foreground="{StaticResource Accent}" Margin="0,2,0,0"/>
+                    <TextBlock Text="{Binding CfrText}" Style="{StaticResource Sub}" Foreground="{StaticResource Ink}"/>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="蘊含碳排密度 ECI（kgCO2e/m²）" Style="{StaticResource Caption}"/>
+                    <TextBlock Text="{Binding EciText}" Style="{StaticResource BigValue}"/>
+                    <TextBlock Text="{Binding EcisText}" Style="{StaticResource Sub}"/>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="4" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="評估範疇蘊含碳排 EEC（kgCO2e）" Style="{StaticResource Caption}"/>
+                    <TextBlock Text="{Binding EecText}" Style="{StaticResource BigValue}"/>
+                    <TextBlock Text="{Binding EeccText}" Style="{StaticResource Sub}"/>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="6" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="減碳量 ΔCF（kgCO2e）" Style="{StaticResource Caption}"/>
+                    <TextBlock Text="{Binding DeltaText}" Style="{StaticResource BigValue}"/>
+                    <TextBlock Text="{Binding TecText}" Style="{StaticResource Sub}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- 等級刻度（表 6-1） -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource Card}" Margin="0,0,0,12" Padding="14,10">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Left" Text="等級刻度&#10;（ECI 上限）" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <ItemsControl ItemsSource="{Binding GradeChips}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="1"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border x:Name="Chip" Margin="3,0" CornerRadius="6" Padding="4,5" BorderThickness="1"
+                                    BorderBrush="{StaticResource Line}" Background="White">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock x:Name="ChipGrade" Text="{Binding Label}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="ChipEci" Text="{Binding EciText}" FontSize="11.5" Foreground="{StaticResource Quiet}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                    <Setter TargetName="Chip" Property="Background" Value="{StaticResource Accent}"/>
+                                    <Setter TargetName="Chip" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                    <Setter TargetName="ChipGrade" Property="Foreground" Value="White"/>
+                                    <Setter TargetName="ChipEci" Property="Foreground" Value="White"/>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <!-- 分頁 -->
+        <TabControl x:Name="Tabs" Background="White" BorderBrush="{StaticResource Line}" Padding="0">
+            <TabItem Header="四個階段">
+                <DataGrid ItemsSource="{Binding Result.Stages}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="生命週期階段" Binding="{Binding Stage}" Width="2*" ElementStyle="{StaticResource Cell}"/>
+                        <DataGridTextColumn Header="設計案（kgCO2e）" Binding="{Binding Design, StringFormat=N0}" Width="1.5*" ElementStyle="{StaticResource Num}"/>
+                        <DataGridTextColumn Header="占設計案" Binding="{Binding DesignShare, StringFormat=P1}" Width="*" ElementStyle="{StaticResource Num}"/>
+                        <DataGridTextColumn Header="基準案（kgCO2e）" Binding="{Binding Baseline, StringFormat=N0}" Width="1.5*" ElementStyle="{StaticResource Num}"/>
+                        <DataGridTextColumn Header="減碳量（kgCO2e）" Binding="{Binding Reduction, StringFormat=N0}" Width="1.5*" ElementStyle="{StaticResource Num}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+            <TabItem Header="七類構件">
+                <DataGrid ItemsSource="{Binding Result.Groups}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="分項工程" Binding="{Binding Label}" Width="2*" ElementStyle="{StaticResource Cell}"/>
+                        <DataGridTextColumn Header="設計案（kgCO2e）" Binding="{Binding Design, StringFormat=N0}" Width="1.5*" ElementStyle="{StaticResource Num}"/>
+                        <DataGridTextColumn Header="占設計案資材" Binding="{Binding DesignShare, StringFormat=P1}" Width="*" ElementStyle="{StaticResource Num}"/>
+                        <DataGridTextColumn Header="基準案（kgCO2e）" Binding="{Binding Baseline, StringFormat=N0}" Width="1.5*" ElementStyle="{StaticResource Num}"/>
+                        <DataGridTextColumn Header="減碳量（kgCO2e）" Binding="{Binding Reduction, StringFormat=N0}" Width="1.5*" ElementStyle="{StaticResource Num}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+            <TabItem Header="構件明細">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="雙擊一列可在模型中選取這些元件（範例資料沒有對應元件）。數字含新建與 60 年更新。"
+                               Style="{StaticResource Sub}" Margin="10,8,10,6"/>
+                    <DataGrid x:Name="ItemGrid" ItemsSource="{Binding Result.Items}" MouseDoubleClick="OnItemDoubleClick">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="代號" Binding="{Binding Code}" Width="110" ElementStyle="{StaticResource Cell}"/>
+                            <DataGridTextColumn Header="構造名稱" Binding="{Binding Name}" Width="3.2*" ElementStyle="{StaticResource Cell}"/>
+                            <DataGridTextColumn Header="分項" Binding="{Binding GroupLabel}" Width="1.7*" ElementStyle="{StaticResource Cell}"/>
+                            <DataGridTextColumn Header="面積（m²）" Binding="{Binding AreaM2, StringFormat=N2}" Width="*" ElementStyle="{StaticResource Num}"/>
+                            <DataGridTextColumn Header="新建 F" Binding="{Binding FNew, StringFormat=N2}" Width="70" ElementStyle="{StaticResource Num}"/>
+                            <DataGridTextColumn Header="更新 F*" Binding="{Binding FRenew, StringFormat=N2}" Width="70" ElementStyle="{StaticResource Num}"/>
+                            <DataGridTextColumn Header="設計案" Binding="{Binding Design, StringFormat=N0}" Width="*" ElementStyle="{StaticResource Num}"/>
+                            <DataGridTextColumn Header="比較基準" Binding="{Binding BaselineCode}" Width="100" ElementStyle="{StaticResource Cell}"/>
+                            <DataGridTextColumn Header="基準案" Binding="{Binding Baseline, StringFormat=N0}" Width="*" ElementStyle="{StaticResource Num}"/>
+                            <DataGridTextColumn Header="減碳量" Binding="{Binding Reduction, StringFormat=N0}" Width="*" ElementStyle="{StaticResource Num}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="主結構">
+                <DataGrid ItemsSource="{Binding StructureRows}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="參數" Binding="{Binding Name}" Width="2.5*" ElementStyle="{StaticResource Cell}"/>
+                        <DataGridTextColumn Header="設計案" Binding="{Binding Design}" Width="*" ElementStyle="{StaticResource Num}"/>
+                        <DataGridTextColumn Header="基準案" Binding="{Binding Baseline}" Width="*" ElementStyle="{StaticResource Num}"/>
+                        <DataGridTextColumn Header="來源" Binding="{Binding Note}" Width="2*" ElementStyle="{StaticResource Cell}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+            <TabItem Header="{Binding NoticeHeader}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="計算提醒" Style="{StaticResource SectionTitle}"/>
+                        <ItemsControl ItemsSource="{Binding Result.Issues}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,0,0,8">
+                                        <Border x:Name="Chip" DockPanel.Dock="Left" CornerRadius="4" Padding="6,1" Margin="0,1,10,0"
+                                                VerticalAlignment="Top" Background="#EEF1F4">
+                                            <TextBlock x:Name="ChipText" Text="{Binding LevelText}" FontSize="12"/>
+                                        </Border>
+                                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap"/>
+                                    </DockPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Level}" Value="Error">
+                                            <Setter TargetName="Chip" Property="Background" Value="#FBE4E2"/>
+                                            <Setter TargetName="ChipText" Property="Foreground" Value="{StaticResource ErrorInk}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Level}" Value="Warning">
+                                            <Setter TargetName="Chip" Property="Background" Value="{StaticResource WarnSoft}"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="未對應的元件" Style="{StaticResource SectionTitle}" Margin="0,12,0,8"/>
+                        <TextBlock Text="沒有未對應的元件。" Style="{StaticResource Sub}" Visibility="{Binding NoUnmappedVisibility}"/>
+                        <DataGrid ItemsSource="{Binding Result.Unmapped}" Visibility="{Binding UnmappedVisibility}" MaxHeight="260">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="元件 ID" Binding="{Binding ElementId}" Width="100" ElementStyle="{StaticResource Cell}"/>
+                                <DataGridTextColumn Header="品類" Binding="{Binding Category}" Width="*" ElementStyle="{StaticResource Cell}"/>
+                                <DataGridTextColumn Header="類型" Binding="{Binding TypeName}" Width="2*" ElementStyle="{StaticResource Cell}"/>
+                                <DataGridTextColumn Header="原因" Binding="{Binding Reason}" Width="2*" ElementStyle="{StaticResource Cell}"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>
