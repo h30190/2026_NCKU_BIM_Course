@@ -87,6 +87,7 @@ public sealed class LebrWindow : Window
         buttons.Children.Add(Btn("計算", (_, _) => Calculate()));
         buttons.Children.Add(Btn("儲存", (_, _) => Save(true)));
         buttons.Children.Add(Btn("匯出 Excel 計算書", (_, _) => ExportExcel()));
+        buttons.Children.Add(Btn("匯出 PDF 摘要", (_, _) => ExportPdf()));
         buttons.Children.Add(Btn("匯出 CSV", (_, _) => ExportCsv()));
         buttons.Children.Add(Btn("上傳到控制台", (_, _) => UploadToDashboard()));
         buttons.Children.Add(Btn("關閉", (_, _) => Close()));
@@ -487,7 +488,7 @@ public sealed class LebrWindow : Window
         Calculate();
         if (_last is null) return;
 
-        var path = Path.ChangeExtension(_projectPath, null) + $".計算書.{DateTime.Now:yyyyMMdd-HHmm}.xlsx";
+        var path = ReportExporter.ExcelPath(_projectPath, DateTime.Now);   // 與功能區「匯出報表」相同檔名規則
         try
         {
             LebrExcelWriter.Write(path, _last,
@@ -502,6 +503,49 @@ public sealed class LebrWindow : Window
 
         SetStatus($"已匯出計算書：{path}");
         if (MessageBox.Show(this, $"已匯出：\n{path}\n\n要現在開啟嗎？", "匯出 Excel 計算書",
+                MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                SetStatus($"已匯出，但無法自動開啟：{ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>匯出一頁式 PDF 摘要（F10）：先以目前輸入重新計算，再經 Windows「Microsoft Print to PDF」輸出。</summary>
+    private void ExportPdf()
+    {
+        Calculate();
+        if (_last is null) return;
+
+        string path;
+        Cursor = Cursors.Wait;
+        try
+        {
+            path = ReportExporter.WritePdf(_last, _file, _doc.Title, _projectPath, DateTime.Now);
+        }
+        catch (Reports.Pdf.PdfPrinterUnavailableException ex)
+        {
+            MessageBox.Show(this, ex.Message, "匯出 PDF 摘要", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        catch (IOException ex)
+        {
+            MessageBox.Show(this, $"無法寫入 PDF，若同名檔案正在 PDF 檢視器中開啟請先關閉。\n\n{ex.Message}",
+                "匯出 PDF 摘要", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        finally
+        {
+            Cursor = null;
+        }
+
+        SetStatus($"已匯出 PDF 摘要：{path}");
+        if (MessageBox.Show(this, $"已匯出：\n{path}\n\n要現在開啟嗎？", "匯出 PDF 摘要",
                 MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
         {
             try

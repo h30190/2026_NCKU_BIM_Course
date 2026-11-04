@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- PDF 摘要（計畫書 F10）：以 Windows 內建「Microsoft Print to PDF」輸出，不帶第三方套件，
+       中文字型交給 Windows 處理，也避免和其他 Revit 外掛的 DLL 衝突（理由同 Excel 計算書不用 ClosedXML）。
+       System.Drawing 由 .NET Windows Desktop 執行環境提供，Revit 2026 本身就載入，不會複製到外掛資料夾。 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>LebrCarbon.Reports.Pdf</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LebrCarbon.Reports\LebrCarbon.Reports.csproj" />
+  </ItemGroup>
+</Project>

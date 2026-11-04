@@ -2,6 +2,7 @@ using System.Text;
 using LebrCarbon.Dashboard;
 using LebrCarbon.Data;
 using LebrCarbon.Reports;
+using LebrCarbon.Reports.Pdf;
 
 // lebr-snapshot：由 .lebr.json 重算 LEBR，輸出控制台快照 JSON，或直接上傳到控制台後端。
 // 用途：教室沒有 Revit 2026 時，仍可用事先存好的評估輸入 demo 網頁控制台。
@@ -16,8 +17,9 @@ const string Usage = """
   --out <路徑>     把快照 JSON 寫到檔案
   --upload [網址]  上傳到控制台後端（預設 http://127.0.0.1:8080）
   --excel          一併附上 Excel 計算書
+  --pdf <路徑>     另外輸出一頁式 PDF 摘要（需要 Windows「Microsoft Print to PDF」）
 
-沒有 --out 也沒有 --upload 時，把快照 JSON 印到畫面。
+沒有 --out、--upload、--pdf 時，把快照 JSON 印到畫面。
 """;
 
 if (args.Length == 0 || args[0] is "-h" or "--help")
@@ -27,7 +29,7 @@ if (args.Length == 0 || args[0] is "-h" or "--help")
 }
 
 string input = args[0];
-string? name = null, key = null, outPath = null, uploadUrl = null;
+string? name = null, key = null, outPath = null, uploadUrl = null, pdfPath = null;
 var upload = false;
 var withExcel = false;
 
@@ -41,6 +43,7 @@ for (var i = 1; i < args.Length; i++)
         case "--out": outPath = Next(); break;
         case "--upload": upload = true; uploadUrl = Next(); break;
         case "--excel": withExcel = true; break;
+        case "--pdf": pdfPath = Next(); break;
         default:
             Console.Error.WriteLine($"不認得的選項：{args[i]}\n\n{Usage}");
             return 1;
@@ -94,7 +97,22 @@ if (upload)
     if (!r.Ok) return 2;
 }
 
-if (outPath is null && !upload)
+if (pdfPath is not null)
+{
+    try
+    {
+        var meta = new SummaryMeta(title, file.SavedAt, SnapshotBuilder.PluginVersion,
+            Shape: new ShapeValues(file.Shape.PAr, file.Shape.Aspect, file.Shape.Rc));
+        Console.Error.WriteLine($"已寫入 PDF 摘要 {PdfSummaryWriter.Write(pdfPath, LebrSummaryBuilder.Build(result, meta))}");
+    }
+    catch (Exception ex) when (ex is PdfPrinterUnavailableException or IOException)
+    {
+        Console.Error.WriteLine($"PDF 摘要匯出失敗：{ex.Message}");
+        return 3;
+    }
+}
+
+if (outPath is null && !upload && pdfPath is null)
     Console.WriteLine(SnapshotBuilder.ToJson(snapshot));
 
 return 0;

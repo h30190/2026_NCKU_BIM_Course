@@ -2,7 +2,8 @@
   <!-- lebr-snapshot：不開 Revit，由 .lebr.json 重算並產生／上傳控制台快照（教室 demo 備案用） -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <!-- PDF 摘要用 Windows 內建印表機，因此這個工具改為 Windows 專用 -->
+    <TargetFramework>net10.0-windows</TargetFramework>
     <RootNamespace>LebrCarbon.Cli</RootNamespace>
     <AssemblyName>lebr-snapshot</AssemblyName>
     <RollForward>Major</RollForward>
@@ -12,5 +13,6 @@
     <ProjectReference Include="..\LebrCarbon.Data\LebrCarbon.Data.csproj" />
     <ProjectReference Include="..\LebrCarbon.Reports\LebrCarbon.Reports.csproj" />
     <ProjectReference Include="..\LebrCarbon.Dashboard\LebrCarbon.Dashboard.csproj" />
+    <ProjectReference Include="..\LebrCarbon.Reports.Pdf\LebrCarbon.Reports.Pdf.csproj" />
   </ItemGroup>
 </Project>

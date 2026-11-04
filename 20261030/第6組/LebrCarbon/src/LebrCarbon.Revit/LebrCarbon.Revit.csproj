@@ -33,6 +33,7 @@
     <ProjectReference Include="..\LebrCarbon.Data\LebrCarbon.Data.csproj" />
     <ProjectReference Include="..\LebrCarbon.Reports\LebrCarbon.Reports.csproj" />
     <ProjectReference Include="..\LebrCarbon.Dashboard\LebrCarbon.Dashboard.csproj" />
+    <ProjectReference Include="..\LebrCarbon.Reports.Pdf\LebrCarbon.Reports.Pdf.csproj" />
   </ItemGroup>
 
   <!-- 編譯後自動部署到 Revit 2026 的 Addins 資料夾，重開 Revit 即可載入 -->

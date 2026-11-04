@@ -20,7 +20,4 @@ public abstract class PlaceholderCommand : IExternalCommand
 public sealed class OpenPaneCommand : PlaceholderCommand { protected override string Feature => "停駐面板（6.2 節）"; }
 
 [Transaction(TransactionMode.ReadOnly)]
-public sealed class ExportReportCommand : PlaceholderCommand { protected override string Feature => "F10 報表輸出"; }
-
-[Transaction(TransactionMode.ReadOnly)]
 public sealed class FactorLibraryCommand : PlaceholderCommand { protected override string Feature => "F11 係數庫管理"; }
