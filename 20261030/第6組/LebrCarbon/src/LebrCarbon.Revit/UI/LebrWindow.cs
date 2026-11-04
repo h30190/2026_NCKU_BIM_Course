@@ -341,8 +341,10 @@ public sealed class LebrWindow : Window
         p.Sb = below.Count;
         p.AFb = Math.Round(below.Sum(l => l.AreaM2), 2);
 
-        // BH：一樓到上一層樓的高差（不論上一層是否計入面積）
-        var next = _levels.Where(l => l.ElevationM > groundElev + 0.01).OrderBy(l => l.ElevationM).FirstOrDefault();
+        // BH：一樓到上一個勾選樓層的高差，跳過夾層、高程參考等未勾選的樓層；
+        // 單層建築上面只剩屋頂（未勾選）時，退回取最近的上一層
+        var higher = _levels.Where(l => l.ElevationM > groundElev + 0.01).OrderBy(l => l.ElevationM).ToList();
+        var next = higher.FirstOrDefault(l => l.Include) ?? higher.FirstOrDefault();
         if (next is not null) p.BH = Math.Round(next.ElevationM - groundElev, 2);
 
         _file.GroundLevelName = ground.Name;
