@@ -16,11 +16,24 @@ foreach ($cmd in @("go", "node", "npm")) {
   }
 }
 
-Write-Host "[1/2] 啟動後端（Go + SQLite，http://127.0.0.1:8080）..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\backend'; go run . -seed '$root\samples'"
+# 已經在跑的就跳過（Revit 的「網頁控制台」按鈕可能重複呼叫這支腳本）
+function Test-Listening($port) {
+  [bool](Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
+}
 
-Write-Host "[2/2] 啟動前端（React，http://localhost:5173）..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\frontend'; if (-not (Test-Path node_modules)) { Write-Host '第一次跑，先裝依賴（約1分鐘）...'; npm install }; npm run dev"
+if (Test-Listening 8080) {
+  Write-Host "[1/2] 後端已在運行（:8080），略過" -ForegroundColor Yellow
+} else {
+  Write-Host "[1/2] 啟動後端（Go + SQLite，http://127.0.0.1:8080）..." -ForegroundColor Green
+  Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\backend'; go run . -seed '$root\samples'"
+}
+
+if (Test-Listening 5173) {
+  Write-Host "[2/2] 前端已在運行（:5173），略過" -ForegroundColor Yellow
+} else {
+  Write-Host "[2/2] 啟動前端（React，http://localhost:5173）..." -ForegroundColor Green
+  Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$root\frontend'; if (-not (Test-Path node_modules)) { Write-Host '第一次跑，先裝依賴（約1分鐘）...'; npm install }; npm run dev"
+}
 
 Write-Host ""
 Write-Host "兩個視窗都出現 ready / listening 後，瀏覽器開 http://localhost:5173" -ForegroundColor Cyan

@@ -92,6 +92,12 @@ public sealed class DashboardSettings
 {
     public string BaseUrl { get; set; } = DashboardClient.DefaultBaseUrl;
 
+    /// <summary>網頁（Vite 前端）網址，「網頁控制台」按鈕開這個。</summary>
+    public string FrontendUrl { get; set; } = "http://localhost:5173";
+
+    /// <summary>console 資料夾（含 start.ps1）；不填時用外掛編譯時記下的 repo 路徑。</summary>
+    public string? ConsoleDir { get; set; }
+
     public static string DefaultPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LebrCarbon", "console.json");
 

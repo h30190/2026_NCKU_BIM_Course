@@ -23,6 +23,11 @@
     </Reference>
   </ItemGroup>
 
+  <!-- 記下編譯時 console 資料夾的位置，讓「網頁控制台」按鈕找得到 start.ps1（部署後 DLL 不在 repo 裡） -->
+  <ItemGroup>
+    <AssemblyMetadata Include="ConsoleDir" Value="$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\..\console'))" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\LebrCarbon.Core\LebrCarbon.Core.csproj" />
     <ProjectReference Include="..\LebrCarbon.Data\LebrCarbon.Data.csproj" />

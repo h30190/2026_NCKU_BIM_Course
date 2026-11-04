@@ -85,7 +85,7 @@ Revit 若不是裝在 `C:\Program Files\Autodesk\Revit 2026`，請修改 `Direct
    - 按「計算」，在「結果」分頁看 EEC、減碳率、等級與所有中間值。
    - 按「匯出 Excel 計算書」，產生可查核的 .xlsx 計算書（也可以匯出 CSV）。
 4. 切到 3D 視圖、視覺樣式設為「著色」，按「熱點著色」。對話框會列出圖例和碳排最高的 5 個構件。看完按「清除著色」還原。
-5. 先執行 `console\start.ps1`，再在評估視窗按「上傳到控制台」，輸入快照名稱（例如「方案 B：輕隔間」），瀏覽器開 http://localhost:5173 查看。
+5. 按功能區「輸出 → 網頁控制台」：控制台沒開就自動執行 `console\start.ps1`，網頁準備好後自動開瀏覽器（http://localhost:5173）。再在評估視窗按「上傳到控制台」，輸入快照名稱（例如「方案 B：輕隔間」）。
 
 ## 網頁控制台
 
@@ -113,6 +113,8 @@ dotnet run --project src/LebrCarbon.Cli -- 專案1.lebr.json --name "方案 A" -
 ```
 
 `--out 檔名.json` 改為寫成檔案（可放進 `console/samples/`），`--excel` 一併附上 Excel 計算書。後端網址預設 `http://127.0.0.1:8080`，外掛端可在 `%AppData%\LebrCarbon\console.json` 以 `{"baseUrl": "…"}` 修改。
+
+Revit 功能區的「網頁控制台」按鈕靠編譯時記下的 repo 路徑找 `console\start.ps1`；repo 搬家後重新編譯外掛，或在同一個 `console.json` 加 `"consoleDir": "D:\\…\\console"`。`start.ps1` 會略過已在運行的後端或前端，重複按不會開出第二份。
 
 ## 目前限制
 
