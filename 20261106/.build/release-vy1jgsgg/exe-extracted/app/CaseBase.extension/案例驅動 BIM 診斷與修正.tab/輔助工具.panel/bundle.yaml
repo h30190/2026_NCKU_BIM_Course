@@ -1,8 +1,0 @@
-title: 輔助工具
-layout:
-  - CaseGraph
-  - SimilarElements
-  - CompareElements
-  - Relationships
-  - RelatedCases
-  - CaseLibrary
