@@ -1,0 +1,67 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    切換 Revit 版本：改下面 RevitVersion 的預設值，或用命令列
+      dotnet build -c Release -p:RevitVersion=2025
+    2022–2024 → .NET Framework 4.8；2025 以上 → .NET 8
+  -->
+  <PropertyGroup>
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2024</RevitVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework Condition="'$(RevitVersion)' &gt;= '2025'">net8.0-windows</TargetFramework>
+    <TargetFramework Condition="'$(RevitVersion)' &lt; '2025'">net48</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
+    <RootNamespace>ShaftChecker.Revit</RootNamespace>
+    <AssemblyName>ShaftChecker.Revit</AssemblyName>
+    <OutputPath>bin\$(Configuration)\$(RevitVersion)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RevitVersion)' &gt;= '2024'">
+    <DefineConstants>$(DefineConstants);REVIT2024_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Revit API 參考：只用於編譯，不複製到輸出（Revit 執行時自己提供） -->
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" PrivateAssets="all" ExcludeAssets="runtime" />
+    <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" PrivateAssets="all" ExcludeAssets="runtime" />
+    <!-- 讓沒有安裝 .NET Framework 4.8 Targeting Pack 的電腦也能編譯 -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" Condition="'$(TargetFramework)' == 'net48'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ShaftChecker.Core\ShaftChecker.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="config\shaft-rules.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="ShaftChecker.addin" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="ui\index.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!--
+    建置後自動部署到 %AppData%\Autodesk\Revit\Addins\<版本>\
+    Revit 開著時 DLL 會被鎖住，複製會失敗（只顯示警告）；請先關閉 Revit 再建置。
+    不想自動部署：dotnet build -p:DeployToRevit=false
+  -->
+  <Target Name="DeployToRevit" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT' And '$(DeployToRevit)' != 'false'">
+    <PropertyGroup>
+      <AddinRoot>$(AppData)\Autodesk\Revit\Addins\$(RevitVersion)\</AddinRoot>
+    </PropertyGroup>
+    <ItemGroup>
+      <DeployDll Include="$(TargetDir)*.dll;$(TargetDir)*.pdb" />
+      <DeployConfig Include="$(TargetDir)config\*.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DeployDll)" DestinationFolder="$(AddinRoot)ShaftChecker\" ContinueOnError="true" />
+    <Copy SourceFiles="@(DeployConfig)" DestinationFolder="$(AddinRoot)ShaftChecker\config\" ContinueOnError="true" />
+    <Copy SourceFiles="$(TargetDir)ui\index.html" DestinationFolder="$(AddinRoot)ShaftChecker\ui\" ContinueOnError="true" />
+    <Copy SourceFiles="$(TargetDir)ShaftChecker.addin" DestinationFolder="$(AddinRoot)" ContinueOnError="true" />
+    <Message Importance="high" Text="ShaftChecker 已部署到 $(AddinRoot)" />
+  </Target>
+
+</Project>

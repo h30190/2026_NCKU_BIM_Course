@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 規則引擎：不引用 Revit API，可同時給 net48 (Revit 2022–2024) 與 net8 (Revit 2025+) 使用 -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <RootNamespace>ShaftChecker.Core</RootNamespace>
+    <AssemblyName>ShaftChecker.Core</AssemblyName>
+  </PropertyGroup>
+
+</Project>

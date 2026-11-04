@@ -1,0 +1,283 @@
+{
+  "batch": "coordination-25-v1",
+  "label": "BIM 協調模擬案例庫",
+  "notice": "全部為虛構教學案例。尺寸、原因及改善結果均為情境假設；解法尚未在實際模型驗證，採用前須按專案核定資料確認。",
+  "categories": {
+    "Doors": {"label": "門", "id": "-2000023"},
+    "Electrical Fixtures": {"label": "插座／電氣裝置", "id": "-2001060"},
+    "Walls": {"label": "牆", "id": "-2000011"},
+    "Windows": {"label": "窗", "id": "-2000014"},
+    "Floors": {"label": "樓板", "id": "-2000032"},
+    "Detail Items": {"label": "詳圖元件", "id": "-2002000"},
+    "Furniture": {"label": "家具", "id": "-2000080"}
+  },
+  "profiles": {
+    "door_d2": {"category": "Doors", "family": "單開-矩形- (1)", "type_name": "大門_D2 100 x 230 cm", "dimensions": {"Width": 1000, "Height": 2300}, "ifc_class": "IfcDoor"},
+    "door_d1": {"category": "Doors", "family": "單開-矩形- (1)", "type_name": "房門_D1 90 x 210 cm", "dimensions": {"Width": 900, "Height": 2100}, "ifc_class": "IfcDoor"},
+    "door_double": {"category": "Doors", "family": "雙開-矩形", "type_name": "雙開_D3 160 x 230 cm", "dimensions": {"Width": 1600, "Height": 2300}, "ifc_class": "IfcDoor"},
+    "outlet": {"category": "Electrical Fixtures", "family": "壁式雙聯插座", "type_name": "一般插座", "dimensions": {"Width": 120, "Height": 80}, "ifc_class": "IfcOutlet"},
+    "outlet_face": {"category": "Electrical Fixtures", "family": "面式雙聯插座", "type_name": "面式一般插座", "dimensions": {"Width": 120, "Height": 80}, "ifc_class": "IfcOutlet"},
+    "wall_rc": {"category": "Walls", "family": "Basic Wall", "type_name": "RC 牆 20cm", "dimensions": {"Width": 200, "Height": 3000, "Length": 4800}, "ifc_class": "IfcWall"},
+    "wall_partition": {"category": "Walls", "family": "Basic Wall", "type_name": "輕隔間 10cm", "dimensions": {"Width": 100, "Height": 3000, "Length": 4800}, "ifc_class": "IfcWall"},
+    "window": {"category": "Windows", "family": "鋁窗-推拉", "type_name": "W1 150 x 120 cm", "dimensions": {"Width": 1500, "Height": 1200}, "ifc_class": "IfcWindow"},
+    "floor": {"category": "Floors", "family": "Floor", "type_name": "RC 樓板 15cm", "dimensions": {"Thickness": 150}, "ifc_class": "IfcSlab"},
+    "sofa_detail": {"category": "Detail Items", "family": "客廳_沙發", "type_name": "一般", "dimensions": {"Length": 830, "Width": 2040}, "ifc_class": null},
+    "ac_detail": {"category": "Detail Items", "family": "陽台_空調室外機", "type_name": "室外機", "dimensions": {"Length": 300, "Width": 900}, "ifc_class": null},
+    "sofa": {"category": "Furniture", "family": "三人沙發", "type_name": "S1 204 x 83 cm", "dimensions": {"Length": 830, "Width": 2040, "Height": 850}, "ifc_class": "IfcFurnishingElement"},
+    "cabinet": {"category": "Furniture", "family": "活動收納櫃", "type_name": "C1 120 x 45 cm", "dimensions": {"Length": 450, "Width": 1200, "Height": 2100}, "ifc_class": "IfcFurnishingElement"}
+  },
+  "cases": [
+    {
+      "id": "SIM-001", "profile": "door_d2", "title": "大門開啟範圍遮住插座", "issue_type": "SPATIAL_CLEARANCE", "priority": "High", "level": "2FL",
+      "problem": "模擬大門開至 90° 時，門扇遮住距門框 180 mm 的插座；住戶難以插拔。門寬 1000 mm，高 2300 mm。",
+      "cause": "插座定位只參考牆線，未與門扇開啟範圍及使用動作一起檢查。",
+      "parameters": {"Door handing": "左開", "Outlet distance from frame": "180 mm"},
+      "steps": ["在平面及三維視圖核對門的實際開向，標出門扇與把手的使用範圍。", "比較翻轉開向與移動插座兩種方案，先確認鄰接空間、設備及專案要求；本例假設保留開向。", "由建築與電氣協調核定插座新位置，再更新插座實例、標註及相關施工圖，避免直接批改整個門類型。"],
+      "checks": ["在核定開啟角度下，門扇、把手及使用者動作均不遮擋插座。", "檢查同族同型的其他大門；逐一確認插座側別，不能直接套用位移。"],
+      "expected": "預期插座可正常操作，大門原有開向保留；實際淨空仍待模型檢查。",
+      "context": [{"name": "RC 牆 20cm", "kind": "ELEMENT", "category": "Walls", "relation": "HOSTED_BY"}, {"name": "門後一般插座", "kind": "ELEMENT", "category": "Electrical Fixtures", "relation": "NEARBY"}]
+    },
+    {
+      "id": "SIM-002", "profile": "door_d2", "title": "同型大門鏡射後開向錯誤", "issue_type": "DESIGN_CONFLICT", "priority": "High", "level": "3FL",
+      "problem": "鏡射戶型中的大門與原戶型名稱、尺寸相同，但門扇轉向走道內的設備櫃。",
+      "cause": "族群名稱未記錄實例開向，複製後只比較類型而忽略 Hand／Facing 方向。",
+      "parameters": {"Door handing": "右開（鏡射）", "Mirror review": "未完成"},
+      "steps": ["並排比較原戶與鏡射戶的門、宿主牆及設備櫃，確認問題來自實例方向。", "在協調視圖試調該門的翻轉控制，逐一檢查內外側及左右開向；族群沒有控制時先修正測試副本。", "確認核定方案後只調整受影響實例，同步更新開向標註與門表備註。"],
+      "checks": ["平面門弧、三維門扇與核定門表的方向一致。", "原戶型的門未被改動，鏡射戶設備櫃仍可開啟。"],
+      "expected": "預期鏡射戶的門開向與核定配置一致，不再侵入設備櫃操作區。",
+      "context": [{"name": "入口宿主牆", "kind": "ELEMENT", "category": "Walls", "relation": "HOSTED_BY"}, {"name": "走道設備櫃", "kind": "ELEMENT", "category": "Furniture", "relation": "NEARBY"}]
+    },
+    {
+      "id": "SIM-003", "profile": "door_d2", "title": "門檻高度與完成面不一致", "issue_type": "PARAMETER_ERROR", "priority": "Medium", "level": "2FL",
+      "problem": "門實例底部依結構樓層放置，但室內完成面比結構面高 50 mm，剖面中門扇底部被地坪遮住。",
+      "cause": "門檻高度採用了結構基準，未納入地坪完成面偏移。",
+      "parameters": {"Sill Height": "0 mm", "Finish build-up": "50 mm"},
+      "steps": ["以剖面量測宿主樓層、結構板與完成面標高，確認 50 mm 為本情境的假設值。", "按核定門框及門檻詳圖調整實例高度或對應族群參數，同時核對門洞上緣及有效高度。", "檢查同類門是否位於不同地坪做法，按完成面分組調整並更新門表。"],
+      "checks": ["剖面門底、完成面及核定門檻詳圖一致。", "調高後沒有造成門楣衝突，也沒有改動其他地坪條件的門。"],
+      "expected": "預期門底與完成面協調一致；調整值應由實際詳圖決定。",
+      "context": [{"name": "門洞宿主牆", "kind": "ELEMENT", "category": "Walls", "relation": "HOSTED_BY"}, {"name": "室內完成面 +50 mm", "kind": "ELEMENT", "category": "Floors", "relation": "NEARBY"}]
+    },
+    {
+      "id": "SIM-004", "profile": "door_d1", "title": "門表尺寸與族群幾何不一致", "issue_type": "PARAMETER_ERROR", "priority": "Medium", "level": "2FL",
+      "problem": "門表顯示寬 900 mm，但測試族群的門扇幾何寬為 850 mm。",
+      "cause": "門表 Width 與控制門扇幾何的自訂參數未建立正確關聯，且門扇寬與洞口寬被混用。",
+      "parameters": {"Scheduled width": "900 mm", "Leaf geometry width": "850 mm"},
+      "steps": ["在族群測試副本中找出 Width、自訂門扇寬及洞口寬各自的定義與標註關聯。", "依專案門表定義修正參數關聯或欄位名稱，保留門框所需差值，避免把洞口寬強制等同門扇寬。", "測試至少兩個類型尺寸後再載入專案，檢查現有實例及門表數值。"],
+      "checks": ["門扇、洞口與表列尺寸的定義清楚，對應量測相符。", "切換 900／1000 mm 測試類型時幾何正常伸縮。"],
+      "expected": "預期門表可區分門扇寬與洞口寬，且每個欄位與對應幾何一致。",
+      "context": [{"name": "房間隔間牆", "kind": "ELEMENT", "category": "Walls", "relation": "HOSTED_BY"}]
+    },
+    {
+      "id": "SIM-005", "profile": "door_d1", "title": "門的 IFC 匯出分類錯誤", "issue_type": "IFC_MAPPING_ERROR", "priority": "Medium", "level": "3FL",
+      "problem": "模擬匯出結果把房門分類成 IfcBuildingElementProxy，接收方無法以門類別篩選。",
+      "cause": "族群或專案的匯出分類覆寫與目前 IFC 匯出設定不一致。",
+      "parameters": {"Observed export class": "IfcBuildingElementProxy", "Expected export class": "IfcDoor"}, "overrides": {"ifc_class": "IfcBuildingElementProxy"},
+      "steps": ["記錄使用中的匯出器版本與 IFC 格式，檢查族群類別、匯出分類覆寫及專案映射設定。", "在測試副本修正造成 Proxy 分類的覆寫，按專案交換規範設定預期分類。", "只匯出包含該門的測試範圍，以獨立 IFC 檢視器核對分類、尺寸及屬性，再套用到其餘同型門。"],
+      "checks": ["測試 IFC 中該物件分類符合預期 IfcDoor，且幾何沒有消失。", "記錄匯出前後的識別資訊，確認接收方可找到同一門實例。"],
+      "expected": "預期匯出分類與門的用途一致；必須以實際匯出檔驗證。",
+      "context": [{"name": "房門宿主牆", "kind": "ELEMENT", "category": "Walls", "relation": "HOSTED_BY"}]
+    },
+    {
+      "id": "SIM-006", "profile": "door_double", "title": "雙扇門與走道家具互相干涉", "issue_type": "SPATIAL_CLEARANCE", "priority": "High", "level": "1FL",
+      "problem": "雙扇門其中一扇開啟時進入走道展示櫃範圍；單看總門寬無法辨別問題。",
+      "cause": "配置檢討未區分主扇、副扇及家具的實際使用範圍。",
+      "parameters": {"Active leaf": "左扇", "Cabinet offset": "250 mm"},
+      "steps": ["確認雙扇門主副扇、正常開啟情境及展示櫃的操作需求。", "比較移動展示櫃與調整門扇配置的方案，交由設計協調確認；本例採用重新定位家具的假設方案。", "更新家具實例與尺寸標註，保留門的核定規格並重新檢查走道。"],
+      "checks": ["主副扇的核定開啟狀態均不碰家具。", "調整後走道及展示櫃的使用空間符合專案要求。"],
+      "expected": "預期門與家具可同時正常使用，所需淨空按專案要求確認。",
+      "context": [{"name": "大廳雙門宿主牆", "kind": "ELEMENT", "category": "Walls", "relation": "HOSTED_BY"}, {"name": "走道展示櫃", "kind": "ELEMENT", "category": "Furniture", "relation": "NEARBY"}]
+    },
+    {
+      "id": "SIM-007", "profile": "outlet", "title": "插座被櫃體遮擋而無法操作", "issue_type": "SPATIAL_CLEARANCE", "priority": "Medium", "level": "2FL",
+      "problem": "插座中心離完成面 300 mm，後續加入的固定櫃遮住面板及插頭空間。",
+      "cause": "電氣配置尚未與最新家具及裝修模型協調。",
+      "parameters": {"Elevation from finish": "300 mm", "Use": "一般插座"},
+      "steps": ["核對家具版本、櫃背位置及實際插接設備，區分常用插座與櫃內設備專用插座。", "與建築、室內及電氣設計確認可操作的位置與配線可行性，選定方案後調整模型實例。", "同步更新插座高度、定位尺寸與電氣圖，檢查相同房型的櫃後插座。"],
+      "checks": ["面板、插頭及維修操作空間可使用。", "配置與核定裝修圖一致，模型電路資料仍正確。"],
+      "expected": "預期插座可操作且不影響櫃體使用，實際位置待各專業確認。",
+      "context": [{"name": "插座宿主牆", "kind": "ELEMENT", "category": "Walls", "relation": "HOSTED_BY"}, {"name": "固定收納櫃", "kind": "ELEMENT", "category": "Furniture", "relation": "NEARBY"}]
+    },
+    {
+      "id": "SIM-008", "profile": "outlet", "title": "同房型插座高度不一致", "issue_type": "PARAMETER_ERROR", "priority": "Medium", "level": "3FL",
+      "problem": "兩個相同房型的插座外觀相同，一個距完成面 300 mm，另一個 450 mm；未有設計變更記錄。",
+      "cause": "複製後保留了個別實例偏移，或使用了不同樓層／完成面基準。",
+      "parameters": {"Elevation from finish": "450 mm", "Approved scenario height": "300 mm"},
+      "steps": ["並排比較插座的樓層、偏移及地坪完成面，先換算為相同基準。", "核對設備用途與核定圖，排除檯面、無障礙或專用設備等應保留的高度差異。", "只對確定錯誤的實例調整到核定高度，使用明細表檢視其餘同房型。"],
+      "checks": ["同用途、同基準的插座高度一致。", "有設計依據的例外高度保留，並在案例備註中記錄原因。"],
+      "expected": "預期移除無依據的高度差異；300 mm 僅是本情境的假設核定值。",
+      "context": [{"name": "插座宿主隔間牆", "kind": "ELEMENT", "category": "Walls", "relation": "HOSTED_BY"}]
+    },
+    {
+      "id": "SIM-009", "profile": "outlet", "title": "插座模型未加入指定電路", "issue_type": "CONNECTION_ERROR", "priority": "High", "level": "2FL",
+      "problem": "插座已放置，但模型電路及配電盤欄位空白，設備統計未包含此插座。",
+      "cause": "放置後尚未建立模型電路關聯，或族群連接器定義不符合設計資料。",
+      "parameters": {"Panel": "未指定", "Circuit": "未建立"},
+      "steps": ["檢查族群電氣連接器及其設計參數，確認模型資料來源為核定電氣設備表。", "由電氣設計者確認負載、系統及指定配電盤，再在 Revit 建立或加入對應模型電路。", "更新配電盤明細表並檢查其他未接入電路的同類插座。"],
+      "checks": ["插座的模型電路及配電盤可追溯到核定設計。", "配電盤表與插座統計一致，未把重複實例當成新增負載。"],
+      "expected": "預期模型電路關聯完整；實際電氣設計須由負責專業確認。",
+      "context": [{"name": "電氣設計待指定系統", "kind": "SYSTEM", "relation": "RELATED_TO"}, {"name": "插座宿主牆", "kind": "ELEMENT", "category": "Walls", "relation": "HOSTED_BY"}]
+    },
+    {
+      "id": "SIM-010", "profile": "outlet_face", "title": "連結模型更新後插座宿主失效", "issue_type": "CONNECTION_ERROR", "priority": "High", "level": "2FL",
+      "problem": "建築連結更新後，面式插座的原宿主面被重建；平面仍見符號，但定位與牆面不一致。",
+      "cause": "原面參照已改變，插座未重新確認宿主與偏移。",
+      "parameters": {"Host review": "待重新指定", "Link revision": "模擬 Rev B"},
+      "steps": ["核對連結檔版本、位置及相關警告，確認插座是否仍有有效宿主參照。", "在備份或測試副本中按族群支援方式重新指定面；若須重放，先保存電路、標記及高度資料。", "完成定位後逐項恢復與核對參數，檢查同一次連結更新影響的其他面式裝置。"],
+      "checks": ["插座貼合正確牆面，位置及高度符合核定圖。", "宿主警告已處理，原有標記與模型電路沒有遺失或重複。"],
+      "expected": "預期重新建立穩定宿主參照並保留電氣資料。",
+      "context": [{"name": "連結建築更新後牆面（待確認）", "kind": "ELEMENT", "category": "Walls", "relation": "RELATED_TO"}]
+    },
+    {
+      "id": "SIM-011", "profile": "outlet", "title": "插座類型的 IFC 分類覆寫錯誤", "issue_type": "IFC_MAPPING_ERROR", "priority": "Medium", "level": "3FL",
+      "problem": "同一類型插座在交換檔中顯示成一般代理物件，接收方設備表漏列。",
+      "cause": "類型層級的匯出覆寫沿用其他設備族群設定。",
+      "parameters": {"Observed export class": "IfcBuildingElementProxy", "Expected export class": "IfcOutlet"}, "overrides": {"ifc_class": "IfcBuildingElementProxy"},
+      "steps": ["比較正常與異常插座的族群類別、實例／類型覆寫及匯出設定。", "依交換需求及使用中的 IFC 格式核對預期分類；本情境以 IfcOutlet 為測試目標。", "修正測試副本後匯出小範圍檔案，核對接收方的設備表及識別資訊，再推廣至同型實例。"],
+      "checks": ["接收方可依正確分類找到插座，數量與來源範圍一致。", "高度、標記及需要交換的屬性沒有在修改分類後遺失。"],
+      "expected": "預期匯出插座可被設備表辨識，需用實際交換檔確認。",
+      "context": [{"name": "電氣裝置宿主牆", "kind": "ELEMENT", "category": "Walls", "relation": "HOSTED_BY"}]
+    },
+    {
+      "id": "SIM-012", "profile": "wall_rc", "title": "同位置牆體厚度與核定類型不一致", "issue_type": "PARAMETER_ERROR", "priority": "High", "level": "2FL",
+      "problem": "情境核定牆厚為 200 mm，但局部牆段使用 150 mm 測試類型，門框收口跟著偏移。",
+      "cause": "局部替換類型時未確認牆層組成、定位線及宿主門窗。",
+      "overrides": {"type_name": "RC 牆 15cm", "dimensions": {"Width": 150, "Height": 3000, "Length": 4800}},
+      "parameters": {"Approved thickness": "200 mm", "Location line": "牆中心線"},
+      "steps": ["與核定建築／結構資料核對該牆段的厚度及用途，確認並非設計例外。", "在協調視圖試換核定牆類型，檢查定位線造成的兩側位移及相鄰牆接合。", "經確認後更新受影響牆段，重新核對門窗宿主、尺寸標註及完成面。"],
+      "checks": ["牆厚與核定類型一致，定位沒有意外偏移。", "門窗洞口、相鄰接合及房間面積已重新檢查。"],
+      "expected": "預期牆類型回到核定設定；結構用途及構造仍依負責設計者確認。",
+      "context": [{"name": "受影響大門", "kind": "ELEMENT", "category": "Doors", "relation": "RELATED_TO"}, {"name": "相鄰 RC 牆段", "kind": "ELEMENT", "category": "Walls", "relation": "ADJACENT_TO"}]
+    },
+    {
+      "id": "SIM-013", "profile": "wall_rc", "title": "牆頂約束導致牆體穿出樓板", "issue_type": "GEOMETRY_CLASH", "priority": "High", "level": "2FL",
+      "problem": "模型視圖中牆頂高於預定樓板底 200 mm；尚未執行精確幾何交集驗證。",
+      "cause": "牆頂仍採用舊的未連接高度，未隨樓層或樓板方案更新。",
+      "parameters": {"Top constraint": "未連接", "Suspected excess": "200 mm"},
+      "steps": ["在剖面確認牆頂、樓板底及該牆的核定構造意圖，區分應接合與不應穿越的情況。", "依核定方案修正頂部約束、偏移或附著方式，先檢查單一牆段。", "重新檢查接合、數量與相關門窗，對其他同樓層牆段進行相同條件篩選。"],
+      "checks": ["牆頂與核定構造位置一致，必要時完成精確交集檢查。", "數量與剖面沒有因接合方式改變而異常。"],
+      "expected": "預期消除非設計意圖的穿出部分，圖中的相近關係本身不證明碰撞。",
+      "context": [{"name": "上層 RC 樓板", "kind": "ELEMENT", "category": "Floors", "relation": "NEARBY"}]
+    },
+    {
+      "id": "SIM-014", "profile": "wall_partition", "title": "隔間改動後房間邊界未封閉", "issue_type": "CONNECTION_ERROR", "priority": "Medium", "level": "3FL",
+      "problem": "修改隔間後，房間面積變為未封閉；牆端與相鄰牆間有疑似小間隙。",
+      "cause": "牆端未接合、房間邊界選項或房間計算階段設定不一致。",
+      "parameters": {"Room Bounding": "待核對", "Room state": "未封閉"},
+      "steps": ["在對應階段的平面檢查牆端、房間邊界屬性及房間計算條件，先找出斷開位置。", "依設計意圖修正牆端接合或核定的房間分隔線；不要用重疊分隔線掩蓋錯誤牆體。", "重新檢視該房間與鄰室面積，更新房間標籤及相關明細表。"],
+      "checks": ["目標房間形成正確封閉邊界，鄰室沒有被意外合併。", "面積及階段與核定平面一致。"],
+      "expected": "預期恢復正確房間邊界與面積計算。",
+      "context": [{"name": "相鄰隔間牆端", "kind": "ELEMENT", "category": "Walls", "relation": "NEARBY"}, {"name": "房間 R-301（邊界待確認）", "kind": "SPACE", "relation": "RELATED_TO"}]
+    },
+    {
+      "id": "SIM-015", "profile": "wall_rc", "title": "重複牆段造成數量翻倍", "issue_type": "CONSTRUCTION_ISSUE", "priority": "High", "level": "2FL",
+      "problem": "同位置、同類型牆段出現兩筆，材料數量表的體積接近預期兩倍。",
+      "cause": "複製／貼上或跨模型整合時留下重複實例，尚未排除設計選項與階段差異。",
+      "parameters": {"Duplicate candidate count": "2", "Quantity review": "待去重確認"},
+      "steps": ["以元素 ID、來源文件、階段、設計選項及位置比較兩筆候選，先排除有意保留的不同方案。", "確認應保留的宿主牆與其門窗關聯，備份後只移除經確認的多餘實例。", "重新產生材料數量表並檢查門窗宿主、標註及牆端接合。"],
+      "checks": ["對應方案中只留下核定牆段，數量回到單一構件的預期範圍。", "沒有因移除多餘牆而丟失門窗或標註。"],
+      "expected": "預期移除重複計量；相同位置不應直接被視為可刪除證據。",
+      "context": [{"name": "疑似重複 RC 牆段", "kind": "ELEMENT", "category": "Walls", "relation": "NEARBY"}]
+    },
+    {
+      "id": "SIM-016", "profile": "window", "title": "窗台高度與立面設計不一致", "issue_type": "PARAMETER_ERROR", "priority": "Medium", "level": "2FL",
+      "problem": "同型窗的窗台偏移為 1000 mm，但本情境核定立面為 900 mm，窗頂不在同一水平線。",
+      "cause": "窗台屬於實例參數，複製類型沒有同步修正偏移。",
+      "parameters": {"Sill Height": "1000 mm", "Scenario approved sill": "900 mm"},
+      "steps": ["確認樓層、完成面及核定窗台基準，排除不同房間用途的高度差異。", "調整受影響窗的實例偏移，核對窗頂與梁底、室內設備及立面分格。", "更新立面尺寸與窗表備註，再篩選其餘同型窗逐一檢查。"],
+      "checks": ["窗台與窗頂標高符合核定立面。", "更改後沒有產生梁、設備或室內裝修衝突。"],
+      "expected": "預期同一立面控制條件下的窗對齊；高度值僅為本例假設。",
+      "context": [{"name": "外牆窗洞宿主", "kind": "ELEMENT", "category": "Walls", "relation": "HOSTED_BY"}]
+    },
+    {
+      "id": "SIM-017", "profile": "window", "title": "窗型尺寸變更後洞口未同步", "issue_type": "GEOMETRY_CLASH", "priority": "High", "level": "3FL",
+      "problem": "窗寬改為 1800 mm，但測試族群的洞口仍維持 1500 mm，三維視圖出現牆面遮住窗側。",
+      "cause": "切割洞口的尺寸標註未與窗寬參數正確關聯。",
+      "overrides": {"type_name": "W2 180 x 120 cm", "dimensions": {"Width": 1800, "Height": 1200}},
+      "parameters": {"Opening width": "1500 mm", "Window width": "1800 mm"},
+      "steps": ["在族群副本檢查窗框、洞口及參考平面的尺寸關聯。", "依核定窗框與洞口定義修正洞口控制，測試兩種寬度及不同宿主牆厚。", "載入測試專案確認切割後，再更新正式模型並檢查所有受影響窗型。"],
+      "checks": ["窗洞按設定尺寸正確切割宿主牆。", "不同窗寬及牆厚均正常，窗框沒有漂移或被牆遮住。"],
+      "expected": "預期窗洞與窗型正確聯動，精確幾何仍需實際模型驗證。",
+      "context": [{"name": "窗洞宿主 RC 牆", "kind": "ELEMENT", "category": "Walls", "relation": "HOSTED_BY"}]
+    },
+    {
+      "id": "SIM-018", "profile": "floor", "title": "浴室降板偏移套用到錯誤樓層", "issue_type": "PARAMETER_ERROR", "priority": "High", "level": "3FL",
+      "problem": "浴室樓板複製後仍綁定 2FL，利用大偏移落在 3FL 附近，剖面與樓層明細表不一致。",
+      "cause": "複製時保留來源樓層，使用偏移暫時補償位置。",
+      "parameters": {"Assigned level": "2FL", "Intended level": "3FL", "Height offset": "跨層補償，待重設"},
+      "steps": ["記錄樓板當前絕對標高、核定降板深度及面層做法。", "在測試副本把樓層關聯改為正確樓層，重新計算偏移以維持核定絕對標高。", "核對邊界、排水及相鄰樓板接合，再更新標註與明細表。"],
+      "checks": ["樓層歸屬正確，絕對標高與降板做法一致。", "沒有因更換樓層導致樓板跳層、重疊或洞口失效。"],
+      "expected": "預期樓層歸屬與幾何位置一致，降板數值依核定設計。",
+      "context": [{"name": "浴室完成面", "kind": "ELEMENT", "category": "Floors", "relation": "NEARBY"}, {"name": "浴室 R-302", "kind": "SPACE", "relation": "RELATED_TO"}]
+    },
+    {
+      "id": "SIM-019", "profile": "floor", "title": "機電穿樓板位置缺少協調開口", "issue_type": "DESIGN_CONFLICT", "priority": "High", "level": "2FL",
+      "problem": "模擬排水立管路徑穿越樓板，但結構與建築開口表中沒有對應記錄。",
+      "cause": "機電路徑調整後，開口需求尚未完成跨專業審查與模型同步。",
+      "parameters": {"Opening request": "未建立", "Pipe route revision": "模擬 Rev C"},
+      "steps": ["彙整立管位置、尺寸、保溫及維修需求，建立開口協調記錄並標示待審狀態。", "由結構、建築與機電負責者確認位置、構造及相關收口需求，未核定前不直接修改結構板。", "按核定方案更新開口或調整管路，連結開口編號與對應圖說。"],
+      "checks": ["開口位置、尺寸及編號與核定記錄一致。", "完成模型交集及相關構造檢查，開口表與管路版本同步。"],
+      "expected": "預期形成可追溯的開口方案；圖中的相近關係只是待檢查線索。",
+      "context": [{"name": "排水立管候選路徑", "kind": "ELEMENT", "category": "Pipes", "relation": "NEARBY"}]
+    },
+    {
+      "id": "SIM-020", "profile": "sofa_detail", "title": "沙發詳圖尺寸與家具表不一致", "issue_type": "PARAMETER_ERROR", "priority": "Medium", "level": "2FL",
+      "problem": "客廳沙發詳圖寬 2040 mm，家具表本情境選型為 2200 mm，平面預留空間被高估。",
+      "cause": "二維詳圖使用通用類型，未與實際選型的尺寸資料同步。",
+      "parameters": {"Furniture schedule width": "2200 mm", "Detail width": "2040 mm", "Owner view": "2FL 家具配置平面"},
+      "steps": ["確認此元素為 Detail Items，取得家具表的核定尺寸並檢查詳圖參數單位。", "複製適當的詳圖類型並明確命名尺寸，避免修改一般類型而影響所有房型。", "更新該房型詳圖、家具表與定位尺寸，必要時對照三維家具。"],
+      "checks": ["詳圖外廓與家具表尺寸一致，走道預留重新檢查。", "其他仍使用 2040 mm 沙發的房型未被改動。"],
+      "expected": "預期二維配置可反映核定家具尺寸；不把詳圖當成實際三維幾何。",
+      "context": [{"name": "客廳 R-201（圖面對照）", "kind": "SPACE", "relation": "RELATED_TO"}]
+    },
+    {
+      "id": "SIM-021", "profile": "sofa_detail", "title": "沙發詳圖只在原視圖顯示", "issue_type": "OTHER", "priority": "Low", "level": "3FL",
+      "problem": "使用者在家具平面看得到沙發，在其他平面與三維視圖找不到，誤以為元素被刪除。",
+      "cause": "沙發是視圖專用詳圖元件，並非三維家具實例。",
+      "parameters": {"Owner view": "3FL 家具配置平面", "View specific": "是"},
+      "steps": ["讀取元素類別及所屬視圖，在原視圖定位確認其仍存在。", "若交付需要三維協調，選用尺寸相符的三維家具族群；若只需二維圖面，依圖面管理方式在目標視圖配置。", "標示二維與三維資料用途，核對標籤和數量表，避免雙重計量。"],
+      "checks": ["在預期的圖面或模型視圖可找到正確表示方式。", "二維符號與三維家具沒有被重複納入數量統計。"],
+      "expected": "預期使用者能依視圖找到詳圖，並清楚區分二維符號與三維家具。",
+      "context": [{"name": "3FL 家具圖面所屬專案", "kind": "PROJECT", "relation": "RELATED_TO"}]
+    },
+    {
+      "id": "SIM-022", "profile": "ac_detail", "title": "室外機詳圖沒有表達維修空間", "issue_type": "SPATIAL_CLEARANCE", "priority": "High", "level": "2FL",
+      "problem": "陽台平面只畫出 900 × 300 mm 室外機外形，旁邊儲物架可能阻擋服務面。",
+      "cause": "詳圖未包含選定設備的維修與散熱需求，僅用機殼外形協調。",
+      "parameters": {"Service envelope": "未提供", "Owner view": "2FL 陽台配置平面"},
+      "steps": ["取得實際選型與廠商安裝資料，辨別服務面、進出風面及管線空間。", "在協調圖加入明確標示來源的需求範圍，與儲物架、欄杆及開窗一起比較。", "由機電與建築確認可行位置，再更新詳圖；需三維協調時建立相應設備模型。"],
+      "checks": ["需求範圍採用該設備的有效資料，沒有套用虛構通用距離。", "設備可維修且進出風及管路配置經負責專業確認。"],
+      "expected": "預期圖面能表達設備使用需求，具體距離依實際設備資料。",
+      "context": [{"name": "陽台儲物架（圖面鄰近）", "kind": "ELEMENT", "category": "Furniture", "relation": "NEARBY"}]
+    },
+    {
+      "id": "SIM-023", "profile": "ac_detail", "title": "室外機詳圖方向與管線側相反", "issue_type": "DESIGN_CONFLICT", "priority": "Medium", "level": "3FL",
+      "problem": "鏡射陽台詳圖後，室外機的管線側仍按原戶型標示，與預留穿牆位置相反。",
+      "cause": "符號鏡射與設備實際接口方向沒有一起檢查。",
+      "parameters": {"Connection side": "左側（待核對）", "Owner view": "3FL 陽台配置平面"},
+      "steps": ["核對設備選型接口方向、管線圖及穿牆預留位置，確認能否採用鏡像配置。", "依核定設備配置調整詳圖方向與管線標記；設備不支援鏡像時重新協調路徑。", "同步更新立面、平面及預留孔資料，再檢查其他鏡射戶。"],
+      "checks": ["詳圖管線側與設備資料、管線圖一致。", "穿牆位置及維修需求已協調，未把符號翻轉當成設備可鏡像的證據。"],
+      "expected": "預期設備方向及穿牆需求在各圖面一致。",
+      "context": [{"name": "陽台管線穿牆位置（圖面對照）", "kind": "ELEMENT", "category": "Walls", "relation": "RELATED_TO"}]
+    },
+    {
+      "id": "SIM-024", "profile": "sofa", "title": "三維沙發與二維配置外廓不一致", "issue_type": "DESIGN_CONFLICT", "priority": "Medium", "level": "2FL",
+      "problem": "三維家具寬 2040 mm，但圖面使用 2200 mm 的沙發詳圖，兩份配置顯示不同走道空間。",
+      "cause": "三維家具與二維詳圖分別維護，沒有共同的選型版本記錄。",
+      "parameters": {"2D detail width": "2200 mm", "Model width": "2040 mm"},
+      "steps": ["以核定家具表確認應採用的產品與尺寸，識別哪份表示方式過期。", "更新相應家具類型或詳圖，保留其他房型仍使用的類型。", "建立明確選型標記，對照平面、三維及明細表，重新量測家具旁通道。"],
+      "checks": ["同一選型在三維、二維及家具表中的尺寸一致。", "家具不重複計量，配置空間按更新後外廓檢查。"],
+      "expected": "預期所有表示方式反映同一核定家具選型。",
+      "context": [{"name": "客廳_沙發二維詳圖", "kind": "ELEMENT", "category": "Detail Items", "relation": "RELATED_TO"}]
+    },
+    {
+      "id": "SIM-025", "profile": "cabinet", "title": "收納櫃開門範圍與房門重疊", "issue_type": "SPATIAL_CLEARANCE", "priority": "Medium", "level": "3FL",
+      "problem": "收納櫃外形不碰房門，但櫃門與房門同時開啟時可能互相干涉。",
+      "cause": "協調只檢查靜態外廓，沒有包含開啟及操作情境。",
+      "parameters": {"Cabinet operation": "平開", "Door simultaneous use": "未檢查"},
+      "steps": ["核對櫃門形式、把手及房門開向，以平面和三維檢查同時使用情境。", "比較櫃位調整與經核定的櫃門形式變更，並考慮收納及維修需求。", "選定方案後更新家具實例、開啟示意與配置尺寸，逐一檢查同房型。"],
+      "checks": ["房門與櫃門在核定使用情境下不互相阻擋。", "櫃體容量、通道及相關設備操作需求仍符合專案要求。"],
+      "expected": "預期房門與櫃門可正常操作，所需空間待實際模型確認。",
+      "context": [{"name": "相鄰房門", "kind": "ELEMENT", "category": "Doors", "relation": "NEARBY"}]
+    }
+  ]
+}

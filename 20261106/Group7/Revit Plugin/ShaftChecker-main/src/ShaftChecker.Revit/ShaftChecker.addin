@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>管道間檢討 ShaftChecker</Name>
+    <!-- 相對路徑：相對於此 .addin 檔所在的 Addins\<版本>\ 資料夾 -->
+    <Assembly>ShaftChecker\ShaftChecker.Revit.dll</Assembly>
+    <AddInId>0C008AF3-EB67-4497-A5CC-81B00103BA8E</AddInId>
+    <FullClassName>ShaftChecker.Revit.App</FullClassName>
+    <VendorId>TEAM01</VendorId>
+    <VendorDescription>管道間維修空間檢討外掛</VendorDescription>
+  </AddIn>
+</RevitAddIns>

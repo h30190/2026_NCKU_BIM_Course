@@ -1,0 +1,68 @@
+# 自動測試：每次發 PR、或有東西合併進 main 時執行
+#   1. 單元測試（Core + tests，不需要 Revit）— Ubuntu
+#   2. 建置 Revit 2024 外掛（只確認能編譯，不部署）— Windows
+# 任何一項失敗，PR 會顯示紅色 ✗。到 Settings → Branches 把這兩項設為必要檢查，就不能合併。
+name: 自動測試
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:   # 也可以在 Actions 頁面手動執行
+
+# 同一個分支連續 push 時，只保留最新那一次
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  unit-tests:
+    name: 單元測試
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: 還原套件
+        run: dotnet restore tests/ShaftChecker.Tests/ShaftChecker.Tests.csproj
+
+      - name: 執行測試
+        run: >
+          dotnet test tests/ShaftChecker.Tests/ShaftChecker.Tests.csproj
+          --no-restore -c Release
+          --logger "console;verbosity=normal"
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory test-results
+
+      - name: 上傳測試結果
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results
+          retention-days: 7
+
+  revit-build:
+    name: 建置 Revit 2024 外掛
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: 建置（不部署）
+        run: dotnet build src/ShaftChecker.Revit/ShaftChecker.Revit.csproj -c Release -p:RevitVersion=2024 -p:DeployToRevit=false

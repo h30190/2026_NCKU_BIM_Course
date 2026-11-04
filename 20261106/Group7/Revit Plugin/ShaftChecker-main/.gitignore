@@ -1,0 +1,44 @@
+# ===== 編譯產物（每個人自己建置就會產生） =====
+bin/
+obj/
+TestResults/
+*.user
+*.suo
+*.cache
+.vs/
+.idea/
+
+# ===== 建置與安裝記錄檔 =====
+build-log.txt
+setup-mcp-log.txt
+*.log
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ===== Revit 模型與備份（放組內共用雲端，不進 Git） =====
+*.rvt
+*.rte
+*.rws
+*.slog
+*.dwl
+*.dwl2
+*_backup/
+Revit_temp/
+
+# ===== 壓縮檔、匯出報表、暫存 =====
+*.zip
+*.7z
+*.rar
+*.csv
+~$*
+*.tmp
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ===== 儀表板假資料預覽的輸出（用 tools/ui-preview/build_preview.py 產生） =====
+tools/ui-preview/output/
