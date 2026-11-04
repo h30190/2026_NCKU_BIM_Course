@@ -1,0 +1,7 @@
+python313.zip
+.
+Lib/site-packages
+../../backend
+../../CaseBase.extension/lib
+../../shared
+import site

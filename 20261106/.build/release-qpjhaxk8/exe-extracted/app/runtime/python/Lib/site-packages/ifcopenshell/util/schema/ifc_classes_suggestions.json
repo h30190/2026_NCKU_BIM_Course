@@ -1,0 +1,212 @@
+{
+    "IfcActuator": [
+        {
+            "name": "Electric Strike",
+            "predefined_type": "NOTDEFINED"
+        }
+    ],
+    "IfcAirTerminal": [
+        {
+            "name": "Commercial Kitchen Hood"
+        }
+    ],
+    "IfcAirTerminalType": [
+        {
+            "name": "Commercial Kitchen Hood"
+        }
+    ],
+    "IfcAirTerminalBox": [
+        {
+            "name": "VAV Box"
+        }
+    ],
+    "IfcCableSegment": [
+        {
+            "name": "Lighting Rod"
+        }
+    ],
+    "IfcCovering": [
+        {
+            "name": "Flashing"
+        },
+        {
+            "name": "Capping"
+        },
+        {
+            "name": "Screed",
+            "predefined_type": "FLOORING"
+        },
+        {
+            "name": "Screed",
+            "predefined_type": "TOPPING"
+        }
+    ],
+    "IfcElectricDistributionBoard": [
+        {
+            "name": "Circuit Breaker Panel",
+            "predefined_type": "DISTRIBUTIONBOARD"
+        },
+        {
+            "name": "Electrical Panel",
+            "predefined_type": "DISTRIBUTIONBOARD"
+        }
+    ],
+    "IfcElectricDistributionBoardType": [
+        {
+            "name": "Circuit Breaker Panel",
+            "predefined_type": "DISTRIBUTIONBOARD"
+        },
+        {
+            "name": "Electrical Panel",
+            "predefined_type": "DISTRIBUTIONBOARD"
+        }
+    ],
+    "IfcFireSuppressionTerminal": [
+        {
+            "name": "Fire Extinguisher"
+        }
+    ],
+    "IfcFireSuppressionTerminalType": [
+        {
+            "name": "Fire Extinguisher"
+        }
+    ],
+    "IfcFurniture": [
+        {
+            "name": "Casework"
+        },
+        {
+            "name": "Millwork"
+        },
+        {
+            "name": "Signage"
+        }
+    ],
+    "IfcFurnitureType": [
+        {
+            "name": "Casework"
+        },
+        {
+            "name": "Millwork"
+        },
+        {
+            "name": "Signage"
+        }
+    ],
+    "IfcGeographicElement": [
+        {
+            "name": "Trees"
+        },
+        {
+            "name": "Plants"
+        },
+        {
+            "name": "Shrubs"
+        }
+    ],
+    "IfcGeographicElementType": [
+        {
+            "name": "Trees"
+        },
+        {
+            "name": "Plants"
+        },
+        {
+            "name": "Shrubs"
+        }
+    ],
+    "IfcPlate": [
+        {
+            "name": "Glazing"
+        },
+        {
+            "name": "Glass"
+        },
+        {
+            "name": "Pane"
+        }
+    ],
+    "IfcSensor": [
+        {
+            "name": "Card Reader"
+        },
+        {
+            "name": "Fob Reader"
+        }
+    ],
+    "IfcSlab": [
+        {
+            "name": "Hob"
+        }
+    ],
+    "IfcSwitchingDevice": [
+        {
+            "name": "Reed Switch"
+        },
+        {
+            "name": "Electric Isolating Switch"
+        }
+    ],
+    "IfcUnitaryEquipment": [
+        {
+            "name": "Fan Coil Unit"
+        },
+        {
+            "name": "Roof Top Unit (RTU)",
+            "predefined_type": "ROOFTOPUNIT"
+        },
+        {
+            "name": "Furnace"
+        },
+        {
+            "name": "Central air conditioner (split or package)",
+            "predefined_type": "AIRCONDITIONINGUNIT"
+        },
+        {
+            "name": "Mini-split system",
+            "predefined_type": "SPLITSYSTEM"
+        }
+    ],
+    "IfcUnitaryEquipmentType": [
+        {
+            "name": "Fan Coil Unit"
+        },
+        {
+            "name": "Roof Top Unit (RTU)",
+            "predefined_type": "ROOFTOPUNIT"
+        },
+        {
+            "name": "Furnace"
+        },
+        {
+            "name": "Central air conditioner (split or package)",
+            "predefined_type": "AIRCONDITIONINGUNIT"
+        },
+        {
+            "name": "Mini-split system",
+            "predefined_type": "SPLITSYSTEM"
+        }
+    ],
+    "IfcWall": [
+        {
+            "name": "Glazing"
+        },
+        {
+            "name": "Glass"
+        },
+        {
+            "name": "Pane"
+        }
+    ],
+    "IfcWindow": [
+        {
+            "name": "Glazing"
+        },
+        {
+            "name": "Glass"
+        },
+        {
+            "name": "Pane"
+        }
+    ]
+}
