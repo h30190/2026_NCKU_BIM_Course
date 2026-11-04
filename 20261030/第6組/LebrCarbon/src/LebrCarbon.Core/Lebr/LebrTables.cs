@@ -67,15 +67,22 @@ public static class LebrTables
         _ => u switch { WasteUsage.Residential => 390, WasteUsage.Factory => 240, _ => 294 },
     };
 
+    /// <summary>表 10 LEBR 分級評估間距：CFR 大於門檻即達該等級，由好到差排列；都不到為 7 級。</summary>
+    public static IReadOnlyList<(string Grade, double MinCfrExclusive)> GradeThresholds { get; } = new[]
+    {
+        ("1+級", 0.20), ("1級", 0.16), ("2級", 0.12), ("3級", 0.08),
+        ("4級", 0.03), ("5級", -0.10), ("6級", -0.20),
+    };
+
+    public const string LowestGrade = "7級";
+
     /// <summary>表 10 LEBR 分級評估間距。</summary>
-    public static string Grade(double cfr) =>
-        cfr > 0.20 ? "1+級" :
-        cfr > 0.16 ? "1級" :
-        cfr > 0.12 ? "2級" :
-        cfr > 0.08 ? "3級" :
-        cfr > 0.03 ? "4級" :
-        cfr > -0.10 ? "5級" :
-        cfr > -0.20 ? "6級" : "7級";
+    public static string Grade(double cfr)
+    {
+        foreach (var (grade, min) in GradeThresholds)
+            if (cfr > min) return grade;
+        return LowestGrade;
+    }
 
     /// <summary>表 12 八等級尺標刻度：ECIs 乘以各等級係數。</summary>
     public static IReadOnlyList<(string Grade, double Multiplier)> ScaleTicks { get; } = new[]

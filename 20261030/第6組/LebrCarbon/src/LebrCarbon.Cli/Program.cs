@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using LebrCarbon.Dashboard;
 using LebrCarbon.Data;
 using LebrCarbon.Reports;
@@ -19,13 +20,37 @@ const string Usage = """
   --excel          一併附上 Excel 計算書
   --pdf <路徑>     另外輸出一頁式 PDF 摘要（需要 Windows「Microsoft Print to PDF」）
 
-沒有 --out、--upload、--pdf 時，把快照 JSON 印到畫面。
+沒有 --out、--upload、--pdf 時，把快照 JSON 印到畫面。快照會附上分析（佔比、改善潛力、距下一級）。
+
+lebr-snapshot analyze <專案.lebr.json>
+  只印分析 JSON。
+
+lebr-snapshot scenario <情境.json>
+lebr-snapshot scenario <專案.lebr.json> --change <原代碼>=<新代碼> [--change ...]
+  情境試算：替換構件後用同一個計算核心重算，印出前後對照 JSON。不會改評估輸入檔。
+  情境 JSON：{ "base": "專案1.lebr.json", "changes": [ { "from": "IW-3", "to": "IW-1",
+               "typeName": "（選用）只換這個 Revit 類型", "dropFinish": false } ] }
+  base 是相對於情境檔的路徑。
 """;
 
 if (args.Length == 0 || args[0] is "-h" or "--help")
 {
     Console.WriteLine(Usage);
     return args.Length == 0 ? 1 : 0;
+}
+
+if (args[0] is "analyze" or "scenario")
+{
+    try
+    {
+        Console.WriteLine(args[0] == "analyze" ? Analyze(args) : Scenario(args));
+        return 0;
+    }
+    catch (Exception ex) when (ex is ScenarioException or CliException or IOException or JsonException)
+    {
+        Console.Error.WriteLine(ex.Message);
+        return 1;
+    }
 }
 
 string input = args[0];
@@ -80,7 +105,8 @@ if (withExcel)
     }
 }
 
-var snapshot = SnapshotBuilder.Build(result, key, title, name ?? $"{title} 評估", file.Shape, excel: excel);
+var analysis = AnalysisBuilder.Build(file, BlccLibrary.Load(), result);
+var snapshot = SnapshotBuilder.Build(result, key, title, name ?? $"{title} 評估", file.Shape, excel: excel, analysis: analysis);
 Console.Error.WriteLine($"{title}：EEC {result.EEC:N0}、EECc {result.EECc:N0}、CFR {result.CFR:P2}、{result.Grade}");
 
 if (outPath is not null)
@@ -116,3 +142,61 @@ if (outPath is null && !upload && pdfPath is null)
     Console.WriteLine(SnapshotBuilder.ToJson(snapshot));
 
 return 0;
+
+static LebrProjectFile Load(string path) =>
+    ProjectStore.TryLoad(path) ?? throw new CliException($"找不到評估輸入檔：{path}");
+
+static string Analyze(string[] args)
+{
+    if (args.Length != 2) throw new CliException("用法：lebr-snapshot analyze <專案.lebr.json>");
+    var file = Load(args[1]);
+    var lib = BlccLibrary.Load();
+    return JsonSerializer.Serialize(AnalysisBuilder.Build(file, lib, ProjectEvaluator.Evaluate(file, lib)), DataLoader.Options);
+}
+
+static string Scenario(string[] args)
+{
+    if (args.Length < 2) throw new CliException("用法：lebr-snapshot scenario <情境.json> 或 <專案.lebr.json> --change 原=新");
+
+    string basePath;
+    List<ScenarioChange> changes;
+    if (args[1].EndsWith(".lebr.json", StringComparison.OrdinalIgnoreCase))
+    {
+        basePath = args[1];
+        changes = new();
+        for (var i = 2; i < args.Length; i++)
+        {
+            var pair = args[i] == "--change" && i + 1 < args.Length ? args[++i].Split('=', 2) : null;
+            if (pair is not { Length: 2 }) throw new CliException($"看不懂的參數：{args[i]}（應為 --change 原代碼=新代碼）");
+            changes.Add(new ScenarioChange(pair[0].Trim(), pair[1].Trim()));
+        }
+    }
+    else
+    {
+        var spec = JsonSerializer.Deserialize<ScenarioSpec>(File.ReadAllText(args[1]), DataLoader.Options)
+                   ?? throw new CliException($"情境檔是空的：{args[1]}");
+        if (string.IsNullOrWhiteSpace(spec.Base)) throw new CliException("情境檔缺少 base（評估輸入檔路徑）");
+        basePath = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args[1]))!, spec.Base);
+        changes = spec.Changes ?? new();
+    }
+
+    var file = Load(basePath);
+    var lib = BlccLibrary.Load();
+    var before = ProjectEvaluator.Evaluate(file, lib);
+    var after = ScenarioRunner.Run(file, lib, changes);
+    return JsonSerializer.Serialize(new
+    {
+        Changes = changes,
+        Before = Summary(before),
+        After = Summary(after),
+        DeltaCfr = after.CFR - before.CFR,
+        DeltaEec = after.EEC - before.EEC,
+    }, DataLoader.Options);
+
+    static object Summary(LebrCarbon.Core.Lebr.LebrResult r) =>
+        new { Eec = r.EEC, Eecc = r.EECc, DeltaCf = r.DeltaCF, Cfr = r.CFR, Grade = r.Grade };
+}
+
+sealed record ScenarioSpec(string? Base, List<ScenarioChange>? Changes);
+
+sealed class CliException(string message) : Exception(message);

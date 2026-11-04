@@ -36,6 +36,7 @@ public sealed class App : IExternalApplication
         var output = app.CreateRibbonPanel(TabName, "輸出");
         AddButton<ExportReportCommand>(output, asm, "匯出\n報表", "Excel 明細與 PDF 摘要");
         AddButton<OpenConsoleCommand>(output, asm, "網頁\n控制台", "開啟網頁控制台；沒在運行時自動執行 console\\start.ps1 再開瀏覽器");
+        AddButton<ApplyProposalCommand>(output, asm, "套用\n建議", "取回網頁控制台選定的減碳建議，確認後寫回類型參數 LEBR_BlccId 並重算");
 
         var settings = app.CreateRibbonPanel(TabName, "設定");
         AddButton<FactorLibraryCommand>(settings, asm, "係數庫", "檢視、匯入、切換係數版本");

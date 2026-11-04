@@ -5,11 +5,13 @@ import Overview from './pages/Overview.jsx'
 import Timeline, { MAX_COMPARE } from './pages/Timeline.jsx'
 import Compare from './pages/Compare.jsx'
 import MaterialMap from './pages/MaterialMap.jsx'
+import Analysis from './pages/Analysis.jsx'
 
-// 依工作流程排列：先對照材料（寫入 LEBR_BlccId）→ 外掛計算上傳 → 看結果、比較
+// 依工作流程排列：先對照材料（寫入 LEBR_BlccId）→ 外掛計算上傳 → 看結果與建議（選定後回 Revit 套用）→ 比較
 const VIEWS = [
   ['mapping', '材料對照'],
   ['overview', '評估總覽'],
+  ['analysis', '分析與建議'],
   ['timeline', '快照時間軸'],
   ['compare', '方案比較'],
 ]
@@ -130,6 +132,7 @@ export default function App() {
                 {view === 'overview' && projects.length > 0 && (
                   <Overview snapshot={snapshot} snapshots={snapshots} snapshotId={snapshotId} onSelectSnapshot={setSnapshotId} />
                 )}
+                {view === 'analysis' && projects.length > 0 && <Analysis snapshot={snapshot} />}
                 {view === 'timeline' && projects.length > 0 && (
                   <Timeline snapshots={snapshots} selected={selected} onToggle={toggle} onOpen={openSnapshot} onCompare={runCompare} />
                 )}

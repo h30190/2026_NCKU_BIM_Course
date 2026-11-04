@@ -83,5 +83,20 @@ func migrate(db *sql.DB) error {
 			return fmt.Errorf("migrate: %w", err)
 		}
 	}
+	// 後加的欄位：舊資料庫沒有就補上，不必刪檔重建
+	return addColumn(db, "snapshots", "analysis_json", `TEXT NOT NULL DEFAULT 'null'`)
+}
+
+func addColumn(db *sql.DB, table, column, def string) error {
+	var n int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?`, table, column).Scan(&n); err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	}
+	if n > 0 {
+		return nil
+	}
+	if _, err := db.Exec(fmt.Sprintf(`ALTER TABLE %s ADD COLUMN %s %s`, table, column, def)); err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	}
 	return nil
 }

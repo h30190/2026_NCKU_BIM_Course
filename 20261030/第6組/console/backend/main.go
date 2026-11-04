@@ -16,6 +16,7 @@ func main() {
 	frontendOrigin := flag.String("cors", "http://localhost:5173", "允許的前端 origin（Vite 預設）")
 	blccPath := flag.String("blcc", "../../LebrCarbon/src/LebrCarbon.Data/Resources/blcc.LEBR-2025.json", "B-LCC 資料庫（與外掛共用同一份）")
 	mappingPath := flag.String("mapping", "../../MaterialMapping/data/mapping.json", "材料對照表（AI agent 辨識結果）")
+	proposalsPath := flag.String("proposals", "../../MaterialMapping/data/proposals.json", "減碳建議（AI agent 用情境試算產生）")
 	flag.Parse()
 
 	db, err := OpenDB(*dbPath)
@@ -26,6 +27,7 @@ func main() {
 
 	srv := NewServer(db)
 	srv.Mapping = openMappingStore(*blccPath, *mappingPath)
+	srv.Proposals = NewProposalStore(*proposalsPath)
 	if *seedDir != "" {
 		n, err := srv.SeedIfEmpty(*seedDir)
 		if err != nil {

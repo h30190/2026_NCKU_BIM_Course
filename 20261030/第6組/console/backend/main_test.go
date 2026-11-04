@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -215,5 +216,49 @@ func TestExcelDownload(t *testing.T) {
 	}
 	if rec := do(t, mux, "POST", "/api/snapshots", compareJSON("壞檔", 1, 1, "@@@")); rec.Code != http.StatusBadRequest {
 		t.Fatalf("bad base64 = %d", rec.Code)
+	}
+}
+
+func TestAnalysisStoredAndOldDBMigrated(t *testing.T) {
+	// 舊資料庫：snapshots 沒有 analysis_json 欄位
+	path := filepath.Join(t.TempDir(), "old.db")
+	old, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := old.Exec(`CREATE TABLE snapshots (id INTEGER PRIMARY KEY AUTOINCREMENT, project_id INTEGER NOT NULL,
+		name TEXT NOT NULL, created_at TEXT NOT NULL, uploaded_at DATETIME NOT NULL DEFAULT (datetime('now')),
+		plugin_version TEXT NOT NULL DEFAULT '', manual TEXT NOT NULL DEFAULT '', eec REAL NOT NULL DEFAULT 0,
+		eecc REAL NOT NULL DEFAULT 0, cfr REAL NOT NULL DEFAULT 0, grade TEXT NOT NULL DEFAULT '',
+		inputs_json TEXT NOT NULL DEFAULT '{}', shape_json TEXT NOT NULL DEFAULT 'null',
+		result_json TEXT NOT NULL DEFAULT '{}', excel_blob BLOB)`); err != nil {
+		t.Fatal(err)
+	}
+	old.Close()
+
+	db, err := OpenDB(path)
+	if err != nil {
+		t.Fatalf("migrate old db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	s := NewServer(db)
+	mux := http.NewServeMux()
+	s.routes(mux)
+
+	var up map[string]any
+	_ = json.Unmarshal([]byte(snapshotJSON("專案1", "附分析", "1級", 0.1805, 1)), &up)
+	up["analysis"] = map[string]any{"version": 1, "nextGrade": map[string]any{"grade": "1+級", "cfrNeeded": 0.2}}
+	b, _ := json.Marshal(up)
+	do(t, mux, "POST", "/api/snapshots", string(b))
+	do(t, mux, "POST", "/api/snapshots", snapshotJSON("專案1", "舊外掛", "1級", 0.1805, 1))
+
+	var withA, without SnapshotDetail
+	_ = json.Unmarshal(do(t, mux, "GET", "/api/snapshots/1", "").Body.Bytes(), &withA)
+	_ = json.Unmarshal(do(t, mux, "GET", "/api/snapshots/2", "").Body.Bytes(), &without)
+	if !strings.Contains(string(withA.Analysis), `"1+級"`) {
+		t.Fatalf("analysis = %s", withA.Analysis)
+	}
+	if string(without.Analysis) != "null" {
+		t.Fatalf("old snapshot analysis = %s", without.Analysis)
 	}
 }

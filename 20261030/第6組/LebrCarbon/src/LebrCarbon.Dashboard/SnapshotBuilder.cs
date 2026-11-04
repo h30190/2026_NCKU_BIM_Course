@@ -16,7 +16,8 @@ public static class SnapshotBuilder
         string snapshotName,
         ShapeInputs? shape = null,
         DateTimeOffset? createdAt = null,
-        byte[]? excel = null)
+        byte[]? excel = null,
+        SnapshotAnalysis? analysis = null)
     {
         var credits = r.Inputs.ReuseCredit + r.Inputs.RecycledMaterialCredit + r.Inputs.LowCarbonMethodCredit;
         return new SnapshotDocument
@@ -51,6 +52,7 @@ public static class SnapshotBuilder
                 .Concat(r.BaselineItems.Select(i => Item("baseline", i)))
                 .ToList(),
             Excel = excel is null ? null : Convert.ToBase64String(excel),
+            Analysis = analysis,
         };
     }
 

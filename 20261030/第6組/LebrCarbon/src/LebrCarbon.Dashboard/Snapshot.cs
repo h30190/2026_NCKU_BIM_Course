@@ -21,6 +21,8 @@ public sealed record SnapshotDocument
     public required List<SnapshotItem> Items { get; init; }
     /// <summary>（選用）base64 的 .xlsx 計算書。</summary>
     public string? Excel { get; init; }
+    /// <summary>（選用）佔比、改善潛力、距下一級；舊快照沒有這欄。</summary>
+    public SnapshotAnalysis? Analysis { get; init; }
 }
 
 public sealed record PluginInfo(string Version, string Manual);

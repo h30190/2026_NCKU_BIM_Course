@@ -26,6 +26,8 @@ type SnapshotUpload struct {
 	Result json.RawMessage `json:"result"`
 	Items  []Item          `json:"items"`
 	Excel  string          `json:"excel"` // base64 .xlsx，可空
+	// Analysis 是外掛算好的佔比、改善潛力、距下一級（AI 分析計畫書 5.1 節），原樣存；舊快照沒有。
+	Analysis json.RawMessage `json:"analysis"`
 }
 
 // resultHead 是從 result 抽出的獨立欄位。
@@ -76,6 +78,7 @@ type SnapshotDetail struct {
 	Inputs       json.RawMessage `json:"inputs"`
 	Shape        json.RawMessage `json:"shape"`
 	Result       json.RawMessage `json:"result"`
+	Analysis     json.RawMessage `json:"analysis"` // 舊快照為 null
 	Items        []Item          `json:"items"`
 }
 

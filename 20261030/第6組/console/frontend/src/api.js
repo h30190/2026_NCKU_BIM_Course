@@ -39,3 +39,12 @@ export const updateMapping = (elementId, project, patch) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...patch, project }),
   })
+
+// 減碳建議（AI 分析計畫書 6 節）：AI 寫入、網頁選定、外掛套用後回報
+export const listProposals = (project) => get(`/api/proposals?project=${encodeURIComponent(project)}`)
+export const setProposalStatus = (id, status) =>
+  request(`/api/proposals/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  })

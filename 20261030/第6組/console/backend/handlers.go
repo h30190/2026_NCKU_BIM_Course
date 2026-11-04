@@ -16,8 +16,9 @@ import (
 )
 
 type Server struct {
-	DB      *sql.DB
-	Mapping *MappingStore // 材料對照；nil 時相關 API 回 503
+	DB        *sql.DB
+	Mapping   *MappingStore  // 材料對照；nil 時相關 API 回 503
+	Proposals *ProposalStore // 減碳建議；nil 時相關 API 回 503
 }
 
 func NewServer(db *sql.DB) *Server { return &Server{DB: db} }
@@ -35,6 +36,10 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/blcc", s.handleBlcc)
 	mux.HandleFunc("GET /api/mapping", s.handleMapping)
 	mux.HandleFunc("PATCH /api/mapping/{elementId}", s.handleMappingUpdate)
+	mux.HandleFunc("GET /api/proposals", s.handleListProposals)
+	mux.HandleFunc("GET /api/proposals/chosen", s.handleChosenProposal)
+	mux.HandleFunc("PATCH /api/proposals/{id}", s.handleChooseProposal)
+	mux.HandleFunc("PATCH /api/proposals/{id}/applied", s.handleProposalApplied)
 }
 
 // errBadSnapshot 代表快照內容不合格（回 400），其他錯誤回 500。
@@ -114,11 +119,11 @@ func (s *Server) insertSnapshot(up *SnapshotUpload) (snapID, projID int64, err e
 	}
 
 	res, err := tx.Exec(`INSERT INTO snapshots
-		(project_id, name, created_at, plugin_version, manual, eec, eecc, cfr, grade, inputs_json, shape_json, result_json, excel_blob)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		(project_id, name, created_at, plugin_version, manual, eec, eecc, cfr, grade, inputs_json, shape_json, result_json, analysis_json, excel_blob)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		projID, name, createdAt, up.Plugin.Version, up.Plugin.Manual,
 		head.Eec, head.Eecc, head.Cfr, head.Grade,
-		rawOr(up.Inputs, "{}"), rawOr(up.Shape, "null"), string(up.Result), excel)
+		rawOr(up.Inputs, "{}"), rawOr(up.Shape, "null"), string(up.Result), rawOr(up.Analysis, "null"), excel)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -229,14 +234,15 @@ func (s *Server) handleGetSnapshot(w http.ResponseWriter, r *http.Request) {
 // loadSnapshot 讀出單一快照與明細；不存在時回 sql.ErrNoRows。
 func (s *Server) loadSnapshot(id int64) (*SnapshotDetail, error) {
 	var d SnapshotDetail
-	var inputs, shape, result string
-	err := scanSummary(s.DB.QueryRow(`SELECT `+summaryCols+`, p.key, p.title, s.inputs_json, s.shape_json, s.result_json
+	var inputs, shape, result, analysis string
+	err := scanSummary(s.DB.QueryRow(`SELECT `+summaryCols+`, p.key, p.title, s.inputs_json, s.shape_json, s.result_json, s.analysis_json
 		FROM snapshots s JOIN projects p ON p.id = s.project_id WHERE s.id = ?`, id),
-		&d.SnapshotSummary, &d.ProjectKey, &d.ProjectTitle, &inputs, &shape, &result)
+		&d.SnapshotSummary, &d.ProjectKey, &d.ProjectTitle, &inputs, &shape, &result, &analysis)
 	if err != nil {
 		return nil, err
 	}
 	d.Inputs, d.Shape, d.Result = json.RawMessage(inputs), json.RawMessage(shape), json.RawMessage(result)
+	d.Analysis = json.RawMessage(analysis)
 
 	rows, err := s.DB.Query(`SELECT side, blcc_id, category, category_name, name, area, new_ef, renew_ef,
 		new_carbon, renew_carbon, carbon, source, elements_json

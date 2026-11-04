@@ -608,7 +608,9 @@ public sealed class LebrWindow : Window
 
         // 案子 key 用模型檔名，與 {模型名}.lebr.json 一致；未存檔時用標題
         var key = string.IsNullOrWhiteSpace(_doc.PathName) ? _doc.Title : Path.GetFileNameWithoutExtension(_doc.PathName);
-        var snapshot = SnapshotBuilder.Build(_last, key, _doc.Title, dlg.SnapshotName, _file.Shape, excel: excel);
+        // 分析（佔比、改善潛力、距下一級）由同一個計算核心逐項試算；_file 已在 Calculate() 自動儲存時同步明細
+        var analysis = AnalysisBuilder.Build(_file, _lib, _last);
+        var snapshot = SnapshotBuilder.Build(_last, key, _doc.Title, dlg.SnapshotName, _file.Shape, excel: excel, analysis: analysis);
 
         SetStatus("上傳中…");
         Cursor = Cursors.Wait;

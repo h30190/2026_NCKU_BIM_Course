@@ -123,26 +123,64 @@ rvt-mcp 實測踩到的坑：
 1. 讀 data/mapping.json 這個 project 目前所有項目（kind != "excluded" 的才算範圍）
 2. 讀 B-LCC（../LebrCarbon/src/LebrCarbon.Data/Resources/blcc.LEBR-2025.json），
    取同一 category 裡的其他候選（cw換cw、ow換ow、iw換iw、w換w，不跨類別）
-3. 依使用者的目標/限制判斷要動哪些構件、換成什麼——這段是 AI 自己想組合，
-   不是程式自動排序取最低值；精確的省多少 kgCO2e 可以用程式/計算機算，但「選哪些候選來組合」要自己判斷
-4. 產出多組建議（使用者沒指定數量時，預設 5 組），每組都要講清楚：
-   - 改了哪些構件、從什麼 BlccId 換成什麼 BlccId
-   - 預估省多少 kgCO2e、佔目前這個 project 總碳排的百分比
-   - 一句話說明取捨（例如「只動局部材質不改外牆系統，施工面影響小」vs「換整個外牆工法，效果大但牽涉結構介面」）
-5. 使用者選一組，或要求調整、重新給
-6. 使用者確認後才動手寫入：
-   a. 更新 mapping.json 對應項目的 bodyId/finishId，note 寫明這是哪組建議、原本是什麼、為什麼
-   b. modify_element_parameter 寫回 Revit 的 LEBR_BlccId
-   c. 請使用者去 LebrCarbon 外掛「從模型帶入 → 計算 → 上傳到控制台」，產生新快照
-   d. 請使用者到控制台「方案比較」分頁，拿新快照跟原本的比較，取得正式官方結果（不要自己宣稱算出來的數字就是正式結果，正式結果一定要走外掛）
+3. 先看控制台「分析與建議」分頁（或 `lebr-snapshot analyze 專案.lebr.json`）：哪項佔比最多、
+   每項換成同類別各選項時 CFR 會變多少、距下一級還差多少。這些都是外掛計算核心逐項試算的結果
+4. 依使用者的目標/限制判斷要動哪些構件、換成什麼——這段是 AI 自己想組合，
+   不是程式自動排序取最低值
+5. 每組候選的數字一律用情境試算取得，不要自己用 mapping 小計加減（小計不含基準案、更新修繕，算不出 CFR）：
+     dotnet run --project ../LebrCarbon/src/LebrCarbon.Cli -- scenario 專案1.lebr.json --change OW-1=OW-5 --change IW-3=IW-5
+   輸出 before/after 的 EEC、EECc、CFR、等級。只換某一個 Revit 類型、或換成帷幕系統要拿掉外裝時，
+   改寫情境 JSON（格式見 `lebr-snapshot --help`），用 typeName、dropFinish
+6. 產出多組建議（使用者沒指定數量時，預設 5 組），寫進 data/proposals.json（格式見下方），每組都要講清楚：
+   - 改了哪些構件、從什麼 BlccId 換成什麼 BlccId（changes）
+   - 試算的 CFR、等級、EEC（expected，直接抄 scenario 的 after）
+   - 一句話說明取捨（reason，例如「只動局部材質不改外牆系統，施工面影響小」vs「換整個外牆工法，效果大但牽涉結構介面」）
+7. 使用者在控制台「分析與建議」選定一組（或在對話裡要求調整、重新給）
+8. 寫回 Revit，兩種方式擇一：
+   a. 建議：使用者在 Revit 按「低碳建築 → 套用建議」。外掛取回選定的那組、列出要改的類型請使用者確認，
+      改類型參數 LEBR_BlccId、同步 {模型}.lebr.json 並重算，再回報控制台；後端會順便把 mapping.json
+      對應項目的 bodyId/finishId 改好。AI 不必連 Revit
+   b. 備案（外掛沒裝時）：AI 自己更新 mapping.json 的 bodyId/finishId（note 寫明是哪組建議、原本是什麼），
+      再用 MCP 寫回 Revit 的 LEBR_BlccId，請使用者去外掛「從模型帶入 → 計算」
+9. 請使用者「上傳到控制台」產生新快照，到「方案比較」拿新舊快照比較。正式結果一定要走外掛，
+   試算數字只是預估（模型數量變了就會不同）
 ```
+
+### data/proposals.json 格式
+
+```json
+{
+  "updatedAt": "",
+  "proposals": [
+    {
+      "id": "p-20261104-1",
+      "project": "專案1",
+      "title": "外牆外裝改免粉刷塗料",
+      "reason": "OW-1 佔非主結構第二大；改 OW-5 單項即可跨過 1+級門檻。",
+      "changes": [{ "from": "OW-1", "to": "OW-5" }],
+      "expected": { "cfr": 0.2567, "grade": "1+級", "eec": 108407 },
+      "status": "proposed",
+      "createdAt": "2026-11-04T10:00:00+08:00"
+    }
+  ]
+}
+```
+
+- `project` 填案子 key（模型檔名，和快照、mapping.json 的 project 相同）
+- `changes` 每筆可加 `"typeName": "Revit 類型名稱"`（只換這個類型）、`"dropFinish": true`（換成帷幕系統時拿掉同類型的 OW）
+- `status` 新增時一律 `proposed`；`chosen`、`applied` 由網頁和外掛改，AI 不要手動改。已 `applied` 的不要刪，留作紀錄
+- 後端偵測檔案修改時間自動重讀，不必重啟
 
 ### 重要計算規則：帷幕系統（CW-1~CW-5）不要再疊加 OW
 
 `cw` 類別裡，`CW-0`（傳統 RC 現澆）是「裸牆」，要另外配一個 `ow` 代碼當外裝材（例如 `CW-0;OW-1`）。
 但 `CW-1`～`CW-5`（金屬板/玻璃/石材/陶瓷鋼板帷幕、預鑄 PC）本身已經是**含外裝材的完整帷幕系統**。
-**建議換成這幾個的時候，要把 `finishId` 設成 `null`（拿掉 OW），不要繼續配外裝代碼**——
+**建議換成這幾個的時候，要把 `finishId` 設成 `null`（拿掉 OW），不要繼續配外裝代碼**（情境試算用 `dropFinish: true`）——
 疊加會重複計算外裝的碳排，換算下來會明顯低估「換成帷幕系統」能省下的量（少算了被拿掉的那層外裝）。
+
+注意：拿掉外裝後，外掛的基準案也會跟著少一列 OW-1，所以減碳量 ΔCF 不變、但 CFR 會變高（分母 EECc 變小）。
+帷幕牆基準案到底該不該保留外裝，還要對照手冊式 11 確認，所以控制台在帷幕牆的改善潛力標「規則待確認」，
+建議裡用到 CW-1～CW-5 時，reason 要提醒這個 CFR 可能偏高。
 
 ### 範圍限制（跟材料辨識一樣）
 
