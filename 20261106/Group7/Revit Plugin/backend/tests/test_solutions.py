@@ -117,12 +117,28 @@ def test_legacy_record_recovers_move_and_original_coordinates_without_database_r
     assert move['after_position_mm'] == dict(x=100., y=1000., z=2300.)
     windows_case = dict(case, solution=case['solution'].replace('\n', '\r\n'))
     assert recipe_from(windows_case, windows_case['history'])['steps'] == result['steps']
-    plan = client.post('/graph/cases/{}/fix-plan'.format(case['id']), json=dict(
-        target=dict(element_id=800), related={'element:334206': 801})).json()
+    # The move is relative to the case-graph anchor (the NEARBY wall): without live geometry it is not ready.
+    assert str(move['relation']['anchor']['element_id']) == '334210' and move['relation']['axes'] == dict(
+        y=dict(side=1, gap_mm=600., case_gap_before_mm=800.))
+    route = '/graph/cases/{}/fix-plan'.format(case['id'])
+    waiting = client.post(route, json=dict(target=dict(element_id=800), related={'element:334206': 801})).json()
+    assert not waiting['ready'] and 'geometry' in waiting['steps'][0]['unresolved'][0]
+    box = lambda x0, y0, z0, x1, y1, z1: dict(MinX=x0, MinY=y0, MinZ=z0, MaxX=x1, MaxY=y1, MaxZ=z1)
+    same_model = {'800': box(0, 0, 0, 4000, 200, 3000), '801': box(0, 1000, 2000, 200, 1400, 2600)}
+    plan = client.post(route, json=dict(target=dict(element_id=800), related={'element:334206': 801}, geometry=same_model)).json()
     assert plan['ready'] and len(plan['steps']) == 1
     assert plan['steps'][0]['call'] == dict(tool='move_element', arguments=dict(elementId=801, dx=0., dy=-200., dz=0.))
     assert plan['steps'][0]['expect_before']['position_mm']['y'] == 1200.
     assert plan['steps'][0]['expect_after']['position_mm']['y'] == 1000.
+    assert plan['steps'][0]['anchors'][0]['current_id'] == 800
+    # A thicker wall in another model: keep the case's 600 mm gap, not the case's -200 mm vector.
+    thicker = dict(same_model, **{'800': box(0, 0, 0, 4000, 300, 3000)})
+    adapted = client.post(route, json=dict(target=dict(element_id=800), related={'element:334206': 801}, geometry=thicker)).json()
+    assert adapted['steps'][0]['call']['arguments']['dy'] == -100.
+    # Already at the case relation: nothing to move.
+    done = dict(same_model, **{'801': box(0, 800, 2000, 200, 1200, 2600)})
+    settled = client.post(route, json=dict(target=dict(element_id=800), related={'element:334206': 801}, geometry=done)).json()
+    assert settled['steps'][0]['already_satisfied'] and settled['steps'][0]['call']['arguments']['dy'] == 0.
     assert client.get('/graph/cases/{}/applications'.format(case['id'])).json() == []
     assert client.get('/graph/cases/{}'.format(case['id'])).json()['history'] == case['history']
     found = client.post('/graph/solutions/search', json=dict(category='Walls')).json()
@@ -297,3 +313,60 @@ def test_mcp_server_runs_over_stdio():
                             capture_output=True, text=True, encoding='utf-8', timeout=30).stdout.splitlines()
     responses = [json.loads(line) for line in output]
     assert [r['id'] for r in responses] == [1, 2] and len(responses[1]['result']['tools']) == 4
+
+
+def test_older_floor_hole_record_is_derived_and_planned_around_the_new_pipe():
+    from app.solutions import derived_floor_opening
+    floor = dict(category='Floors', changes=[
+        dict(field='參數 · Area', action=dict(op='set_parameter', name='Area', read_only=True,
+                                             before_raw=5498.760858632831, after_raw=5487.1358353827845)),
+        dict(field='參數 · Perimeter', action=dict(op='set_parameter', name='Perimeter', read_only=True,
+                                                  before_raw=334.64566929133855, after_raw=350.3937007874015))])
+    assert derived_floor_opening(floor) == dict(op='floor_opening', length_mm=1800, width_mm=600, rotation_deg=0, derived=True)
+    assert derived_floor_opening(dict(floor, category='Walls')) is None
+
+
+def test_floor_opening_reuses_case_clearance_not_case_size():
+    from app.solutions import adaptive_opening, case_clearance
+    pipe = dict(properties=dict(bounding_box=dict(min=dict(x=950., y=-50., z=0.), max=dict(x=1050., y=50., z=3000.))))
+    # Case: a 100 mm pipe in a 400 × 300 hole, hole centre 20 mm +X of the pipe.
+    action = dict(op='floor_opening', length_mm=400, width_mm=300, rotation_deg=0, center_mm=dict(x=1020., y=0., z=0.))
+    clearance = case_clearance(action, pipe)
+    assert clearance == dict(length_start=130., length_end=170., width_start=100., width_end=100.,
+                             case_mep_mm=dict(length=100., width=100.))
+    # Same pipe size gives back the case opening and offset; a 200 mm pipe keeps the gaps, not the size.
+    assert adaptive_opening(action, clearance, 100.) == dict(length_mm=400, width_mm=300, offset_mm=dict(x=20., y=0.))
+    assert adaptive_opening(action, clearance, 200.) == dict(length_mm=500, width_mm=400, offset_mm=dict(x=20., y=0.))
+    # Rotated 90°: the length runs along Y.
+    turned = dict(action, rotation_deg=90, center_mm=dict(x=1000., y=20., z=0.))
+    sized = adaptive_opening(turned, case_clearance(turned, pipe), 100.)
+    assert sized['length_mm'] == 400 and sized['width_mm'] == 300 and sized['offset_mm'] == dict(x=0., y=20.)
+    # A sloped run's box is wider than the hole: no reliable clearance.
+    assert case_clearance(action, dict(properties=dict(bounding_box=dict(
+        min=dict(x=0., y=-50., z=0.), max=dict(x=3000., y=50., z=3000.))))) is None
+
+
+def test_floor_opening_fix_plan_asks_for_the_pipe_size_then_adapts():
+    from app.solutions import FixPlanRequest, fix_plan
+    import app.solutions as solutions
+    plan = dict(case_id=2, title='開孔', verified=True, solution='', signature=dict(category='Floors', type_name=None),
+                evidence=dict(document='doc'), manual=[], observations=[], steps=[dict(
+                    role='target', relations=[], label='樓板開孔', element_id=1, name='FL', category='Floors',
+                    action=dict(op='floor_opening', length_mm=1800, width_mm=600, rotation_deg=0, derived=True),
+                    mep=[dict(element_id=7, name='管', category='Pipes', relations=['INTERSECTS'])], offset_mm=dict(x=0, y=0),
+                    clearance_mm=dict(length_start=850., length_end=850., width_start=250., width_end=250.,
+                                      case_mep_mm=dict(length=100., width=100.)))])
+    original = solutions.recipe
+    solutions.recipe = lambda case_id: copy.deepcopy(plan)
+    try:
+        first = fix_plan(2, FixPlanRequest(target=dict(element_id=883400), related={'element:7': 883848}))
+        step = first['steps'][0]
+        assert not step['ready'] and 'mep_outer_mm' in step['unresolved'][0]
+        assert step['call']['arguments']['mepId'] == 883848
+        sized = fix_plan(2, FixPlanRequest(target=dict(element_id=883400), related={'element:7': 883848}, mep_outer_mm=60.))
+        args = sized['steps'][0]['call']['arguments']
+        assert (args['lengthMm'], args['widthMm']) == (1760, 560) and sized['steps'][0]['unresolved'] == []
+        assert any('blocked' in n for n in sized['steps'][0]['notes'])
+        assert sized['steps'][0]['expect_before']['adaptive']['case_opening_mm'] == dict(length=1800, width=600)
+    finally:
+        solutions.recipe = original

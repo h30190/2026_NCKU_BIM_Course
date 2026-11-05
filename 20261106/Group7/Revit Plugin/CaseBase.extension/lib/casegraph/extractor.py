@@ -64,6 +64,39 @@ def xyz(point):
     return dict(x=point.X * 304.8, y=point.Y * 304.8, z=point.Z * 304.8)
 
 
+def floor_openings(doc, floor):
+    """Holes in a floor: inner sketch loops plus hosted Opening elements, as rectangles where possible."""
+    from casegraph.model_changes import opening_shape
+    holes = []
+    try:
+        loops = [list(loop) for loop in doc.GetElement(floor.SketchId).Profile]
+    except Exception:
+        loops = []  # Revit 2021 and older floors have no sketch access.
+    def vertices(curves):
+        return [xyz(c.GetEndPoint(0)) for c in curves]
+    def extent(curves):
+        pts = vertices(curves)
+        return (max(p['x'] for p in pts)-min(p['x'] for p in pts))*(max(p['y'] for p in pts)-min(p['y'] for p in pts)) if pts else 0
+    if len(loops) > 1:
+        outer = max(loops, key=extent)
+        for loop in loops:
+            if loop is not outer:
+                holes.append((u'sketch', vertices(loop)))
+    try:
+        for opening in DB.FilteredElementCollector(doc).OfClass(DB.Opening):
+            if opening.Host is not None and opening.Host.Id == floor.Id:
+                holes.append((u'opening', vertices(list(opening.BoundaryCurves))))
+    except Exception:
+        pass
+    found = []
+    for source, points in holes:
+        shape = opening_shape(points)
+        if shape:
+            shape['source'] = source
+            found.append(shape)
+    return sorted(found, key=lambda h: (h['center_mm']['x'], h['center_mm']['y']))
+
+
 def node(doc, element):
     typ = doc.GetElement(element.GetTypeId())
     try:
@@ -107,6 +140,12 @@ def node(doc, element):
             for y in (box.Min.Y, box.Max.Y) for z in (box.Min.Z, box.Max.Z)]
         properties['bounding_box'] = dict(min=dict(x=min(p.X for p in corners)*304.8,y=min(p.Y for p in corners)*304.8,z=min(p.Z for p in corners)*304.8),
             max=dict(x=max(p.X for p in corners)*304.8,y=max(p.Y for p in corners)*304.8,z=max(p.Z for p in corners)*304.8), units='mm')
+    floor_class = getattr(DB, 'Floor', None)
+    if floor_class is not None and isinstance(element, floor_class):
+        try:
+            properties['openings'] = floor_openings(doc, element)
+        except Exception:
+            pass  # Missing hole data is never reported as a change.
     for attr in ['FacingOrientation', 'HandOrientation']:
         try:
             direction = getattr(element, attr, None)

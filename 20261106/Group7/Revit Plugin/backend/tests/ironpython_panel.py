@@ -58,6 +58,7 @@ class ExternalEvent(object):
 
 module('Autodesk')
 db = module('Autodesk.Revit.DB', ElementId=int, ElementType=type('ElementType', (object,), {}),
+            View=type('View', (Object,), {}),
             Events=Object(DocumentChangedEventArgs=EventArgs))
 ui = module('Autodesk.Revit.UI', IExternalEventHandler=object, ExternalEvent=ExternalEvent,
             Events=Object(ViewActivatedEventArgs=EventArgs))
@@ -90,7 +91,8 @@ def extract(doc, primary, issue_type, related=None, depth=1, limit=80, findings=
 
 module('casegraph.extractor', document_id=lambda doc: doc.identity, id_value=lambda value: str(value), node=lambda doc, e: e.record, extract=extract)
 module('casegraph.element_index', snapshot=lambda doc, e: copy.deepcopy(e.record), detail_snapshot=lambda doc, e: copy.deepcopy(e.record),
-       discover=lambda uidoc, e, scope: dict(target=copy.deepcopy(e.record), candidates=[copy.deepcopy(x.record) for x in elements.values() if x.Id != e.Id], skipped=0, truncated=False))
+       name_of=lambda e: e.record['name'] if e is not None else None,
+       discover=lambda uidoc, e, scope='model', limit=500: dict(target=copy.deepcopy(e.record), candidates=[copy.deepcopy(x.record) for x in elements.values() if x.Id != e.Id], skipped=0, truncated=False))
 module('casegraph.client', request=None)
 
 from casegraph.workspace_panel import WorkspacePanel
@@ -2230,6 +2232,65 @@ def test_suggestion_auto_repair_applies_complete_plan_and_stops_for_questions_or
         p.refresh_timer.Stop()
 
 
+def test_suggestion_question_options_apply_directly_or_replan_with_the_answer():
+    forms = sys.modules['pyrevit'].forms
+    alerts, calls = [], []
+    forms.alert = lambda message, **kwargs: alerts.append(message) or True
+    move = dict(tool='move_element', arguments=dict(elementId=101, dx=100), reason=u'避開碰撞', source_case=None)
+    choices = [dict(question=u'沒有 4 hr 類型，要怎樣處理？', options=[
+        dict(label=u'4 小時', detail=u'先在 Revit 建立 WT-FR4', instruction=u'改用新建的 WT-FR4', steps=[], problems=[]),
+        dict(label=u'2 小時', detail=u'改用 WT-FR2', instruction=u'', steps=[move], problems=[])])]
+    class Agent(object):
+        def __init__(self, base, provider='claude'): pass
+        def plan(self, target, sources, instruction, **options):
+            calls.append(('plan', instruction))
+            return dict(summary=u'需要決定', questions=[choices[0]['question']], choices=choices,
+                        problems=[], warnings=[], steps=[])
+        def apply(self, steps, scope=None):
+            calls.append(('apply', steps))
+            return dict(summary=u'已移動', results=[dict(step=1, ok=True, message=u'MCP 已執行')])
+        def cancel(self): calls.append('cancel')
+    p = new_panel()
+    p.agent_factory = Agent
+    p.spawn = lambda worker: worker()
+    p.suggest_callbacks = []
+    p.dispatch = lambda callback: p.suggest_callbacks.append(callback)
+    try:
+        p.set_target(node('A'), refresh=False)
+        p.SuggestAiMode.IsChecked = True
+        p.suggest_mode_changed(None, None)
+        p.SuggestPrompt.Text = u'防火時效改為 4 小時'
+        suggest_click_and_flush(p, p.SuggestRun)
+        assert u'請在下方選擇' in p.SuggestStatus.Text and u'？' not in p.SuggestSummary.Text
+        item = p.SuggestChoices.Items[0]
+        assert [o.button for o in item.options] == [u'4 小時', u'2 小時', u'其他…']
+        assert u'可直接套用' in item.hint and u'重新規劃' in item.hint
+        four, two, other = list(item.options)
+        # 其他…: only appends the question to the instruction for the user to finish.
+        p.suggest_choice_click(Object(Tag=other), None)
+        assert len(calls) == 1 and p.SuggestPrompt.Text.endswith(u'回答「沒有 4 hr 類型，要怎樣處理？」：')
+        p.SuggestPrompt.Text = u'防火時效改為 4 小時'
+        suggest_click_and_flush(p, p.SuggestRun)
+        # An option with steps is applied after one confirmation, without another plan.
+        two = p.SuggestChoices.Items[0].options[1]
+        p.suggest_choice_click(Object(Tag=two), None)
+        flush_suggestion(p)
+        assert calls[-1] == ('apply', [move]) and u'移動 · 元素 101' in alerts[-1]
+        assert u'已全部套用' in p.SuggestStatus.Text and p.SuggestChoices.Items.Count == 0
+        # An option without steps re-plans with the answer appended.
+        suggest_click_and_flush(p, p.SuggestRun)
+        stale = Object(Tag=four)
+        p.suggest_choice_click(stale, None)
+        assert calls[-1][0] == 'plan' and len([c for c in calls if c[0] == 'plan']) == 3
+        four = p.SuggestChoices.Items[0].options[0]
+        p.suggest_choice_click(Object(Tag=four), None)
+        flush_suggestion(p)
+        assert calls[-1] == ('plan', u'防火時效改為 4 小時\n回答「沒有 4 hr 類型，要怎樣處理？」：4 小時。改用新建的 WT-FR4')
+    finally:
+        del forms.alert
+        p.refresh_timer.Stop()
+
+
 def test_suggestion_reads_sources_plans_confirms_applies_and_records():
     import casegraph.suggest_view as suggest_module
     calls, recorded, answers = [], [], []
@@ -2337,12 +2398,12 @@ def test_suggestion_scope_uses_current_pair_instead_of_a_repaired_counterpart():
         p.refresh_queue.take()
         first_origin = dict(document='model', message=u'第一組', elements=[dict(unique_id='A'), dict(unique_id='B')])
         p.set_suggest_context(first_origin)
-        uidoc.Selection.GetElementIds = lambda: ['B']
+        uidoc.Selection.GetElementIds = lambda: ['A', 'B']
         suggest_click_and_flush(p, p.SuggestRun)
         assert calls[-1][0]['element_ids'] == [101, 102] and calls[-1][1]['message'] == u'第一組'
         assert u'本次目標與選取物' in p.SuggestStatus.Text and not p.SuggestApply.IsEnabled
         # Selecting another counterpart replaces the old pinned members and old issue context.
-        uidoc.Selection.GetElementIds = lambda: ['C']
+        uidoc.Selection.GetElementIds = lambda: ['A', 'C']
         suggest_click_and_flush(p, p.SuggestRun)
         assert calls[-1][0]['element_ids'] == [101, 103] and calls[-1][1] is None
         assert p.SuggestContext.Text == ''
@@ -2360,12 +2421,130 @@ def test_suggestion_scope_uses_current_pair_instead_of_a_repaired_counterpart():
         assert u'第二組仍有碰撞' in p.SuggestContext.Text and u'第一組' not in p.SuggestContext.Text
         assert p.suggest_scope['element_ids'] == [101, 103]
         # Changing the explicit selected group invalidates the plan even with the same root.
-        p.set_target(node('A'), refresh=False, members=[node('C')])
+        p.set_target(node('A'), refresh=False, members=[node('B')])
         assert not p.suggest_steps and not p.SuggestApply.IsEnabled
         assert u'選取物已變更' in p.SuggestStatus.Text
     finally:
         uidoc.Selection.GetElementIds = original_selection
         del elements['C']
+        p.refresh_timer.Stop()
+
+
+def test_suggestion_prioritizes_selection_and_keeps_other_same_type_read_only():
+    original_selection = uidoc.Selection.GetElementIds
+    uidoc.Selection.GetElementIds = lambda: ['B']
+    calls = []
+    class Agent(object):
+        def __init__(self, base, provider='claude'): pass
+        def cancel(self): pass
+        def plan(self, target, sources, instruction, **options):
+            calls.append(('plan', target, options['members']))
+            return dict(summary=u'修正目前選取物', steps=[dict(tool='move_element',
+                arguments=dict(elementId=102, dx=10), reason=u'改善淨距', source_case=None)])
+        def apply(self, steps, scope=None):
+            calls.append(('apply', copy.deepcopy(steps), scope))
+            return dict(results=[dict(step=1, ok=True)])
+    p = new_panel()
+    p.agent_factory, p.spawn = Agent, lambda worker: worker()
+    p.suggest_callbacks = []
+    p.dispatch = lambda callback: p.suggest_callbacks.append(callback)
+    try:
+        p.set_target(node('A'), refresh=False)
+        p.open_feature('suggest')
+        p.SuggestAiMode.IsChecked = True
+        p.suggest_mode_changed(None, None)
+        p.SuggestPrompt.Text = u'優先修正選中的元件'
+        suggest_click_and_flush(p, p.SuggestAutoFix)
+        assert calls[0][1]['source_element_id'] == 'B' and calls[0][2] == []
+        assert calls[1][2]['element_ids'] == [102] and calls[1][1][0]['arguments']['elementId'] == 102
+        assert p.target['source_element_id'] == 'B' and not p.target_members
+        assert p.SuggestOtherPanel.Visibility == Visibility.Visible and p.SuggestOther.Items.Count == 1
+        other = p.SuggestOther.Items[0]
+        assert other.data['source_element_id'] == 'A' and u'改善淨距' in other.reason
+        preview(p, 'suggestion-selected-first', 460, 1000)
+        p.suggest_other_select(Object(Tag=other), None)
+        flush_suggestion(p)
+        assert selected_ids[-1] == [101] and p.target['source_element_id'] == 'A'
+        assert len(calls) == 2 and not p.suggest_steps  # Selecting a suggestion never modifies it.
+        assert p.SuggestOtherPanel.Visibility == Visibility.Collapsed
+        uidoc.Selection.GetElementIds = lambda: []
+        root, members, context = p.capture_suggestion_targets(uidoc, p.target)
+        assert root['source_element_id'] == 'A' and not members
+        p.target = None
+        uidoc.Selection.GetElementIds = lambda: ['B']
+        suggest_click_and_flush(p, p.SuggestRun)
+        assert calls[-1][1]['source_element_id'] == 'B'  # A current selection also works without an old pin.
+    finally:
+        uidoc.Selection.GetElementIds = original_selection
+        p.refresh_timer.Stop()
+
+
+def test_suggestion_verifies_exact_type_refreshes_card_and_records_only_verified_results():
+    import casegraph.suggest_view as suggest_module
+    forms = sys.modules['pyrevit'].forms
+    old_alert, old_request = getattr(forms, 'alert', None), suggest_module.request
+    old_get, old_element, old_selection = uidoc.Document.GetElement, elements['A'], uidoc.Selection.GetElementIds
+    forms.alert = lambda *args, **kwargs: True
+    recorded, calls = [], []
+    suggest_module.request = lambda base, path, payload=None, method=None: recorded.append(payload)
+    class ElementType(db.ElementType):
+        def __init__(self, number, name):
+            self.Id, self.record = number, node(str(number), name)
+    types_by_id = {201: ElementType(201, 'WT-FR1'), 202: ElementType(202, 'WT-FR2'), 203: ElementType(203, 'WT-FR2')}
+    state = dict(current=201, applied=202)
+    record = node('A', 'WT-FR1')
+    def update(number):
+        state['current'] = number
+        record['name'] = types_by_id[number].record['name']
+        record['properties'].update(type_id=str(number), type_name=record['name'])
+    update(201)
+    wall = Object(Id=101, UniqueId='A', Category=Object(Id=-2000011), record=record,
+                  GetTypeId=lambda: state['current'], IsValidType=lambda number: number in types_by_id)
+    elements['A'] = wall
+    uidoc.Document.GetElement = lambda key: wall if key in ('A', 101) else types_by_id.get(key) or old_get(key)
+    uidoc.Selection.GetElementIds = lambda: ['A']
+    class Agent(object):
+        def __init__(self, base, provider='claude'): pass
+        def cancel(self): pass
+        def apply(self, steps, scope=None):
+            calls.append(steps)
+            update(state['applied'])
+            return dict(results=[dict(step=1, ok=True, message='MCP success')])
+    p = new_panel()
+    p.agent_factory, p.spawn = Agent, lambda worker: worker()
+    p.suggest_callbacks = []
+    p.dispatch = lambda callback: p.suggest_callbacks.append(callback)
+    def show_plan():
+        p.set_target(copy.deepcopy(record), refresh=False)
+        p.show_suggestion(p.target, dict(steps=[dict(tool='change_element_type', arguments=dict(elementId=101, typeId=202),
+            reason=u'更換防火牆類型', source_case=3)], scope=dict(document='model', target_id=101, element_ids=[101])))
+    try:
+        p.open_feature('suggest')
+        show_plan()
+        suggest_click_and_flush(p, p.SuggestApply)
+        assert p.suggest_results[1]['verified'] and p.suggest_results[1]['changed']
+        assert 'WT-FR2' in p.TargetDetail.Text and p.target['properties']['type_id'] == '202'
+        assert recorded[-1]['outcome'] == 'APPLIED' and recorded[-1]['steps'][0]['result']['after_type_id'] == '202'
+        show_plan()
+        suggest_click_and_flush(p, p.SuggestApply)
+        assert p.suggest_results[1]['changed'] is False and u'沒有變更' in p.SuggestStatus.Text
+        assert p.SuggestSteps.Items[0].state == u'已符合，無需變更'
+        for actual in (201, 203):
+            update(201)
+            state['applied'] = actual
+            show_plan()
+            suggest_click_and_flush(p, p.SuggestApply)
+            assert not p.suggest_results[1]['ok'] and p.suggest_blocked and not p.SuggestApply.IsEnabled
+            assert u'類型核對未通過' in p.SuggestResults.Text
+            assert recorded[-1]['outcome'] == 'FAILED' and not recorded[-1]['steps'][0]['result']['verified']
+        assert not p.suggest_finishing and p.SuggestRun.IsEnabled
+    finally:
+        uidoc.Document.GetElement, elements['A'], uidoc.Selection.GetElementIds = old_get, old_element, old_selection
+        suggest_module.request = old_request
+        if old_alert is None:
+            del forms.alert
+        else:
+            forms.alert = old_alert
         p.refresh_timer.Stop()
 
 
@@ -2613,10 +2792,17 @@ def test_shaft_adapter_uses_real_core_and_keeps_linked_ids_separate():
         host, linked = report['results'][0], report['results'][2]
         assert host['room_id'] == linked['room_id'] == '1' and linked['room_name'] == 'PS-1'
         assert host['status'] == linked['status'] == 'Violation'
-        assert host['records'][0]['source_element_id'] == 'host1'
+        assert [r['source_element_id'] for r in host['records']] == ['host2']
         assert linked['records'][0]['source_element_id'] == 'host9'
         assert [(r['document'], r['element_id']) for r in linked['source_refs']] == [('linked', '1'), ('linked', '2')]
+        wall_issue = shaft_issue(report, host)
+        assert wall_issue['root']['source_element_id'] == 'host2' and not wall_issue['related']
+        assert [r['unique_id'] for r in wall_issue['origin']['elements']] == ['host2']
+        assert [r['unique_id'] for r in wall_issue['origin']['source_refs']] == ['host1', 'host2']
         assert report['results'][1]['status'] == 'DataMissing'
+        # No concrete element is known for a missing MEP model: locate the room.
+        assert [r['source_element_id'] for r in report['results'][1]['records']] == ['host1']
+        assert [r['source_element_id'] for r in report['results'][3]['records']] == ['host9']
         assert u'未載入' in report['warnings'][0]
         sc.validate_result(fake_uidoc, report, linked)
         record = shaft_issue(report, linked)
@@ -2629,6 +2815,14 @@ def test_shaft_adapter_uses_real_core_and_keeps_linked_ids_separate():
         except ValueError:
             pass
         linked_doc.GetElement = original_get
+        original_host_get = host_doc.GetElement
+        host_doc.GetElement = lambda key: None if key in (2, 'host2') else original_host_get(key)
+        try:
+            missing_wall = sc.run_check(fake_uidoc)['results'][0]
+            assert missing_wall['unresolved'] and not missing_wall['records']
+            assert missing_wall['room_unique_id'] == 'host1'  # Never substitute the room for a missing wall.
+        finally:
+            host_doc.GetElement = original_host_get
         db.FilteredElementCollector = lambda doc: Object(OfClass=lambda kind: [link, Link()])
         cfg.EnabledRules = List[String](['A1', 'P1'])
         ambiguous = sc.run_check(fake_uidoc)['results'][2]
@@ -2720,6 +2914,37 @@ def test_shaft_window_open_close_does_not_show_panel_or_touch_revit_subscription
         p.refresh_timer.Stop()
 
 
+def test_shaft_report_ignores_only_view_changes():
+    from casegraph.shaft_window import ShaftWindow
+    p = new_panel()
+    w = ShaftWindow(p)
+    views = {900: db.View(), 901: db.View(), 102: elements['B']}
+    doc = Object(identity='model', GetElement=lambda key: views.get(key))
+    def change(added=(), modified=(), deleted=(), source=doc):
+        return Object(GetDocument=lambda:source, GetAddedElementIds=lambda:added,
+                      GetModifiedElementIds=lambda:modified, GetDeletedElementIds=lambda:deleted)
+    try:
+        w.report = dict(stale=False)
+        w.Record.IsEnabled = w.Locate.IsEnabled = w.Suggest.IsEnabled = w.ExportCsv.IsEnabled = True
+        for event in (change(), change(added=[901], modified=[900]), change(modified=[900])):
+            p.document_changed(None, event)
+            assert not w.report['stale'] and w.Record.IsEnabled and w.ExportCsv.IsEnabled
+        # Mixed view/model edits, deletions, missing elements and incomplete event
+        # data must all invalidate; changes from linked models remain relevant.
+        linked = Object(identity='linked', GetElement=lambda key:elements['B'])
+        for event in (change(modified=[900, 102]), change(added=[102]), change(deleted=[102]),
+                      change(modified=[999]), change(modified=[102], source=linked),
+                      Object(GetDocument=lambda:doc)):
+            w.report = dict(stale=False)
+            w.Record.IsEnabled = w.Locate.IsEnabled = w.Suggest.IsEnabled = w.ExportCsv.IsEnabled = True
+            p.document_changed(None, event)
+            assert w.report['stale'] and not w.Record.IsEnabled and not w.Suggest.IsEnabled
+            assert not w.ExportCsv.IsEnabled and u'重新檢查' in w.Status.Text
+    finally:
+        w.Close()
+        p.refresh_timer.Stop()
+
+
 def test_shaft_window_transfers_preserves_unsaved_and_saves_evidence():
     from casegraph import shaft_window as sw
     from casegraph.shaft_issue import RULES
@@ -2730,6 +2955,7 @@ def test_shaft_window_transfers_preserves_unsaved_and_saves_evidence():
     forms.alert = lambda *a, **k: answers.pop(0)
     forms.open_dockable_panel = lambda pane: opened.append(pane)
     previous_check, previous_validate = sw.run_check, sw.validate_result
+    previous_show = uidoc.ShowElements
     store = {}
     sys.modules['pyrevit.coreutils'].envvars.get_pyrevit_env_var = lambda key: store.get(key)
     sys.modules['pyrevit.coreutils'].envvars.set_pyrevit_env_var = lambda key, value: store.update({key:value})
@@ -2738,7 +2964,9 @@ def test_shaft_window_transfers_preserves_unsaved_and_saves_evidence():
     row = dict(id='1', rule_id='A1', rule_name=u'牆防火時效', group='fire', status='Violation',
                shaft_label='1F PS-1', shaft_key='A', room_unique_id='A', source=None, nature=u'法規', reference=u'規則原始依據',
                message=u'牆防火時效不足', advice=u'調整牆型', actual=.5, required=1., unit='h',
-               records=[node('A'), node('B')], source_refs=[], unresolved=False)
+               records=[node('B')], source_refs=[
+                   dict(source=None, document='model', unique_id='A', element_id='101', name='Room'),
+                   dict(source=None, document='model', unique_id='B', element_id='102', name='Wall')], unresolved=False)
     report['results'] = [row]
     sw.run_check = lambda uidoc: copy.deepcopy(report)
     def validate(uidoc, report, row):
@@ -2749,6 +2977,13 @@ def test_shaft_window_transfers_preserves_unsaved_and_saves_evidence():
         IsVisible = True
     p = new_panel()
     w = TestWindow(p)
+    def show_with_view_events(ids):
+        previous_show(ids)
+        view_doc = Object(identity='model', GetElement=lambda key:db.View())
+        p.document_changed(None, Object(GetDocument=lambda:view_doc,
+            GetAddedElementIds=lambda:[901], GetModifiedElementIds=lambda:[900], GetDeletedElementIds=lambda:[]))
+        p.view_activated(None, Object(CurrentActiveView=Object(Document=uidoc.Document)))
+    uidoc.ShowElements = show_with_view_events
     try:
         w.check_click(None, None)
         p.handler.Execute(app)
@@ -2756,11 +2991,19 @@ def test_shaft_window_transfers_preserves_unsaved_and_saves_evidence():
         w.Findings.SelectedIndex = 0
         assert w.Record.IsEnabled and u'實測：0.5' in w.Details.Text
         assert u'調整牆型' not in w.Details.Text and w.Suggest.IsEnabled
+        w.locate_click(None, None)
+        p.handler.Execute(app)
+        assert selected_ids[-1] == shown_ids[-1] == [102]
+        assert not w.report['stale'] and w.Record.IsEnabled and w.Suggest.IsEnabled and w.ExportCsv.IsEnabled
+        assert w.Findings.SelectedItem.data['id'] == '1' and u'返回此視窗' in w.Status.Text
+        p.set_target(node('A'), refresh=False, members=[node('B')])
         p.IssueTitle.Text, p.Description.Text = u'未儲存標題', u'未儲存內容'
         w.suggest_click(None, None)
         p.handler.Execute(app)
         assert p.active_feature == 'suggest' and u'調整牆型' in p.SuggestContext.Text
         assert p.current_suggest_context()['rule_id'] == 'A1'
+        assert p.target['source_element_id'] == 'B' and not p.target_members
+        assert u'另' not in p.TargetName.Text
         assert p.IssueTitle.Text == u'未儲存標題' and p.Description.Text == u'未儲存內容'
         opened[:] = []
         answers.append(False)
@@ -2771,17 +3014,19 @@ def test_shaft_window_transfers_preserves_unsaved_and_saves_evidence():
         w.record_click(None, None)
         p.handler.Execute(app)
         assert p.active_feature == 'issue' and p.issue_origin['kind'] == 'SHAFT_CHECK'
-        assert p.target['source_element_id'] == 'A' and p.target_members[0]['source_element_id'] == 'B'
+        assert p.target['source_element_id'] == 'B' and not p.target_members
         assert p.IssueType.SelectedItem.data == 'DESIGN_CONFLICT' and p.Priority.SelectedItem.data == 'High'
         assert u'管道間檢查' in p.IssueOrigin.Text and opened
         def create(payload):
             return dict(id=15, revision=1, status='DRAFT', solution='', reviewer='', analyses=[], draft=copy.deepcopy(payload))
-        p.responses.update({'/elements': node('A'), '/cases': create})
+        p.responses.update({'/elements': node('B'), '/cases': create})
         p.save_click(None, None)
         p.handler.Execute(app)
         complete(p)
         assert p.current['draft']['origin']['rule_id'] == 'A1'
-        assert extracted_findings[-1] == [(102, False, '1')]
+        assert [e['unique_id'] for e in p.current['draft']['origin']['elements']] == ['B']
+        assert [e['unique_id'] for e in p.current['draft']['origin']['source_refs']] == ['A', 'B']
+        assert extracted_findings[-1] == []
         assert not p.issue_form_unsaved()
         w.model_changed(None, None)
         assert w.report['stale'] and not w.Record.IsEnabled and not w.Suggest.IsEnabled
@@ -2799,6 +3044,7 @@ def test_shaft_window_transfers_preserves_unsaved_and_saves_evidence():
         assert p.issue_origin == before and u'重新檢查' in w.Status.Text
     finally:
         uidoc.Document.identity = 'model'
+        uidoc.ShowElements = previous_show
         sw.run_check, sw.validate_result = previous_check, previous_validate
         forms.alert, forms.open_dockable_panel = old_alert, old_open
         w.Close()

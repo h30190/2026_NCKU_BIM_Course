@@ -111,8 +111,8 @@ def run_check(uidoc):
             refs, records = [], []
             unresolved = room_ref is None
             if room_ref:
+                # Keep the room as location evidence, not an implicit selection.
                 refs.append(room_ref)
-                records.append(room_anchor)
             for item in issue.Refs:
                 ref, anchor = resolve(item.Source, item.Id)
                 if ref is None:
@@ -123,6 +123,10 @@ def run_check(uidoc):
                         refs.append(ref)
                     if not any(r['node_id'] == anchor['node_id'] for r in records):
                         records.append(anchor)
+            # Only findings without concrete problem elements use a room target.
+            # Unresolved wall/door/pipe references must never fall back to the room.
+            if issue.Refs.Count == 0 and room_anchor is not None:
+                records.append(room_anchor)
             report['results'].append(dict(id=str(len(report['results'])+1), group=group, status=status,
                 rule_id=issue.RuleId, rule_name=issue.RuleName, message=issue.Message, advice=issue.Suggestion or '',
                 nature=u'法規' if str(issue.Nature) == 'Regulation' else u'設計參數', reference=issue.Reference,
@@ -132,6 +136,23 @@ def run_check(uidoc):
                 level_elevation_mm=shaft.FloorZ,
                 records=records, source_refs=refs, unresolved=unresolved))
     return report
+
+
+def model_data_changed(args):
+    """Ignore view-only navigation transactions, not changes to scan inputs.
+
+    ShowElements can create/update a view and raise DocumentChanged. The finding
+    still describes the original check scope. Deletions and unreadable events
+    remain conservative, including changes originating in linked documents.
+    """
+    try:
+        if list(args.GetDeletedElementIds()):
+            return True
+        doc = args.GetDocument()
+        ids = list(args.GetAddedElementIds()) + list(args.GetModifiedElementIds())
+        return any(not isinstance(doc.GetElement(i), DB.View) for i in ids)
+    except Exception:
+        return True
 
 
 def validate_report(uidoc, report):

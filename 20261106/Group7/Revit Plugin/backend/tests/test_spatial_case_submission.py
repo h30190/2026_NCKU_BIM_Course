@@ -91,11 +91,12 @@ def test_spatial_target_saves_submits_and_reopens_with_original_identity(extract
     assert by_id[related.UniqueId]['node_type'] == 'SPACE'
     assert by_id['element-uid-10']['node_type'] == 'LEVEL'
     assert extractor.node(doc, primary)['node_type'] == 'SPACE'  # Context semantics are preserved.
-    report, row = sample()
+    report, row = sample('A6', 'maint')
     report['document'] = root['source_document']
-    row.update(records=[root, by_id[wall.UniqueId]], room_unique_id=primary.UniqueId,
+    row.update(records=[root], room_unique_id=primary.UniqueId,
                shaft_key=primary.UniqueId, source_refs=[], unresolved=False)
     record = shaft_issue(report, row)
+    assert record['related'] == []  # A room-level problem keeps a room target; context walls are not selected.
     draft = {key: record[key] for key in ('title', 'description', 'notes', 'priority', 'issue_type', 'origin')}
     draft['graph'] = graph
     response = client.post('/graph/elements', json=root)

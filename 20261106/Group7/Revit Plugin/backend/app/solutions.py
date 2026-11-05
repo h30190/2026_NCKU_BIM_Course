@@ -16,7 +16,148 @@ from .database import connection
 from .graph_models import Draft, IssueType
 
 FEET_MM = 304.8
-REPLAYABLE = {'set_parameter', 'change_type', 'move', 'flip', 'delete'}
+REPLAYABLE = {'set_parameter', 'change_type', 'move', 'flip', 'delete', 'floor_opening'}
+MEP_CATEGORIES = {'Pipes', 'Ducts', 'Conduits', 'Cable Trays', 'Flex Pipes', 'Flex Ducts'}
+
+
+def raw_change(element, name):
+    """(before, after) internal values of a recorded read-only parameter, or None."""
+    for change in element.get('changes', []):
+        action = change.get('action') or {}
+        if action.get('op') == 'set_parameter' and action.get('name') == name and                 number(action.get('before_raw')) and number(action.get('after_raw')):
+            return float(action['before_raw']), float(action['after_raw'])
+    return None
+
+
+def derived_floor_opening(element):
+    """Older floor records only kept Area/Perimeter: a new rectangular hole adds its perimeter
+    and removes its area, so its sides solve a+b=ΔP/2, ab=ΔA. Returns sizes in mm or None."""
+    if element.get('category') != 'Floors':
+        return None
+    area, perimeter = raw_change(element, 'Area'), raw_change(element, 'Perimeter')
+    if not area or not perimeter:
+        return None
+    removed, added = (area[0] - area[1]) * FEET_MM ** 2, (perimeter[1] - perimeter[0]) * FEET_MM
+    half = added / 2
+    disc = half * half - 4 * removed
+    if removed <= 1 or added <= 1 or disc < -1:
+        return None
+    root = math.sqrt(max(disc, 0))
+    length, width = round((half + root) / 2), round((half - root) / 2)
+    if width <= 0:
+        return None
+    return dict(op='floor_opening', length_mm=length, width_mm=width, rotation_deg=0, derived=True)
+
+
+def mep_centre(node):
+    return position((node or {}).get('properties') or {}, 'bounding_box_center')
+
+
+# Which case-graph relation best explains "this step was done relative to that element".
+ANCHOR_ORDER = ('INTERSECTS', 'HOSTED_BY', 'ADJACENT_TO', 'CONNECTED_TO', 'CONTAINED_IN', 'NEARBY', 'RELATED_TO')
+AXES = ('x', 'y', 'z')
+
+
+def node_box(node):
+    """Recorded bounding box {min, max} in model mm, or None."""
+    box = ((node or {}).get('properties') or {}).get('bounding_box') or {}
+    low, high = box.get('min') or {}, box.get('max') or {}
+    if box.get('units', 'mm') != 'mm' or not all(number(low.get(k)) and number(high.get(k)) for k in AXES):
+        return None
+    return dict(min={k: float(low[k]) for k in AXES}, max={k: float(high[k]) for k in AXES})
+
+
+def shifted(box, delta):
+    return box and dict(min={k: box['min'][k] + delta.get(k, 0) for k in AXES},
+                        max={k: box['max'][k] + delta.get(k, 0) for k in AXES})
+
+
+def gap(box, anchor, axis, side):
+    """Signed face gap from the anchor on `side` (+1: box beyond the anchor's max face); negative = overlap."""
+    return box['min'][axis] - anchor['max'][axis] if side > 0 else anchor['min'][axis] - box['max'][axis]
+
+
+def anchor_rank(element):
+    relations = element.get('relations') or []
+    return min([ANCHOR_ORDER.index(r) for r in relations if r in ANCHOR_ORDER] or [len(ANCHOR_ORDER)])
+
+
+def case_anchors(element, elements, nodes, moves):
+    """Case-graph neighbours the step was relative to, closest relation first, each with its post-fix case box.
+    The root's anchors are its related elements; a related element's anchor is the root."""
+    others = [e for e in elements if e is not element and (e.get('root') or element.get('root'))]
+    found = []
+    for other in sorted(others, key=lambda e: (anchor_rank(element if e.get('root') else e), str(e.get('element_id')))):
+        relations = (element if other.get('root') else other).get('relations') or []
+        box = shifted(node_box(nodes.get(other.get('node_id'))), moves.get(other.get('element_id'), {}))
+        found.append(dict(element_id=other.get('element_id'), name=other.get('name'), category=other.get('category'),
+                          relations=relations, root=bool(other.get('root')), case_box_mm=box, state=other.get('state')))
+    return found[:3]
+
+
+def move_relation(step, anchors, nodes, element):
+    """What a recorded move achieved relative to its closest anchor: per moved axis, the face gap after the fix."""
+    action = step['action']
+    before = node_box(nodes.get(element.get('node_id')))
+    anchor = next((a for a in anchors if a['case_box_mm']), None)
+    if not before or not anchor:
+        return None
+    after, other = shifted(before, {k: action.get('d'+k, 0) for k in AXES}), anchor['case_box_mm']
+    axes = {}
+    for k in AXES:
+        if abs(action.get('d'+k, 0)) < 1:
+            continue
+        side = 1 if after['min'][k] + after['max'][k] >= other['min'][k] + other['max'][k] else -1
+        axes[k] = dict(side=side, gap_mm=round(gap(after, other, k, side), 1), case_gap_before_mm=round(gap(before, other, k, side), 1))
+    return dict(anchor=dict((k, anchor[k]) for k in ('element_id', 'name', 'category', 'relations', 'root')), axes=axes) if axes else None
+
+
+def live_box(value):
+    """get_element_geometry(boundingbox) fields MinX…MaxZ (mm) → {min, max}."""
+    return value and dict(min=dict(x=value.MinX, y=value.MinY, z=value.MinZ), max=dict(x=value.MaxX, y=value.MaxY, z=value.MaxZ))
+
+
+def adaptive_move(relation, box, anchor):
+    """Displacement (mm) that restores the case's post-fix gap to the anchor from the current geometry."""
+    delta = dict(x=0., y=0., z=0.)
+    for k, axis in relation['axes'].items():
+        delta[k] = round((axis['gap_mm'] - gap(box, anchor, k, axis['side'])) * axis['side'], 1)
+    return delta
+
+
+def case_clearance(action, node):
+    """Per-side gap between the case opening and the case MEP footprint, in mm along the opening's
+    length (u) and width (v). The case's practice is this gap, not its absolute size: a different pipe
+    needs its own size. None when the snapshot has no usable MEP footprint."""
+    box = ((node or {}).get('properties') or {}).get('bounding_box') or {}
+    low, high, centre = box.get('min') or {}, box.get('max') or {}, mep_centre(node)
+    if not centre or box.get('units', 'mm') != 'mm' or not all(number(low.get(k)) and number(high.get(k)) for k in 'xy'):
+        return None
+    angle = math.radians(action.get('rotation_deg') or 0)
+    cos, sin = math.cos(angle), math.sin(angle)
+    dx, dy = high['x'] - low['x'], high['y'] - low['y']
+    extent_u, extent_v = abs(dx * cos) + abs(dy * sin), abs(dx * sin) + abs(dy * cos)
+    hole = action.get('center_mm') or centre  # Older records only kept the size: centred on the MEP.
+    du = (centre['x'] - hole['x']) * cos + (centre['y'] - hole['y']) * sin
+    dv = -(centre['x'] - hole['x']) * sin + (centre['y'] - hole['y']) * cos
+    length, width = action['length_mm'], action['width_mm']
+    sides = dict(length_start=length/2 + du - extent_u/2, length_end=length/2 - du - extent_u/2,
+                 width_start=width/2 + dv - extent_v/2, width_end=width/2 - dv - extent_v/2)
+    # A footprint wider than the hole is not a vertical riser (e.g. a sloped run): no reliable gap.
+    if extent_u <= 0 or extent_v <= 0 or min(sides.values()) < -1:
+        return None
+    return dict({k: round(max(v, 0), 1) for k, v in sides.items()}, case_mep_mm=dict(length=round(extent_u, 1), width=round(extent_v, 1)))
+
+
+def adaptive_opening(action, clearance, mep_outer_mm):
+    """Case clearance around the current MEP: size and centre offset (mm) for preview_floor_opening."""
+    angle = math.radians(action.get('rotation_deg') or 0)
+    c = clearance
+    along, across = (c['length_end'] - c['length_start']) / 2, (c['width_end'] - c['width_start']) / 2
+    return dict(length_mm=math.ceil(mep_outer_mm + c['length_start'] + c['length_end']),
+                width_mm=math.ceil(mep_outer_mm + c['width_start'] + c['width_end']),
+                offset_mm=dict(x=round(along * math.cos(angle) - across * math.sin(angle), 1),
+                               y=round(along * math.sin(angle) + across * math.cos(angle), 1)))
 
 
 class SolutionSearch(BaseModel):
@@ -39,12 +180,25 @@ class FixTarget(BaseModel):
     document: str | None = None
 
 
+class LiveBox(BaseModel):
+    MinX: float
+    MinY: float
+    MinZ: float
+    MaxX: float
+    MaxY: float
+    MaxZ: float
+
+
 class FixPlanRequest(BaseModel):
     target: FixTarget
     # Prefer element:<recorded ID>; relation keys remain supported when unambiguous.
     related: dict[str, int] = Field(default_factory=dict)
     # Element ID of the target type to use for change_type, once resolved in the target model.
     type_ids: dict[str, int] = Field(default_factory=dict)
+    # Outer diameter (incl. insulation) of the current MEP element, from preview_floor_opening's mepOuterDiameterMm.
+    mep_outer_mm: float | None = Field(default=None, gt=0, le=10000)
+    # Current bounding boxes keyed by target-model element ID, as get_element_geometry(boundingbox) returns them (mm).
+    geometry: dict[str, LiveBox] = Field(default_factory=dict, max_length=50)
 
 
 class Application(BaseModel):
@@ -177,7 +331,33 @@ def recipe_from(case, history):
                 steps.append(step)
             elif element['state'] == 'CHANGED':
                 manual.append(dict(owner, label=label, reason='沒有可自動重播的動作'))
-    root = next(n for n in case['draft']['graph']['nodes'] if n['node_id'] == case['draft']['graph']['root'])
+        # New records carry the hole itself; only older records need the Area/Perimeter estimate.
+        opening = None if any((c.get('action') or {}).get('op') == 'floor_opening' or c.get('field') == '樓板開孔'
+                              for c in element.get('changes', [])) else derived_floor_opening(element)
+        if opening:
+            steps.append(dict(owner, action=opening, label='樓板開孔 {} × {} mm（由面積／周長變化推算）'.format(
+                opening['length_mm'], opening['width_mm'])))
+    # A floor opening is placed around the MEP element that passed through the slab in the case.
+    meps = [e for e in (evidence or {}).get('elements', []) if not e.get('root') and e.get('category') in MEP_CATEGORIES
+            and 'INTERSECTS' in (e.get('relations') or [])]
+    for step in steps:
+        if step['action'].get('op') != 'floor_opening':
+            continue
+        step['mep'] = [dict(element_id=e.get('element_id'), name=e.get('name'), category=e.get('category'),
+                            relations=e.get('relations', [])) for e in meps]
+        centre = step['action'].get('center_mm')
+        anchor = mep_centre(nodes.get(meps[0].get('node_id'))) if meps and centre else None
+        step['offset_mm'] = dict(x=round(centre['x'] - anchor['x'], 1), y=round(centre['y'] - anchor['y'], 1)) if anchor else dict(x=0, y=0)
+        step['clearance_mm'] = case_clearance(step['action'], nodes.get(meps[0].get('node_id'))) if meps else None
+    # Every step is replayed relative to the elements it related to in the case graph, not by its absolute values.
+    elements = (evidence or {}).get('elements', [])
+    moves = {s['element_id']: {k: s['action'].get('d'+k, 0) for k in AXES} for s in steps if s['action']['op'] == 'move'}
+    for step in steps:
+        element = next((e for e in elements if e.get('element_id') == step['element_id']), None)
+        step['anchors'] = case_anchors(element, elements, nodes, moves) if element else []
+        if step['action']['op'] == 'move' and element:
+            step['relation'] = move_relation(step, step['anchors'], nodes, element)
+    root =next(n for n in case['draft']['graph']['nodes'] if n['node_id'] == case['draft']['graph']['root'])
     return dict(case_id=case['id'], status=case['status'], verified=case['status'] == 'VERIFIED',
                 title=case['draft']['title'], issue_type=case['draft']['issue_type'], solution=case['solution'],
                 signature=dict(issue_type=case['draft']['issue_type'], category=root['properties'].get('category'),
@@ -295,8 +475,12 @@ def fix_plan(case_id, request: FixPlanRequest):
         warnings.append('此案例沒有結構化動作；請以 casegraph_get_case 讀取完整解法與快照，再查詢現況建立建議。')
     if (plan['evidence'] or {}).get('source') == 'legacy_generated_record':
         warnings.append('步驟由舊版模型變更記錄還原；已保留原快照位置，套用前須以 Revit MCP 比對現況。')
+    def current_id(anchor):
+        """Target-model ID of a case-graph anchor: the root maps to the target, others through related."""
+        return target.element_id if anchor.get('root') else request.related.get('element:' + str(anchor.get('element_id')))
+
     for index, step in enumerate(plan['steps'], 1):
-        action, unresolved, notes = step['action'], [], []
+        action, unresolved, notes, already, after = step['action'], [], [], False, None
         if step['role'] == 'target':
             element_id = target.element_id
         else:
@@ -336,26 +520,94 @@ def fix_plan(case_id, request: FixPlanRequest):
             call = dict(tool='change_element_type', arguments=dict(elementId=element_id, typeId=type_id))
             expect = dict(type=step.get('type_name'))
         elif op == 'move':
-            call = dict(tool='move_element', arguments=dict(elementId=element_id, dx=action['dx'], dy=action['dy'], dz=action['dz']))
-            notes.append('位移是案例中的向量，新模型的正確位移可能不同；請按現場條件確認。')
+            delta, relation, after = dict(x=action['dx'], y=action['dy'], z=action['dz']), step.get('relation'), None
             expect = dict(position_mm=step.get('before_position_mm'), basis=step.get('position_basis'),
                           document=(plan['evidence'] or {}).get('document'), element_id=step['element_id'])
-            notes.append('按 basis 比對同一種位置；bounding_box_center 使用 get_element_geometry 的 boundingbox（mm）中心，location 不可當作外框中心。現況已等於修正後位置時不可再次位移。不同元件需依相對位置與問題條件調整，不可照抄絕對座標。')
+            if relation:
+                anchor = relation['anchor']
+                anchor_id = current_id(anchor)
+                box = request.geometry.get(str(element_id)) if element_id else None
+                other = request.geometry.get(str(anchor_id)) if anchor_id else None
+                gaps = '、'.join('{} {:g} mm'.format(k.upper(), a['gap_mm']) for k, a in relation['axes'].items())
+                if box and other:
+                    box = live_box(box)
+                    delta = adaptive_move(relation, box, live_box(other))
+                    centre = {k: (box['min'][k] + box['max'][k]) / 2 for k in AXES}
+                    expect = dict(expect, position_mm=centre, basis='bounding_box_center', element_id=element_id, document=target.document)
+                    after = {k: round(centre[k] + delta[k], 1) for k in AXES}
+                    notes.append('自適應位移：維持案例修正後與 {}（{}）的面距 {}；由目前外框算出，不照抄案例向量 dx {:g} / dy {:g} / dz {:g}。'.format(
+                        anchor.get('name'), '、'.join(anchor.get('relations') or []), gaps, action['dx'], action['dy'], action['dz']))
+                    if all(abs(v) < 1 for v in delta.values()):
+                        already = True
+                        notes.append('現況已符合案例修正後的關係，不需移動；此步應略過。')
+                else:
+                    unresolved.append('以 get_element_geometry(geometryType="boundingbox") 讀取目前元素 {} 及關係元件 {}（案例中為 {} · {}）的外框，'
+                                      '以 geometry["元素ID"] 傳入，按案例關係（{}）自適應位移。'.format(
+                                          element_id or '（未對應）', anchor_id or '（未對應）', anchor.get('name'), anchor.get('category'), gaps))
+            else:
+                notes.append('案例圖沒有可用的關係元件外框，暫用案例位移向量；不同模型需按現場條件確認。')
+                notes.append('按 basis 比對同一種位置；bounding_box_center 使用 get_element_geometry 的 boundingbox（mm）中心，location 不可當作外框中心。現況已等於修正後位置時不可再次位移。')
+            call = dict(tool='move_element', arguments=dict(elementId=element_id, dx=delta['x'], dy=delta['y'], dz=delta['z']))
         elif op == 'flip':
             call = dict(tool='flip_element', arguments=dict(elementId=element_id, flipType=action['flip']))
             expect = None
+        elif op == 'floor_opening':
+            candidates = step.get('mep') or []
+            mep_id = next((request.related['element:' + str(m['element_id'])] for m in candidates
+                           if 'element:' + str(m['element_id']) in request.related), None)
+            if mep_id is None and 'INTERSECTS' in request.related:
+                mep_id = request.related['INTERSECTS']
+            if mep_id is None:
+                unresolved.append('找出本次穿越樓板的管線（案例中為 {}），以 related["element:{}"] 提供其 ID。'.format(
+                    '、'.join('{} · {}'.format(m.get('name'), m.get('category')) for m in candidates) or '管線',
+                    candidates[0]['element_id'] if candidates else '案例管線ID'))
+            offset = step.get('offset_mm') or dict(x=0, y=0)
+            length, width = action['length_mm'], action['width_mm']
+            clearance = step.get('clearance_mm')
+            adaptive = None
+            if clearance:
+                adaptive = dict(clearance_mm={k: v for k, v in clearance.items() if k != 'case_mep_mm'},
+                                case_mep_mm=clearance['case_mep_mm'], case_opening_mm=dict(length=length, width=width))
+                if request.mep_outer_mm:
+                    sized = adaptive_opening(action, clearance, request.mep_outer_mm)
+                    length, width, offset = sized['length_mm'], sized['width_mm'], sized['offset_mm']
+                    adaptive['mep_outer_mm'] = request.mep_outer_mm
+                    notes.append('自適應尺寸：本次管線外徑 {:g} mm 加案例每邊餘量 → {} × {} mm（案例 {} × {} mm）。'.format(
+                        request.mep_outer_mm, length, width, action['length_mm'], action['width_mm']))
+                else:
+                    unresolved.append('先以下列參數（不含 expectedGeometry）呼叫 preview_floor_opening 讀取 mepOuterDiameterMm'
+                                      '（too_small 也會回傳），再以 mep_outer_mm 重新呼叫 casegraph_fix_plan 取得自適應尺寸。')
+            else:
+                notes.append('案例快照沒有可用的管線外框，無法推算餘量；暫用案例尺寸 {} × {} mm。'.format(length, width))
+            call = dict(tool='create_floor_opening', arguments=dict(
+                elementId=element_id, mepId=mep_id, widthMm=width, lengthMm=length,
+                rotationDeg=action.get('rotation_deg') or 0, offsetXMm=offset['x'], offsetYMm=offset['y'], expectedGeometry=None))
+            notes.append('沿用案例做法（樓板開孔包覆管線），尺寸按本次管線自適應，不改用其他方法。以相同參數（不含 expectedGeometry）'
+                         '呼叫 preview_floor_opening：ready 才帶入 expectedGeometry；blocked 表示開孔壓到上下層的牆／柱／梁，'
+                         '改用回傳 fit 的全部參數再預覽，fit 為 null 則停止並說明；too_small 依 mepOuterDiameterMm 重新定尺寸。')
+            if action.get('derived'):
+                notes.append('舊案例只記錄面積／周長，尺寸由此推算為矩形；長邊方向未記錄，預設沿 X 軸，開孔中心對準本次管線。')
+            expect = dict(opening_mm=dict(length=length, width=width), adaptive=adaptive)
         else:  # delete
             call = dict(tool='delete_element', arguments=dict(elementId=element_id))
             notes.append('刪除無法由此計畫復原，只能用 Revit 復原。')
             expect = None
+        anchors = [a for a in step.get('anchors') or [] if a.get('case_box_mm')]
+        if op in ('set_parameter', 'change_type') and anchors:
+            a = anchors[0]
+            notes.append('數值依案例圖關係自適應：比對案例值與 {}（{}，ID {}）的尺寸／位置，在目前對應元件 {} 上維持相同關係'
+                         '（例如同等餘量、對齊或尺寸配合）；看不出關係時才沿用案例值，並在 warnings 說明。'.format(
+                             a.get('name'), '、'.join(a.get('relations') or []), a.get('element_id'), current_id(a) or '（未對應）'))
         if any(v is None for v in call['arguments'].values()):
             call['ready'] = False
         steps.append(dict(step=index, role=step['role'], relations=step['relations'], label=step['label'],
                           call=call, expect_before=expect, unresolved=unresolved, notes=notes,
                           source_element=dict(element_id=step['element_id'], unique_id=step.get('unique_id'),
                                               name=step.get('name'), category=step.get('category')),
-                          expect_after=dict(position_mm=step.get('after_position_mm'), basis=step.get('position_basis')) if op == 'move' else None,
-                          requires_confirmation=True, ready=not unresolved and call.get('ready', True)))
+                          expect_after=(dict(position_mm=after, basis='bounding_box_center') if after else
+                                        dict(position_mm=step.get('after_position_mm'), basis=step.get('position_basis'))) if op == 'move' else None,
+                          anchors=[dict(a, current_id=current_id(a)) for a in step.get('anchors') or []],
+                          already_satisfied=already, requires_confirmation=True, ready=not unresolved and call.get('ready', True)))
     return dict(case_id=case_id, title=plan['title'], verified=plan['verified'], solution=plan['solution'],
                 signature=sig, steps=steps, manual=plan['manual'], observations=plan['observations'], warnings=warnings,
                 ready=bool(steps) and all(s['ready'] for s in steps),

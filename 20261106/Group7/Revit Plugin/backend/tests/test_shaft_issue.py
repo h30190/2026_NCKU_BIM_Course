@@ -11,14 +11,15 @@ from test_element_search import client, element
 
 
 def sample(rule='A1', group='fire', status='Violation'):
-    room, wall = element('room'), element('wall')
+    wall = element('wall')
     report = dict(document='model-a', checked_at='2026-11-03 14:00:00', view_name='1F',
                   rules_run=list(RULES), thresholds={'minFireRatingHours': 1}, warnings=[])
     row = dict(id='1', rule_id=rule, rule_name='檢查規則', group=group, status=status,
                shaft_label='1F PS-1', shaft_key='room', room_unique_id='room', source=None,
                nature='法規', reference='原規則依據', message='牆防火時效不足', advice='調整牆型',
-               actual=0.5, required=1, unit='h', records=[room, wall],
-               source_refs=[dict(source=None, document='model-a', unique_id='wall', element_id='wall', name='Wall')])
+               actual=0.5, required=1, unit='h', records=[wall],
+               source_refs=[dict(source=None, document='model-a', unique_id='room', element_id='room', name='Room'),
+                            dict(source=None, document='model-a', unique_id='wall', element_id='wall', name='Wall')])
     return report, row
 
 
@@ -29,8 +30,11 @@ def test_groups_keep_measurements_evidence_and_case_link(rule, group, issue_type
     original = copy.deepcopy((report, row))
     record = shaft_issue(report, row)
     assert (report, row) == original
-    assert record['root']['source_element_id'] == 'room'
-    assert record['related'][0]['source_element_id'] == 'wall'
+    assert record['root']['source_element_id'] == 'wall'
+    assert record['related'] == []
+    assert [e['unique_id'] for e in record['origin']['elements']] == ['wall']
+    assert record['origin']['source_refs'] == row['source_refs']
+    assert '房間 UniqueId：room' in record['description']
     assert record['issue_type'] == issue_type and record['priority'] == 'High'
     assert '實測：0.5；門檻：1 h' in record['description']
     assert '建議處理' not in record['description'] and row['advice'] not in record['description']

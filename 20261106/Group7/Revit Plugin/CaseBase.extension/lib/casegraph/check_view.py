@@ -11,7 +11,8 @@ from casegraph.check_issue import check_issue
 from casegraph.palette import CHECK_ACCENTS, brush
 from casegraph.extractor import document_id, id_value
 from casegraph.element_index import snapshot
-from casegraph.model_checks import CHECKS, LABELS, STATUSES, CLASH_TARGETS, RevitCheckAdapter, run_checks
+from casegraph.model_checks import (CHECKS, LABELS, STATUSES, CLASH_TARGETS, RevitCheckAdapter, run_checks,
+                                    category_caption, category_groups, category_lines, row_categories)
 from casegraph.plan_checks import PLAN_KINDS, PlanCheckJob, list_plan_views, view_caption
 
 
@@ -20,7 +21,8 @@ class CheckItem(object):
     def __init__(self, row):
         self.data = row
         records = row['records']
-        self.kind = LABELS[row['check']]
+        self.categories = row_categories(row)
+        self.kind = u'{} · {}'.format(u' ↔ '.join(category_caption(c) for c in self.categories), LABELS[row['check']])
         self.status_label = STATUSES[row['status']]
         self.accent = brush(CHECK_ACCENTS[row['status']])
         # Clashes span categories, so name the category of each side.
@@ -58,6 +60,23 @@ class CheckView(object):
         for code, label in CHECKS:
             self.CheckFilter.Items.Add(Item(label, code))
         self.CheckFilter.SelectedIndex = 0
+        self.check_category_loading = False
+        self.load_check_categories([])
+
+    def load_check_categories(self, results):
+        """種類 filter: every category in the report, with how many results involve it."""
+        current = self.CheckCategory.SelectedItem.data if self.CheckCategory.SelectedItem else 'all'
+        self.check_category_loading = True
+        try:
+            self.CheckCategory.Items.Clear()
+            self.CheckCategory.Items.Add(Item(u'全部種類', 'all'))
+            groups = category_groups(results)
+            for category, _, total in groups:
+                self.CheckCategory.Items.Add(Item(u'{}（{}）'.format(category_caption(category), total), category))
+            keep = [i for i, (category, _, _) in enumerate(groups, 1) if category == current]
+            self.CheckCategory.SelectedIndex = keep[0] if keep else 0
+        finally:
+            self.check_category_loading = False
 
     def check_options_changed(self, sender, args):
         if self.ready:
@@ -267,6 +286,7 @@ class CheckView(object):
 
     def show_check_report(self):
         report = self.check_report
+        self.load_check_categories(report['results'] if report else [])
         self.filter_checks(None, None)
         if not report:
             return
@@ -311,11 +331,13 @@ class CheckView(object):
         if report['status'] in ('CLEAR', 'NOT_APPLICABLE') and omitted:
             notes.append(u'略過或排除的元件未作碰撞判定。')
         notes.extend(report['warnings'])
+        if report['results']:
+            notes += [u'', u'依種類（碰撞計入兩邊類別）'] + category_lines(report['results'])
         self.CheckNotes.Text = u'\n'.join(notes)
         self.CheckNotesPanel.Visibility = Visibility.Visible
 
     def filter_checks(self, sender, args):
-        if not self.ready:
+        if not self.ready or getattr(self, 'check_category_loading', False):
             return
         self.pending_check_result = None
         self.CheckResults.Items.Clear()
@@ -323,8 +345,9 @@ class CheckView(object):
         self.LocateCheck.IsEnabled = self.ShowCheckGraph.IsEnabled = self.RecordCheckIssue.IsEnabled = False
         if self.check_report:
             code = self.CheckFilter.SelectedItem.data if self.CheckFilter.SelectedItem else 'all'
+            category = self.CheckCategory.SelectedItem.data if self.CheckCategory.SelectedItem else 'all'
             for row in self.check_report['results']:
-                if code == 'all' or row['check'] == code:
+                if (code == 'all' or row['check'] == code) and (category == 'all' or category in row_categories(row)):
                     self.CheckResults.Items.Add(CheckItem(row))
 
     def check_result_changed(self, sender, args):

@@ -40,6 +40,30 @@ def mm(value):
     return u'{:g} mm'.format(round(value, 1))
 
 
+def opening_shape(vertices):
+    """Describe one hole loop from its vertices (mm dicts x/y/z): a rectangle gets length/width/rotation."""
+    pts = [(float(v['x']), float(v['y']), float(v['z'])) for v in vertices]
+    if len(pts) < 3:
+        return None
+    centre = dict(x=round(sum(p[0] for p in pts)/len(pts), 1), y=round(sum(p[1] for p in pts)/len(pts), 1),
+                  z=round(sum(p[2] for p in pts)/len(pts), 1))
+    edges = [(pts[(i+1) % len(pts)][0]-pts[i][0], pts[(i+1) % len(pts)][1]-pts[i][1]) for i in range(len(pts))]
+    sizes = [math.hypot(*e) for e in edges]
+    if len(pts) == 4 and min(sizes) > 0 and all(abs(edges[i][0]*edges[(i+1) % 4][0] + edges[i][1]*edges[(i+1) % 4][1])
+                                                < 1e-3*sizes[i]*sizes[(i+1) % 4] for i in range(4)):
+        long_edge = edges[0] if sizes[0] >= sizes[1] else edges[1]
+        angle = math.degrees(math.atan2(long_edge[1], long_edge[0])) % 180
+        return dict(shape='rectangle', length_mm=round(max(sizes), 1), width_mm=round(min(sizes), 1),
+                    rotation_deg=round(0. if abs(angle-180) < 1e-6 else angle, 3), center_mm=centre)
+    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+    return dict(shape='polygon', length_mm=round(max(xs)-min(xs), 1), width_mm=round(max(ys)-min(ys), 1),
+                rotation_deg=0., center_mm=centre)
+
+
+def same_opening(a, b):
+    return all(abs(float(a['center_mm'][k]) - float(b['center_mm'][k])) <= MOVE_MM for k in ('x', 'y')) and         all(abs(float(a[k]) - float(b[k])) <= MOVE_MM for k in ('length_mm', 'width_mm'))
+
+
 def caption(p):
     return u'／'.join(text_type(p[k]) for k in ('family', 'type_name') if p.get(k)) or text_type(p.get('type_id') or u'')
 
@@ -112,6 +136,19 @@ def element_changes(before, after):
                 # A reversed vector is a flip; any other turn is a rotation without a replay tool.
                 add(name, u'({:.2f}, {:.2f}, {:.2f})'.format(*old), u'({:.2f}, {:.2f}, {:.2f})'.format(*new),
                     dict(op='flip', flip=flip) if dot < -.9999 else dict(op='rotate', axis=flip, before=list(old), after=list(new)))
+    before_holes, after_holes = b.get('openings'), a.get('openings')
+    if isinstance(before_holes, list) and isinstance(after_holes, list):
+        for hole in after_holes:
+            if not any(same_opening(hole, old) for old in before_holes):
+                # Only rectangles have a replay tool; other shapes stay a manual record.
+                action = dict(op='floor_opening', length_mm=hole['length_mm'], width_mm=hole['width_mm'],
+                              rotation_deg=hole.get('rotation_deg') or 0, center_mm=hole['center_mm'],
+                              source=hole.get('source')) if hole.get('shape') == 'rectangle' else None
+                add(u'樓板開孔', u'（無）', u'{:g} × {:g} mm{}'.format(hole['length_mm'], hole['width_mm'],
+                    u'' if action else u'（非矩形）'), action)
+        for hole in before_holes:
+            if not any(same_opening(hole, new) for new in after_holes):
+                add(u'樓板開孔', u'{:g} × {:g} mm'.format(hole['length_mm'], hole['width_mm']), u'已移除')
     if b.get('ifc_class') and a.get('ifc_class') and b['ifc_class'] != a['ifc_class']:
         source = next((k for k in ('instance:IfcExportAs', 'type:IfcExportAs') if k in ap), 'instance:IfcExportAs')
         add(u'IFC 類別', b['ifc_class'], a['ifc_class'],

@@ -20,8 +20,9 @@ def clip(value, limit):
 def shaft_issue(report, row):
     """One non-pass result becomes an unsaved issue, anchored in the host model.
 
-    Linked rooms use their host link instance as the CaseBase root. Actual linked
+    Linked problem elements use their host link instance as the CaseBase root. Actual linked
     document/UniqueId references remain in source_refs, never as host element IDs.
+    Room context in source_refs is evidence; only records become selected targets.
     """
     if row['rule_id'] not in RULES or row['group'] not in GROUPS or row['status'] not in STATUSES:
         raise ValueError(u'此項目不是可記錄的管道間問題。')

@@ -7,7 +7,26 @@ import sys
 from revit_mcp_client import McpClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'CaseBase.extension/lib'))
-from casegraph.suggestion import CHECK_TOOL, read_tools, check_steps
+from casegraph.suggestion import CHECK_TOOL, read_tools, check_steps, compact_element, compact_case_result
+
+# Read results are reduced before they reach Claude; only text JSON payloads are rewritten.
+COMPACT = dict(get_element_info=compact_element, casegraph_get_case=compact_case_result)
+
+
+def compact_result(name, result):
+    if name not in COMPACT or not isinstance(result, dict) or result.get('isError'):
+        return result
+    content = []
+    for item in result.get('content') or []:
+        if isinstance(item, dict) and item.get('type') == 'text':
+            try:
+                value = json.loads(item.get('text') or '')
+            except ValueError:
+                content.append(item)
+                continue
+            item = dict(item, text=json.dumps(COMPACT[name](value), ensure_ascii=False))
+        content.append(item)
+    return dict(result, content=content)
 
 # Answered here, never forwarded: validates proposed steps without touching a model.
 CHECK = dict(name=CHECK_TOOL, annotations=dict(readOnlyHint=True, destructiveHint=False, idempotentHint=True),
@@ -39,7 +58,7 @@ def handle(message, client, server, mode='cases'):
         elif params.get('name') not in allowed:
             response['error'] = dict(code=-32602, message='Only named read tools are available during planning.')
         else:
-            response['result'] = client.request('tools/call', params)
+            response['result'] = compact_result(params['name'], client.request('tools/call', params))
     elif method == 'ping':
         response['result'] = {}
     else:

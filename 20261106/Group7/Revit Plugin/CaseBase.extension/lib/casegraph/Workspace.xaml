@@ -198,6 +198,7 @@
        <Border BorderBrush="#E3EAF0" BorderThickness="0,1,0,0" Margin="0,0,0,6"/>
        <DockPanel>
         <ComboBox x:Name="CheckFilter" DockPanel.Dock="Right" DisplayMemberPath="label" SelectionChanged="filter_checks" MinWidth="110" Margin="6,0,0,0" ToolTip="篩選結果"/>
+        <ComboBox x:Name="CheckCategory" DockPanel.Dock="Right" DisplayMemberPath="label" SelectionChanged="filter_checks" MinWidth="110" Margin="6,0,0,0" ToolTip="按元件種類篩選（牆、管等）"/>
         <TextBlock x:Name="CheckSummary" Text="選取基準元素後按「檢查」。" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center"/>
        </DockPanel>
        <Expander x:Name="CheckNotesPanel" Header="檢查說明" Foreground="#37546B" Visibility="Collapsed" Margin="0,4,0,0">
@@ -501,7 +502,7 @@
      <TextBlock x:Name="SuggestProvider" Text="Claude" FontWeight="SemiBold" Margin="0,2,0,6"/>
      <TextBlock Text="兩種方式均透過 MCP 讀取元素及套用修改。可先產生建議並檢視步驟，或按「自動修正」直接規劃及套用。" Style="{StaticResource Hint}" Margin="0,0,0,8"/>
      <TextBox x:Name="SuggestContext" Style="{StaticResource HideWhenEmpty}" MaxHeight="160" Margin="0,0,0,8"/>
-     <TextBlock Text="修正只限基準元素及產生建議時的選取物；同一元素的其他問題須另外選取。" Style="{StaticResource Hint}"/>
+     <TextBlock Text="優先修正目前選取的元件；未選取時使用面板基準。其他同類元件在下方另列建議。" Style="{StaticResource Hint}"/>
      <TextBlock x:Name="SuggestScope" TextWrapping="Wrap" Foreground="#37546B" Margin="0,2,0,8"/>
      <StackPanel x:Name="SuggestCasesPanel">
      <DockPanel>
@@ -530,6 +531,21 @@
      </WrapPanel>
      <TextBlock x:Name="SuggestStatus" Style="{StaticResource Hint}" Foreground="#37546B" Margin="0,2,0,4"/>
      <TextBox x:Name="SuggestSummary" Style="{StaticResource HideWhenEmpty}" MaxHeight="140"/>
+     <ItemsControl x:Name="SuggestChoices" Margin="0,6,0,0">
+      <ItemsControl.Style><Style TargetType="ItemsControl"><Style.Triggers><Trigger Property="HasItems" Value="False"><Setter Property="Visibility" Value="Collapsed"/></Trigger></Style.Triggers></Style></ItemsControl.Style>
+      <ItemsControl.ItemTemplate><DataTemplate><Border BorderBrush="#C9D8E4" BorderThickness="1" Background="#F5F9FC" Padding="8,6" Margin="0,0,0,6"><StackPanel>
+       <TextBlock Text="{Binding question}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,4"/>
+       <ItemsControl ItemsSource="{Binding options}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate><DataTemplate>
+         <Button Content="{Binding button}" Tag="{Binding}" Click="suggest_choice_click" ToolTip="{Binding tooltip}"
+                 Style="{StaticResource ActionButton}" Margin="0,0,6,4"/>
+        </DataTemplate></ItemsControl.ItemTemplate>
+       </ItemsControl>
+       <TextBlock Text="{Binding hint}" FontSize="11" Foreground="#52677A" TextWrapping="Wrap"/>
+      </StackPanel></Border></DataTemplate></ItemsControl.ItemTemplate>
+     </ItemsControl>
+     <TextBlock Text="目前選取元件的修改" FontWeight="SemiBold" Margin="0,6,0,4"/>
      <ListBox x:Name="SuggestSteps" BorderBrush="#DFE7ED" MaxHeight="260" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False">
       <ListBox.Style><Style TargetType="ListBox"><Style.Triggers><Trigger Property="HasItems" Value="False"><Setter Property="Visibility" Value="Collapsed"/></Trigger></Style.Triggers></Style></ListBox.Style>
       <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style></ListBox.ItemContainerStyle>
@@ -543,9 +559,22 @@
        <TextBlock Text="{Binding reason}" FontSize="11" Foreground="#52677A" TextWrapping="Wrap"/>
       </StackPanel></Border></DataTemplate></ListBox.ItemTemplate>
      </ListBox>
-     <Button x:Name="SuggestApply" Content="套用全部" Click="suggest_apply" IsEnabled="False" Style="{StaticResource PrimaryActionButton}"
+     <Button x:Name="SuggestApply" Content="套用本次全部修改" Click="suggest_apply" IsEnabled="False" Style="{StaticResource PrimaryActionButton}"
              HorizontalAlignment="Left" Margin="0,6,0,0" ToolTip="確認後透過 Revit MCP 依序執行尚未完成的步驟；已套用的項目不會重複執行。"/>
      <TextBox x:Name="SuggestResults" Style="{StaticResource HideWhenEmpty}" MaxHeight="160" Margin="0,6,0,0"/>
+     <StackPanel x:Name="SuggestOtherPanel" Visibility="Collapsed" Margin="0,16,0,0">
+      <TextBlock Text="其他同類元件建議" FontSize="16" FontWeight="SemiBold"/>
+      <TextBlock Text="以下最多顯示 20 個原類型相同的元件，尚未修改。選取個別元件後，可重新產生適用於它的建議。" Style="{StaticResource Hint}" Margin="0,4,0,6"/>
+      <ListBox x:Name="SuggestOther" MaxHeight="260" BorderBrush="#DFE7ED" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="False">
+       <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style></ListBox.ItemContainerStyle>
+       <ListBox.ItemTemplate><DataTemplate><Border BorderBrush="#E8EEF3" BorderThickness="0,0,0,1" Padding="4,6"><StackPanel>
+        <TextBlock Text="{Binding title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+        <TextBlock Text="{Binding detail}" FontSize="11" Foreground="#52677A" TextWrapping="Wrap"/>
+        <TextBlock Text="{Binding reason}" FontSize="11" TextWrapping="Wrap"/>
+        <Button Content="選取此元件" Tag="{Binding}" Click="suggest_other_select" Style="{StaticResource ActionButton}" HorizontalAlignment="Left"/>
+       </StackPanel></Border></DataTemplate></ListBox.ItemTemplate>
+      </ListBox>
+     </StackPanel>
     </StackPanel></ScrollViewer></TabItem>
    </TabControl>
   </DockPanel>

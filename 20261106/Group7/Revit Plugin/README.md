@@ -39,7 +39,7 @@ Rooms and MEP spaces can be case targets. Saving retains their persistent Revit 
 
 ### Shaft checks and CSV
 
-Open **管道間檢查 → 檢查主模型及已載入連結**. Select a finding to locate elements, create an issue or open modification suggestions. **匯出問題 CSV** exports all violations, warnings and missing-data findings to your chosen location. Each problem gets its own row, including multiple problems in one shaft.
+Open **管道間檢查 → 檢查主模型及已載入連結**. Select a finding to locate elements, create an issue or open modification suggestions. After locating or switching views, return to the check window to transfer the same finding; view-only changes preserve the results. **匯出問題 CSV** exports all violations, warnings and missing-data findings to your chosen location. Each problem gets its own row, including multiple problems in one shaft.
 
 The CSV contains source/model, room/level, rule, measurements, advice and element IDs. UTF-8 BOM preserves Chinese text in Excel. Unresolved sources and coverage limitations are included; passes are excluded. Run checks again after model/document changes. Linked element IDs retain their source; navigation selects the host link instance.
 
@@ -49,9 +49,11 @@ Rules: `ShaftChecker-main/src/ShaftChecker.Revit/config/shaft-rules.json`. Evalu
 
 ### Repairs
 
-Pin the target and select related Revit elements. In **修改建議**, choose **透過過去案例** or **透過 AI 建議** and generate a plan. Each suggestion has its own **套用** button; **套用全部** skips completed items. **自動修正** generates and applies a plan.
+Select the elements to repair in Revit. In **修改建議**, choose **透過過去案例** or **透過 AI 建議** and generate a plan. The current selection takes priority; the pinned target and members are used only when nothing is selected. Each suggestion has its own **套用** button; **套用本次全部修改** skips completed items. **自動修正** generates and applies the current plan.
 
-Changes are restricted to the target/current selection. A repaired pair does not mark another pair sharing its element as repaired. Failed/uncertain operations stop subsequent changes; inspect the model before planning again.
+The lower **其他同類元件建議** section lists up to 20 other instances of the original type. They remain outside the current repair scope. **選取此元件** selects one for a separate plan. Select both elements first when repairing a wall/pipe or other paired issue.
+
+Type changes are read back and checked against Revit's actual type ID before the panel and case record are updated. Zero changes, errors and mismatched types are not reported as successful; an existing assignment is labelled unchanged. A repaired pair does not mark another pair sharing its element as repaired. Inspect the model before planning again after a failed or uncertain operation.
 
 ## Optional Claude / Revit MCP
 
@@ -62,7 +64,7 @@ Model checks, issue records and CSV work without AI. Planning/MCP repairs requir
 3. Copy `.mcp.example.json` to `.mcp.json` in the app folder; replace its example server path. Alternatively set `CASEGRAPH_MCP_CONFIG` to your own JSON file before starting Revit.
 4. Release any other client's MCP connection before generating/applying suggestions.
 
-Optional variables: `CASEGRAPH_CLAUDE` (CLI path), `CASEGRAPH_CLAUDE_MODEL` (model), `CASEGRAPH_MCP_CONFIG`. Separate optional analysis can use `CASEGRAPH_LLM_URL`, `CASEGRAPH_LLM_MODEL`, `CASEGRAPH_LLM_KEY`. No API keys are supplied. Never distribute configured MCP/environment files or credentials. AI features send relevant model evidence to the provider you configure.
+Optional variables: `CASEGRAPH_CLAUDE` (CLI path), `CASEGRAPH_CLAUDE_MODEL` (planning model, default `sonnet`), `CASEGRAPH_MCP_CONFIG`. Separate optional analysis can use `CASEGRAPH_LLM_URL`, `CASEGRAPH_LLM_MODEL`, `CASEGRAPH_LLM_KEY`. No API keys are supplied. Never distribute configured MCP/environment files or credentials. AI features send relevant model evidence to the provider you configure.
 
 ## Data, updates and uninstall
 

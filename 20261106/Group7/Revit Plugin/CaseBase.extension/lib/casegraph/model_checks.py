@@ -25,6 +25,56 @@ ADVICE = dict(duplicate=u'比較尺寸、方向、階段及設計選項；確認
               warning=u'依 Revit 警告內容檢視相關元件；可在「管理 → 檢閱警告」核對完整警告。')
 
 
+# Revit category names (English UI) with the short Chinese name used to group check results.
+CATEGORY_NAMES = {u'Walls': u'牆', u'Floors': u'樓板', u'Ceilings': u'天花板', u'Roofs': u'屋頂', u'Doors': u'門',
+                  u'Windows': u'窗', u'Columns': u'柱', u'Structural Columns': u'結構柱', u'Structural Framing': u'梁',
+                  u'Structural Foundations': u'基礎', u'Stairs': u'樓梯', u'Railings': u'欄杆', u'Curtain Panels': u'帷幕嵌板',
+                  u'Curtain Wall Mullions': u'帷幕豎框', u'Pipes': u'管', u'Pipe Fittings': u'管配件', u'Pipe Accessories': u'管附件',
+                  u'Flex Pipes': u'軟管', u'Ducts': u'風管', u'Duct Fittings': u'風管配件', u'Duct Accessories': u'風管附件',
+                  u'Flex Ducts': u'軟風管', u'Air Terminals': u'出風口', u'Cable Trays': u'電纜架', u'Cable Tray Fittings': u'電纜架配件',
+                  u'Conduits': u'電線管', u'Conduit Fittings': u'電線管配件', u'Mechanical Equipment': u'機械設備',
+                  u'Plumbing Fixtures': u'衛浴設備', u'Electrical Equipment': u'電氣設備', u'Electrical Fixtures': u'電氣裝置',
+                  u'Lighting Fixtures': u'燈具', u'Sprinklers': u'灑水頭', u'Furniture': u'家具', u'Generic Models': u'一般模型',
+                  u'Specialty Equipment': u'特殊設備', u'Rooms': u'房間'}
+NO_CATEGORY = u'（類別未提供）'
+
+
+def row_categories(row):
+    """Distinct categories of a result's elements, in record order; a clash belongs to both sides."""
+    found = []
+    for record in row.get('records') or []:
+        category = (record.get('properties') or {}).get('category') or NO_CATEGORY
+        if category not in found:
+            found.append(category)
+    return found or [NO_CATEGORY]
+
+
+def category_caption(category):
+    name = CATEGORY_NAMES.get(category)
+    return u'{} {}'.format(name, category) if name else category
+
+
+def category_groups(results):
+    """[(category, [(check code, count)], total)] most findings first; a row counts once under each of its categories.
+    Lists, not dicts, keep the order under IronPython 2."""
+    groups = {}
+    for row in results:
+        for category in row_categories(row):
+            counts = groups.setdefault(category, {})
+            counts[row['check']] = counts.get(row['check'], 0) + 1
+    order = [code for code, _ in CHECKS]
+    rank = lambda code: order.index(code) if code in order else len(order)
+    return sorted([(c, sorted(counts.items(), key=lambda kv: rank(kv[0])), sum(counts.values())) for c, counts in groups.items()],
+                  key=lambda g: (-g[2], g[0] == NO_CATEGORY, g[0]))
+
+
+def category_lines(results):
+    """「依種類」 lines for 檢查說明: one line per category with its counts per check kind."""
+    return [u'・{}：{}'.format(category_caption(category), u'、'.join(
+        u'{} {}'.format(LABELS.get(code, code), n) for code, n in counts))
+        for category, counts, _ in category_groups(results)]
+
+
 def close_values(left, right, tolerance):
     return (left is not None and right is not None and len(left) == len(right)
             and all(abs(a-b) <= tolerance for a, b in zip(left, right)))

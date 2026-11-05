@@ -14,7 +14,7 @@ from System.Windows.Data import ListCollectionView, PropertyGroupDescription
 from Autodesk.Revit import DB
 from pyrevit.coreutils import envvars
 from casegraph.navigation import PANEL_INSTANCE_KEY
-from casegraph.shaft_check import run_check, validate_report, validate_result
+from casegraph.shaft_check import run_check, validate_report, validate_result, model_data_changed
 from casegraph.shaft_csv import problem_rows, write_problem_csv
 from casegraph.shaft_issue import GROUPS, STATUSES, shaft_issue, fill_issue
 from casegraph.shaft_results import group_label, grouped_rows
@@ -62,8 +62,9 @@ class ShaftWindow(Window):
                 panel.log_error(error)
 
     def model_changed(self, sender, args):
-        # A linked model change can affect any shaft, so invalidate conservatively.
-        if not self._closed and self.report:
+        # Navigation may update a view without changing the checked model data.
+        # Actual model changes (including links) still invalidate the findings.
+        if not self._closed and self.report and model_data_changed(args):
             self.report['stale'] = True
             self.Record.IsEnabled = self.Locate.IsEnabled = self.Suggest.IsEnabled = self.ExportCsv.IsEnabled = False
             self.Status.Text = u'模型已變更，請重新檢查後再記錄或匯出問題。'
@@ -201,7 +202,9 @@ class ShaftWindow(Window):
             ids = List[DB.ElementId]([uidoc.Document.GetElement(r['source_element_id']).Id for r in item.data['records']])
             uidoc.Selection.SetElementIds(ids)
             uidoc.ShowElements(ids)
-            self.Status.Text = u'已定位主模型元件；連結來源定位至其連結實例，詳細元件 ID 見檢查證據。'
+            if report['stale']:
+                return  # Do not overwrite a real model-change notice during navigation.
+            self.Status.Text = u'已定位；返回此視窗可繼續按「帶入問題紀錄」。連結來源定位至其連結實例，詳細元件 ID 見檢查證據。'
         self.execute(action, u'定位管道間檢查元件…')
 
     def suggest_click(self, sender, args):

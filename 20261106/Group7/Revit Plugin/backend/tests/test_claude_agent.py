@@ -59,6 +59,43 @@ def test_unavailable_tool_blocks_entire_plan_before_first_write():
     assert not client.calls
 
 
+@pytest.mark.parametrize('reply', [dict(Success=True, ChangedCount=0),
+    dict(Success=True, ChangedCount=1, Errors=['Element cannot change type']),
+    dict(Success=True), dict(Success=True, ChangedCount=True), dict(Success=True, ChangedCount=2)])
+def test_type_change_transport_success_is_not_edit_success(reply):
+    client = McpClient({})
+    client.request = lambda *args: dict(content=[dict(type='text', text=json.dumps(reply))])
+    with pytest.raises(ValueError, match='類型變更未完成'):
+        client.call('change_element_type', dict(elementId=101, typeId=200))
+
+
+@pytest.mark.parametrize('actual_type,actual_id,ok', [('FR2', 200, True), ('FR1', 100, False), ('FR2', 201, False)])
+def test_type_change_is_read_back_before_next_write(actual_type, actual_id, ok):
+    class TypeClient(FakeMcp):
+        def list_tools(self):
+            return super().list_tools()+[dict(name='get_element_info')]
+        def call(self, name, arguments):
+            self.calls.append((name, arguments))
+            if name == 'get_element_info':
+                data = (dict(ElementId=200, Name='FR2', Category='Walls') if arguments['elementId'] == 200 else
+                        dict(ElementId=101, Type=actual_type, TypeId=actual_id, Category='Walls'))
+                return json.dumps(data)
+            return 'MCP completed'
+    client = TypeClient()
+    report = claude_agent.apply_steps([step('change_element_type', typeId=200), step('move_element', dx=10)], client, SCOPE)
+    assert report['results'][0]['ok'] is ok
+    assert [name for name, _ in client.calls] == ['change_element_type', 'get_element_info', 'get_element_info']+(['move_element'] if ok else [])
+    if not ok:
+        assert not report['results'][1]['ok'] and '未執行' in report['results'][1]['message']
+
+
+def test_type_change_requires_readback_capability_before_writing():
+    client = FakeMcp()
+    with pytest.raises(ValueError, match='get_element_info'):
+        claude_agent.apply_steps([step('change_element_type', typeId=200)], client, SCOPE)
+    assert not client.calls
+
+
 def test_claude_configuration_uses_read_proxy_and_round_trips_windows_paths(tmp_path):
     command = claude_agent.claude_command('claude.exe', tmp_path,
         dict(type='stdio', command='C:\\Program Files\\node.exe', args=['C:\\中文\\index.js'], env=dict(REVIT_MCP_PORT='8964')),
@@ -240,6 +277,7 @@ def fake_claude(monkeypatch, answers):
     monkeypatch.setattr(claude_agent, 'revit_server', lambda: dict(command='node'))
     monkeypatch.setattr(claude_agent, 'run_claude', run)
     monkeypatch.setattr(claude_agent, 'read_plan_elements', lambda request, server: [dict(ElementId=101, Name='牆')])
+    monkeypatch.setattr(claude_agent, 'case_methods', lambda request: set())
     return prompts
 
 
@@ -265,6 +303,16 @@ def test_empty_plan_retries_with_feedback_and_returns_the_steps(monkeypatch):
 def test_invalid_step_problems_are_fed_back_to_the_retry(monkeypatch):
     prompts = fake_claude(monkeypatch, [answer([step('delete_element', extra=1)]), answer([step('delete_element')])])
     assert claude_agent.plan(plan_request())['steps'] and '不支援的工具參數' in prompts[1]
+
+
+def test_same_type_assignment_is_replanned_instead_of_claiming_a_change(monkeypatch):
+    request = plan_request()
+    request['target']['properties']['type_id'] = '200'
+    prompts = fake_claude(monkeypatch, [answer([step('change_element_type', typeId=200)]),
+                                      answer([step('change_element_type', typeId=201)])])
+    result = claude_agent.plan(request)
+    assert result['attempts'] == 2 and result['steps'][0]['arguments']['typeId'] == 201
+    assert '重複指定相同類型' in prompts[1]
 
 
 @pytest.mark.parametrize('first', [answer([step()]), answer(resolved=True)])
@@ -409,3 +457,137 @@ def test_mcp_reads_all_pinned_elements_before_planning_and_refuses_failed_reads(
     request['context'] = dict(source_refs=[dict(source='MEP link', element_id=101)])
     with pytest.raises(ValueError, match='連結模型'):
         claude_agent.read_plan_elements(request, {})
+
+
+def ai_request():
+    return dict(plan_request(), mode='ai', solutions=[], instruction='防火時效改為 4 小時')
+
+
+def option(label, steps=(), instruction=''):
+    return dict(label=label, detail=label + ' 的影響', instruction=instruction,
+                steps=[dict(tool=s['tool'], arguments_json=json.dumps(s['arguments']), reason='改類型', source_case=None)
+                       for s in steps])
+
+
+def test_question_options_carry_validated_steps_and_skip_the_retry(monkeypatch):
+    request = ai_request()
+    request['target']['properties']['type_id'] = '878490'
+    choice = dict(question='專案沒有 4 hr 牆類型，要怎樣處理？', options=[
+        option('4 小時', instruction='使用者已建立 WT-FR4，改用該類型'),
+        option('2 小時', [step('change_element_type', typeId=878484)]),
+        option('同類型', [step('change_element_type', typeId=878490)]),
+        option('範圍外', [dict(tool='move_element', arguments=dict(elementId=999, dx=1))])])
+    prompts = fake_claude(monkeypatch, [dict(answer(), questions=[choice])])
+    value = claude_agent.plan(request)
+    assert len(prompts) == 1 and value['attempts'] == 1 and not value['steps']
+    assert value['questions'] == ['專案沒有 4 hr 牆類型，要怎樣處理？']
+    four, two, same, outside = value['choices'][0]['options']
+    assert not four['steps'] and four['instruction'] and not four['problems']
+    assert two['steps'] == [dict(tool='change_element_type', arguments=dict(elementId=101, typeId=878484),
+                                 reason='改類型', source_case=None)]
+    assert not same['steps'] and '重複指定相同類型' in same['problems'][0]
+    assert not outside['steps'] and '999 不在本次' in outside['problems'][0]
+    assert '回答「' in prompts[0] and 'option.steps' in prompts[0]
+
+
+def test_ai_question_without_executable_options_is_not_replanned(monkeypatch):
+    prompts = fake_claude(monkeypatch, [answer(questions=['要用幾小時？'])])
+    value = claude_agent.plan(ai_request())
+    assert len(prompts) == 1 and value['choices'] == [dict(question='要用幾小時？', options=[])]
+
+
+def test_case_question_with_clickable_options_is_not_replanned(monkeypatch):
+    choice = dict(question='用哪個類型？', options=[option('1 小時', instruction='改用 WT-FR1'),
+                                                   option('2 小時', instruction='改用 WT-FR2')])
+    prompts = fake_claude(monkeypatch, [dict(answer(), questions=[choice])])
+    value = claude_agent.plan(plan_request())
+    assert len(prompts) == 1 and value['attempts'] == 1 and len(value['choices'][0]['options']) == 2
+
+
+def test_invalid_option_steps_are_fed_back_to_the_retry(monkeypatch):
+    bad = dict(question='選哪個？', options=[option('刪除', [step('delete_element', extra=1)])])
+    good = dict(question='選哪個？', options=[option('刪除', [step('delete_element')])])
+    prompts = fake_claude(monkeypatch, [dict(answer(), questions=[bad]), dict(answer(), questions=[good])])
+    value = claude_agent.plan(ai_request())
+    assert len(prompts) == 2 and value['choices'][0]['options'][0]['steps']
+
+
+def test_plan_schema_questions_offer_options_with_steps():
+    question = claude_agent.PLAN_SCHEMA['properties']['questions']['items']
+    assert question['properties']['options']['items']['properties']['steps']['items'] == claude_agent.STEP_SCHEMA
+
+
+def test_planning_proxy_compacts_element_reads():
+    class Upstream:
+        def list_tools(self): return []
+        def request(self, method, params):
+            return dict(content=[dict(type='text', text=json.dumps(dict(ElementId=1, Name='牆', Parameters=[
+                dict(Name='Width', Value='200', Type='Double'), dict(Name='IfcGUID', Value='x', Type='String')])))])
+    message = dict(id=1, method='tools/call', params=dict(name='get_element_info', arguments=dict(elementId=1)))
+    text = planning_mcp.handle(message, Upstream(), 'revit', 'ai')['result']['content'][0]['text']
+    assert json.loads(text) == dict(ElementId=1, Name='牆', Parameters={'Width': '200'})
+
+
+def test_plan_output_is_at_most_five_short_points():
+    long = '因為目前牆類型的防火時效只有零小時，所以必須改用防火時效一小時以上的牆類型才能符合法規'
+    value = dict(summary='1. 改用 WT-FR1\n' + long + '\n・第三點\n第四點；第五點；第六點', already_resolved=False,
+                 resolution=dict(element_ids=[], evidence=''),
+                 steps=[dict(tool='change_element_type', arguments_json=json.dumps(dict(elementId=101, typeId=2)),
+                             reason=long, source_case=None)],
+                 warnings=[long], questions=[])
+    plan = claude_agent.parse_plan(value)
+    lines = plan['summary'].split('\n')
+    assert len(lines) + len(plan['warnings']) <= 5 and lines[0] == '・改用 WT-FR1'
+    assert all(len(text) <= 30 for text in [l[1:] for l in lines] + plan['warnings'] + [plan['steps'][0]['reason']])
+
+
+def test_planning_defaults_to_sonnet_unless_overridden(monkeypatch):
+    monkeypatch.delenv('CASEGRAPH_CLAUDE_MODEL', raising=False)
+    assert claude_agent.planning_model() == 'sonnet'
+    monkeypatch.setenv('CASEGRAPH_CLAUDE_MODEL', 'opus')
+    assert claude_agent.planning_model() == 'opus'
+
+
+def test_case_plan_must_reuse_the_case_method(monkeypatch):
+    prompts = fake_claude(monkeypatch, [answer([step('move_element', dz=-200)]), answer([step('move_element', dz=-200)])])
+    monkeypatch.setattr(claude_agent, 'case_methods', lambda request: {'create_floor_opening'})
+    value = claude_agent.plan(plan_request())
+    assert len(prompts) == 2 and not value['steps']
+    assert '與參考案例做法（建立樓板開孔）不同' in value['problems'][0]
+    assert '與參考案例做法' in prompts[1]
+
+
+def test_blocked_opening_options_are_automatic():
+    scope = dict(document='doc', target_id=883400, element_ids=[883400, 883848])
+    move = dict(tool='move_element', arguments_json=json.dumps(dict(elementId=883848, dx=-300, dy=0, dz=0)),
+                reason='移動管線', source_case=None)
+    questions = [dict(question='開孔被梁阻擋，如何處理？', options=[
+        dict(label='移動管線', detail='管線離開梁', instruction='管線已移動，重新規劃開孔', steps=[move],
+             select_ids=[], then_replan=True),
+        dict(label='調整梁', detail='把梁加入範圍', instruction='調整梁讓出開孔', steps=[], select_ids=[900001, 883400],
+             then_replan=True),
+        dict(label='壞', detail='', instruction='', steps=[], select_ids=[0], then_replan=False)])]
+    _, choices = claude_agent.parse_choices(questions, scope)
+    moved, beam, bad = choices[0]['options']
+    assert moved['steps'][0]['tool'] == 'move_element' and moved['then_replan'] and not moved['problems']
+    # Already-scoped IDs are dropped; then_replan needs steps.
+    assert beam['select_ids'] == [900001] and not beam['then_replan'] and beam['steps'] == []
+    assert bad['problems'] and bad['select_ids'] == []
+    out_of_scope = dict(move, arguments_json=json.dumps(dict(elementId=900001, dx=0, dy=100, dz=0)))
+    _, choices = claude_agent.parse_choices([dict(question='q', options=[dict(
+        label='x', detail='', instruction='', steps=[out_of_scope], select_ids=[], then_replan=True)])], scope)
+    assert choices[0]['options'][0]['steps'] == [] and not choices[0]['options'][0]['then_replan']
+
+
+def test_selected_pipe_is_changed_before_floor_or_wall_and_blocked_case_is_reported():
+    from casegraph.suggestion import modify_order, plan_prompt
+    floor = dict(name='FL-200', source_document='doc', properties=dict(element_id='883400', category='Floors'))
+    pipe = dict(name='PT-OD100', source_document='doc', properties=dict(element_id='883848', category='Pipes'))
+    beam = dict(name='B1', source_document='doc', properties=dict(element_id='9', category='Structural Framing'))
+    order = modify_order([floor, beam, pipe])
+    assert [o['element_id'] for o in order] == ['883848', '883400', '9']
+    prompt = plan_prompt(floor, [], '開孔', members=[pipe])
+    assert '修改對象的決定次序' in prompt and prompt.index('883848', prompt.index('修改優先次序')) < prompt.index('883400', prompt.index('修改優先次序'))
+    value = dict(summary='移動管線', steps=[], warnings=['x'], questions=[], case_method_blocked='預覽 blocked，fit 為 null')
+    plan = claude_agent.parse_plan(value)
+    assert plan['case_method_blocked'] and plan['warnings'][0].startswith('案例方法不可行')

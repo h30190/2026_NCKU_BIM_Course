@@ -127,3 +127,52 @@ def test_structured_output_parsing_and_outcomes():
     assert outcome([dict(ok=True), dict(ok=True)], 2) == 'APPLIED'
     assert outcome([dict(ok=True), dict(ok=False)], 2) == 'PARTIAL'
     assert outcome([], 2) == 'FAILED'
+
+
+def test_planning_data_drops_empty_and_unrelated_values():
+    from casegraph.suggestion import compact_element, compact_context, compact_case_result
+    info = dict(ElementId=101, Name='WT-FR0', Category='Walls', Type='WT-FR0', Level=None, Parameters=[
+        dict(Name='防火時效', Value='0 hr', Type='String'), dict(Name='Width', Value='200', Type='Double'),
+        dict(Name='IfcGUID', Value='abc', Type='String'), dict(Name='Phase Created', Value='New', Type='ElementId'),
+        dict(Name='Comments', Value='', Type='String'), dict(Name='Mark', Value='W1', Type='String')])
+    assert compact_element(info) == dict(ElementId=101, Name='WT-FR0', Category='Walls', Type='WT-FR0',
+                                         Parameters={'防火時效': '0 hr', 'Width': '200', 'Mark': 'W1'})
+    origin = dict(kind='SHAFT_CHECK', message='未達 1 小時', rule_id='A1', actual=0.0, required=1.0, unit='hr',
+                  document='doc-hash', checked_at='now', shaft_key='|x',
+                  settings=dict(thresholds=dict(minClearWidthMm=600)),
+                  source_refs=[dict(name='PS-102', element_id='883698', unique_id='u', document='doc-hash', source=None)])
+    assert compact_context(origin) == dict(kind='SHAFT_CHECK', message='未達 1 小時', rule_id='A1', actual=0.0,
+                                           required=1.0, unit='hr',
+                                           source_refs=[dict(name='PS-102', element_id='883698')])
+    case = compact_case_result(dict(solution='改類型', origin=origin,
+        history=[dict(status='RESOLVED', solution='改類型'), dict(status='REPORTED', solution='')],
+        applications=[dict(outcome='APPLIED', element_ids=[1], created_at='t', notes='n', document='d',
+                           steps=[dict(tool='change_element_type', arguments=dict(elementId=1, typeId=2),
+                                       reason='r', repair_scope={}, result=dict(ok=True, message='m'))])] * 7))
+    assert case['history'] == [dict(status='RESOLVED'), dict(status='REPORTED')]
+    assert len(case['applications']) == 5 and case['applications'][0]['steps'] == [
+        dict(tool='change_element_type', arguments=dict(elementId=1, typeId=2), ok=True)]
+    assert 'document' not in case['origin']
+
+
+def test_floor_opening_steps_are_validated_and_scoped():
+    from casegraph.suggestion import validate_plan, scope_problems, step_caption
+    args = dict(elementId=883400, mepId=883848, widthMm=600, lengthMm=1800, rotationDeg=0, offsetXMm=0, offsetYMm=0,
+                expectedGeometry='a' * 64)
+    steps, problems = validate_plan(dict(steps=[dict(tool='create_floor_opening', arguments=args, reason='開孔')]))
+    assert not problems and steps[0]['arguments'] == args
+    assert '管線 883848 · 1800 × 600 mm' in step_caption(1, steps[0])
+    scope = dict(document='d', target_id=883400, element_ids=[883400])
+    assert '883848 不在本次' in scope_problems(steps, scope)[0]
+    _, problems = validate_plan(dict(steps=[dict(tool='create_floor_opening', arguments=dict(args, expectedGeometry=None))]))
+    assert problems
+
+
+def test_new_rectangular_floor_hole_becomes_a_replayable_action():
+    from casegraph.model_changes import element_changes, opening_shape
+    hole = opening_shape([dict(x=0, y=0, z=8000), dict(x=0, y=600, z=8000), dict(x=1800, y=600, z=8000), dict(x=1800, y=0, z=8000)])
+    assert (hole['shape'], hole['length_mm'], hole['width_mm'], hole['rotation_deg']) == ('rectangle', 1800, 600, 0)
+    rows = element_changes(dict(properties=dict(openings=[])), dict(properties=dict(openings=[dict(hole, source='sketch')])))
+    assert rows[0]['field'] == '樓板開孔' and rows[0]['action']['op'] == 'floor_opening'
+    assert rows[0]['action']['length_mm'] == 1800 and rows[0]['action']['center_mm'] == dict(x=900, y=300, z=8000)
+    assert element_changes(dict(properties=dict(openings=[hole])), dict(properties=dict(openings=[hole]))) == []

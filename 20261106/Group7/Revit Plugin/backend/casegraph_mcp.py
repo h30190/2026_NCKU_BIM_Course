@@ -28,6 +28,9 @@ Workflow for "fix this like before":
    Resolve every `unresolved` item (related element IDs, target type IDs) with Revit MCP tools.
 4. Read get_element_geometry with geometryType=boundingbox for positions (millimetres); get_element_info alone lacks geometry.
    Compare live geometry with expect_before and expect_after. Do not repeat an already completed move.
+   Adapt every step to the current model through the case graph: each step lists `anchors` (the elements it was relative
+   to in the case: INTERSECTS, HOSTED_BY, ADJACENT_TO...). Keep the case's relation (gap, clearance, alignment), not its
+   absolute numbers: pass geometry (bounding boxes of the target and mapped anchors) and mep_outer_mm to casegraph_fix_plan.
    Map related elements using related["element:<recorded ID>"]; never reuse old IDs across models without resolving them.
    Computed/read-only values such as Volume are observations, not commands. Exhaust read tools before asking for model data.
    Show all steps, notes and warnings
@@ -71,7 +74,15 @@ TOOLS = [
                           description='Target-model IDs keyed by "element:<recorded ID>", e.g. {"element:123": 456}. '
                                       'A relation key such as HOSTED_BY works only when it identifies one recorded element.'),
              type_ids=dict(type='object', additionalProperties=dict(type='integer'),
-                           description='Target-model type IDs keyed by "family／type_name" as named in unresolved items')))),
+                           description='Target-model type IDs keyed by "family／type_name" as named in unresolved items'),
+             mep_outer_mm=dict(type='number', exclusiveMinimum=0,
+                               description='Current MEP outer diameter (mepOuterDiameterMm from preview_floor_opening); '
+                                           'sizes a floor opening from the case clearance instead of copying the case size'),
+             geometry=dict(type='object', description='Current bounding boxes keyed by target-model element ID, exactly as '
+                           'get_element_geometry(geometryType="boundingbox") returns them: {"883400": {"MinX":…, "MinY":…, "MinZ":…, '
+                           '"MaxX":…, "MaxY":…, "MaxZ":…}} (mm). Moves are re-derived from the case-graph relation to each step\'s anchor.',
+                           additionalProperties=dict(type='object', required=['MinX', 'MinY', 'MinZ', 'MaxX', 'MaxY', 'MaxZ'],
+                                                     properties={k: dict(type='number') for k in ('MinX', 'MinY', 'MinZ', 'MaxX', 'MaxY', 'MaxZ')}))))),
     dict(name='casegraph_record_application',
          annotations=dict(readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False),
          description='Record the outcome of applying a solution, so future searches know whether it worked.',
@@ -159,7 +170,8 @@ def call_tool(name, args, api):
                       category=args.get('target_category'), family=args.get('target_family'),
                       type_name=args.get('target_type_name'), document=args.get('target_document'))
         return api('/cases/{}/fix-plan'.format(int(args['case_id'])),
-                   dict(target=target, related=args.get('related') or {}, type_ids=args.get('type_ids') or {}))
+                   dict(target=target, related=args.get('related') or {}, type_ids=args.get('type_ids') or {},
+                        mep_outer_mm=args.get('mep_outer_mm'), geometry=args.get('geometry') or {}))
     if name == 'casegraph_record_application':
         body = dict((k, args[k]) for k in ('outcome', 'element_ids', 'steps', 'resolved', 'document', 'notes') if args.get(k) is not None)
         return api('/cases/{}/applications'.format(int(args['case_id'])), body)

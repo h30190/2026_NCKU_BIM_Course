@@ -125,6 +125,13 @@ class McpClient:
             value = None
         if isinstance(value, dict) and (value.get('success') is False or value.get('Success') is False):
             raise ValueError(str(value.get('error') or value.get('Error') or text))
+        if name == 'change_element_type':
+            # This MCP command can return Success=true with ChangedCount=0 and
+            # per-element Errors. Transport success is not a successful edit.
+            if (not isinstance(value, dict) or value.get('Errors') or
+                    type(value.get('ChangedCount')) is not int or value['ChangedCount'] != 1):
+                detail = (value.get('Errors') or value.get('Message')) if isinstance(value, dict) else text
+                raise ValueError('類型變更未完成：' + str(detail or 'MCP 未確認變更任何元件。'))
         return text or 'MCP tool completed.'
 
     def __exit__(self, *args):

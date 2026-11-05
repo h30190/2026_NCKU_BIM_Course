@@ -36,7 +36,7 @@ from casegraph.check_issue import origin_caption
 from System.IO import File, Directory
 from System.Text import Encoding
 
-BUILD = '2026.11.04.4'
+BUILD = '2026.11.05.3'
 PANEL_ID = 'db4a9c6a-d351-4621-8159-4ac39189e424'
 INSTANCE = None
 MAX_MEMBERS = 20  # Additional selected elements kept with the pinned target.
@@ -321,12 +321,12 @@ class WorkspacePanel(CheckView, ReviewView, SuggestView, GeometryView, GraphView
             self.Status.Text = u'已更新選取結果資訊。'
             return
         if not current_doc or element is None:
-            uidoc.Selection.SetElementIds(List[DB.ElementId]())
-            self.Status.Text = u'此結果來自其他文件，請開啟來源文件後再選取；已清除先前高亮。' if not current_doc else u'此元素已刪除，請重新搜尋；已清除先前高亮。'
+            # Never wipe the user's Revit selection because a list row points elsewhere.
+            self.Status.Text = u'此結果來自其他文件，請開啟來源文件後再選取；Revit 選取保持不變。' if not current_doc else u'此元素已刪除，請重新搜尋；Revit 選取保持不變。'
             return
         self.show_node(uidoc, navigation)
 
-    def set_target(self, target, refresh=True, keep_checks=False, members=None):
+    def set_target(self, target, refresh=True, keep_checks=False, members=None, refresh_suggestions=True):
         """members: other selected elements; omitted, they are kept only for the same target."""
         changed = self.target is None or self.target['node_id'] != target['node_id']
         members_changed = members is not None and set(r['node_id'] for r in members if r['node_id'] != target['node_id']) != set(
@@ -368,7 +368,7 @@ class WorkspacePanel(CheckView, ReviewView, SuggestView, GeometryView, GraphView
             self.CaseDetails.Text = ''
             self.clear_graph(u'基準元素已變更，正在更新關係圖…')
             self.invalidate_suggestion(u'基準元素已變更，請重新產生建議。')
-            if self.active_feature == 'suggest' and self.suggestion_mode() == 'cases':
+            if refresh_suggestions and self.active_feature == 'suggest' and self.suggestion_mode() == 'cases':
                 self.schedule_refresh('suggest')
             self.SnapshotOnly.IsChecked = False
             self.MatchSummary.Text = u'基準元素已更新，按「搜尋」開始比對。'
