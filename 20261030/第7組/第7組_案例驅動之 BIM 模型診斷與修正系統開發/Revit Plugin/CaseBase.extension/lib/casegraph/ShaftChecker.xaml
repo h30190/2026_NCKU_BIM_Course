@@ -1,0 +1,73 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="案例驅動 BIM 診斷與修正 · 管道間檢查" Width="1020" Height="720" MinWidth="740" MinHeight="480"
+        Background="#F5F7FA" FontFamily="Microsoft JhengHei UI" FontSize="14" Closed="closed">
+  <Window.Resources>
+    <Style TargetType="Button"><Setter Property="Padding" Value="14,8"/><Setter Property="Margin" Value="0,0,8,0"/></Style>
+    <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+  </Window.Resources>
+  <Grid Margin="20">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <StackPanel>
+      <TextBlock Text="管道間檢查" FontSize="24" FontWeight="Bold" Foreground="#17324D"/>
+      <TextBlock Margin="0,6,0,14" Text="防火時效及區劃 · 維修門與維修空間 · 管線分隔與間距" Foreground="#52657A"/>
+      <WrapPanel>
+        <Button Content="檢查主模型及已載入連結" Click="check_click"/>
+        <Button x:Name="Locate" Content="定位" Click="locate_click" IsEnabled="False"/>
+        <Button x:Name="Record" Content="帶入問題紀錄" Click="record_click" IsEnabled="False"/>
+        <Button x:Name="Suggest" Content="修改建議" Click="suggest_click" IsEnabled="False"/>
+        <Button x:Name="ExportCsv" Content="匯出問題 CSV" Click="export_csv_click" IsEnabled="False" ToolTip="匯出本次檢查的全部問題"/>
+      </WrapPanel>
+      <WrapPanel Margin="0,12,0,0">
+        <TextBlock Text="分類方式" VerticalAlignment="Center" Margin="0,0,8,0"/>
+        <ComboBox x:Name="GroupBy" Width="140" SelectedIndex="0" SelectionChanged="grouping_changed" Margin="0,0,16,0" Padding="6,4">
+          <ComboBoxItem Content="不分組" Tag="none"/>
+          <ComboBoxItem Content="樓層" Tag="level"/>
+          <ComboBoxItem Content="分類" Tag="category"/>
+          <ComboBoxItem Content="判定" Tag="status"/>
+        </ComboBox>
+        <TextBlock Text="顯示" VerticalAlignment="Center" Margin="0,0,8,0"/>
+        <ComboBox x:Name="GroupFilter" Width="190" SelectionChanged="filter_changed" Padding="6,4"/>
+        <TextBlock x:Name="ResultCount" VerticalAlignment="Center" Margin="16,0,0,0" Foreground="#52657A"/>
+      </WrapPanel>
+    </StackPanel>
+    <TextBlock x:Name="Summary" Grid.Row="1" Margin="0,14" Text="按「檢查」執行；違規、警告及資料不足會列在下方。"/>
+    <Grid Grid.Row="2">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="270"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*" MinWidth="270"/></Grid.ColumnDefinitions>
+      <ListBox x:Name="Findings" SelectionChanged="selection_changed" ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch">
+        <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding label}" Margin="8"/></DataTemplate></ListBox.ItemTemplate>
+        <ListBox.GroupStyle>
+          <GroupStyle>
+            <GroupStyle.ContainerStyle>
+              <Style TargetType="GroupItem">
+                <Setter Property="Template">
+                  <Setter.Value>
+                    <ControlTemplate TargetType="GroupItem">
+                      <Expander IsExpanded="True" Margin="0,4,0,8" HorizontalContentAlignment="Stretch">
+                        <Expander.Header>
+                          <TextBlock Foreground="#17324D" FontWeight="Bold" Margin="4,5">
+                            <TextBlock.Text>
+                              <MultiBinding StringFormat="{}{0} · {1} 項">
+                                <Binding Path="Name"/><Binding Path="ItemCount"/>
+                              </MultiBinding>
+                            </TextBlock.Text>
+                          </TextBlock>
+                        </Expander.Header>
+                        <ItemsPresenter/>
+                      </Expander>
+                    </ControlTemplate>
+                  </Setter.Value>
+                </Setter>
+              </Style>
+            </GroupStyle.ContainerStyle>
+          </GroupStyle>
+        </ListBox.GroupStyle>
+      </ListBox>
+      <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" Background="#CCD4DE"/>
+      <Border Grid.Column="2" Background="White" BorderBrush="#D5DDE5" BorderThickness="1" Padding="14">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"><TextBlock x:Name="Details"/></ScrollViewer>
+      </Border>
+    </Grid>
+    <TextBlock x:Name="Status" Grid.Row="3" Margin="0,14,0,0" Foreground="#52657A" Text="檢查結果可帶入診斷與修正系統，使用既有草稿、提交及審查流程。"/>
+  </Grid>
+</Window>

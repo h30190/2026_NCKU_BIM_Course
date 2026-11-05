@@ -1,0 +1,11 @@
+backend/.deps/
+backend/.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+backend/data/
+.build/
+dist/
+.mcp.json
+.env
+.env.*
