@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- 外掛版本：所有專案共用，控制台快照用它追溯是哪一版算的。改版時改這裡 -->
+    <Version>0.5.0</Version>
+    <!-- Revit 2026 安裝路徑；若裝在其他位置，請改這裡 -->
+    <RevitInstallDir>C:\Program Files\Autodesk\Revit 2026</RevitInstallDir>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 網頁控制台傳送層（控制台計畫書第 7 節）：組快照 JSON、呼叫後端 API。不引用 Revit API，可單獨測試 -->
+  <!-- 計畫書原名 LebrCarbon.Console；改名避免命名空間 LebrCarbon.Console 遮蔽 System.Console -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>LebrCarbon.Dashboard</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LebrCarbon.Core\LebrCarbon.Core.csproj" />
+    <ProjectReference Include="..\LebrCarbon.Data\LebrCarbon.Data.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 計算核心：純 .NET 8，不引用 Revit API（計畫書第 3 節） -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>LebrCarbon.Core</RootNamespace>
+  </PropertyGroup>
+</Project>

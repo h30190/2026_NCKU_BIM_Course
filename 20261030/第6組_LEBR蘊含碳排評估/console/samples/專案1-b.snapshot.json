@@ -1,0 +1,610 @@
+{
+  "schemaVersion": 1,
+  "plugin": {
+    "version": "0.5.0",
+    "manual": "LEBR-2025"
+  },
+  "project": {
+    "key": "專案1",
+    "title": "專案1"
+  },
+  "snapshot": {
+    "name": "示範方案 B：隔間改磚牆（IW-1）",
+    "createdAt": "2026-11-04T22:14:19.0215101+08:00"
+  },
+  "inputs": {
+    "aFu": 336,
+    "aFb": 0,
+    "s": 3,
+    "sb": 0,
+    "bh": 3.5,
+    "i": 1,
+    "saD": 0.3,
+    "fu": 3,
+    "rs": 1,
+    "l": 200,
+    "d0": 300,
+    "structure": "RC",
+    "wOverride": null,
+    "sp": 1.106,
+    "f": 1,
+    "cser": 0,
+    "ebf": 0,
+    "baselineWOverride": null,
+    "baselineSpOverride": null,
+    "baselineFOverride": null,
+    "wear": "Low",
+    "wasteUsage": "Other",
+    "ll": 0,
+    "reuseCredit": 0,
+    "recycledMaterialCredit": 0,
+    "lowCarbonMethodCredit": 0,
+    "w": 1,
+    "averageFloorArea": 112,
+    "baselineW": 1,
+    "baselineSp": 1.6,
+    "baselineF": 1.2,
+    "lccr": 1,
+    "rn": 1
+  },
+  "shape": {
+    "pAr": 1.172,
+    "aspect": 1.75,
+    "rc": 0,
+    "levelName": "FL1",
+    "f1": 1,
+    "f2": 1,
+    "f3": 1,
+    "f": 1
+  },
+  "result": {
+    "eec": 122309.15732529326,
+    "eecc": 145845.55412529327,
+    "tec": 137644.19732529327,
+    "tecc": 161180.59412529328,
+    "eci": 364.01534918242044,
+    "ecis": 434.06414918242046,
+    "deltaCf": 23536.396800000017,
+    "cfr": 0.16137891169298396,
+    "grade": "1級",
+    "ll": 0,
+    "credits": 0,
+    "cfsUnderground": 15288,
+    "stages": {
+      "design": {
+        "structure": 55440,
+        "nonStructural": 50546.6028,
+        "renew": 8568.972,
+        "construction": 1085.8647189989185,
+        "demolition": 6667.717806294364,
+        "total": 122309.15732529326
+      },
+      "baseline": {
+        "structure": 78976.39679999999,
+        "nonStructural": 50546.6028,
+        "renew": 8568.972,
+        "construction": 1085.8647189989185,
+        "demolition": 6667.717806294364,
+        "total": 145845.55412529327
+      }
+    },
+    "designStructure": {
+      "w": 1,
+      "sp": 1.106,
+      "f": 1,
+      "lccr": 1,
+      "rn": 1,
+      "c": 165,
+      "cBeforeFloor": 161.91644,
+      "cu": 55440,
+      "cFs": 55440
+    },
+    "baselineStructure": {
+      "w": 1,
+      "sp": 1.6,
+      "f": 1.2,
+      "lccr": 1,
+      "rn": 1,
+      "c": 235.04879999999997,
+      "cBeforeFloor": 235.04879999999997,
+      "cu": 78976.39679999999,
+      "cFs": 78976.39679999999
+    },
+    "scale": [
+      {
+        "grade": "1+級",
+        "eci": 347.2513193459364
+      },
+      {
+        "grade": "1級",
+        "eci": 364.6138853132332
+      },
+      {
+        "grade": "2級",
+        "eci": 381.97645128053
+      },
+      {
+        "grade": "3級",
+        "eci": 399.33901724782686
+      },
+      {
+        "grade": "4級",
+        "eci": 421.0422247069478
+      },
+      {
+        "grade": "5級",
+        "eci": 477.47056410066256
+      },
+      {
+        "grade": "6級",
+        "eci": 520.8769790189045
+      }
+    ]
+  },
+  "items": [
+    {
+      "side": "design",
+      "blccId": "CW-0",
+      "category": "cw",
+      "categoryName": "不透光帷幕外牆及一般外牆",
+      "name": "傳統 15cm RC 外牆（基準）",
+      "area": 436.08,
+      "newEf": 73.67,
+      "renewEf": 0,
+      "newCarbon": 32126.0136,
+      "renewCarbon": 0,
+      "carbon": 32126.0136,
+      "source": "模型：牆「LEBR測試 RC外牆15cm 貼磁磚」× 12",
+      "elements": []
+    },
+    {
+      "side": "design",
+      "blccId": "IW-1",
+      "category": "iw",
+      "categoryName": "內隔間",
+      "name": "磚牆雙面粉刷（基準）",
+      "area": 82.43,
+      "newEf": 56.28,
+      "renewEf": 0,
+      "newCarbon": 4639.160400000001,
+      "renewCarbon": 0,
+      "carbon": 4639.160400000001,
+      "source": "模型：牆「LEBR測試 輕隔間 138mm」× 3",
+      "elements": []
+    },
+    {
+      "side": "design",
+      "blccId": "OW-1",
+      "category": "ow",
+      "categoryName": "一般外牆外裝",
+      "name": "RC 外牆貼磁磚（基準）",
+      "area": 436.08,
+      "newEf": 28.7,
+      "renewEf": 19.65,
+      "newCarbon": 12515.496,
+      "renewCarbon": 8568.972,
+      "carbon": 21084.468,
+      "source": "模型：牆「LEBR測試 RC外牆15cm 貼磁磚」× 12",
+      "elements": []
+    },
+    {
+      "side": "design",
+      "blccId": "W-11-AL",
+      "category": "w",
+      "categoryName": "外窗及透光帷幕外窗",
+      "name": "崁入式鋁框＋5+5mm 雙強化膠合玻璃",
+      "area": 25.92,
+      "newEf": 48.84,
+      "renewEf": 0,
+      "newCarbon": 1265.9328000000003,
+      "renewCarbon": 0,
+      "carbon": 1265.9328000000003,
+      "source": "模型：窗「LEBR測試 120x180 鋁框5+5」× 12",
+      "elements": []
+    },
+    {
+      "side": "baseline",
+      "blccId": "CW-0",
+      "category": "cw",
+      "categoryName": "不透光帷幕外牆及一般外牆",
+      "name": "傳統 15cm RC 外牆（基準）",
+      "area": 436.08,
+      "newEf": 73.67,
+      "renewEf": 0,
+      "newCarbon": 32126.0136,
+      "renewCarbon": 0,
+      "carbon": 32126.0136,
+      "source": "基準案（對應 傳統 15cm RC 外牆（基準））",
+      "elements": []
+    },
+    {
+      "side": "baseline",
+      "blccId": "IW-1",
+      "category": "iw",
+      "categoryName": "內隔間",
+      "name": "磚牆雙面粉刷（基準）",
+      "area": 82.43,
+      "newEf": 56.28,
+      "renewEf": 0,
+      "newCarbon": 4639.160400000001,
+      "renewCarbon": 0,
+      "carbon": 4639.160400000001,
+      "source": "基準案（對應 磚牆雙面粉刷（基準））",
+      "elements": []
+    },
+    {
+      "side": "baseline",
+      "blccId": "OW-1",
+      "category": "ow",
+      "categoryName": "一般外牆外裝",
+      "name": "RC 外牆貼磁磚（基準）",
+      "area": 436.08,
+      "newEf": 28.7,
+      "renewEf": 19.65,
+      "newCarbon": 12515.496,
+      "renewCarbon": 8568.972,
+      "carbon": 21084.468,
+      "source": "基準案（對應 RC 外牆貼磁磚（基準））",
+      "elements": []
+    },
+    {
+      "side": "baseline",
+      "blccId": "W-11-AL",
+      "category": "w",
+      "categoryName": "外窗及透光帷幕外窗",
+      "name": "崁入式鋁框＋5+5mm 雙強化膠合玻璃",
+      "area": 25.92,
+      "newEf": 48.84,
+      "renewEf": 0,
+      "newCarbon": 1265.9328000000003,
+      "renewCarbon": 0,
+      "carbon": 1265.9328000000003,
+      "source": "基準案（對應 崁入式鋁框＋5+5mm 雙強化膠合玻璃）",
+      "elements": []
+    }
+  ],
+  "excel": "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",
+  "analysis": {
+    "version": 1,
+    "stageShares": {
+      "structure": 0.4532775894494298,
+      "nonStructural": 0.41326916075111475,
+      "renew": 0.07005993817135028,
+      "construction": 0.008878032869697192,
+      "demolition": 0.054515278758408184
+    },
+    "contributions": [
+      {
+        "key": "0",
+        "category": "cw",
+        "categoryName": "不透光帷幕外牆及一般外牆",
+        "blccId": "CW-0",
+        "name": "傳統 15cm RC 外牆（基準）",
+        "source": "模型：牆「LEBR測試 RC外牆15cm 貼磁磚」× 12",
+        "area": 436.08,
+        "designNew": 32126.0136,
+        "designRenew": 0,
+        "designTotal": 32126.0136,
+        "baselineBlccId": "CW-0",
+        "baselineTotal": 32126.0136,
+        "shareOfNonStructural": 0.5434441550926101,
+        "shareOfTotal": 0.2626623737955916
+      },
+      {
+        "key": "1",
+        "category": "iw",
+        "categoryName": "內隔間",
+        "blccId": "IW-1",
+        "name": "磚牆雙面粉刷（基準）",
+        "source": "模型：牆「LEBR測試 輕隔間 138mm」× 3",
+        "area": 82.43,
+        "designNew": 4639.160400000001,
+        "designRenew": 0,
+        "designTotal": 4639.160400000001,
+        "baselineBlccId": "IW-1",
+        "baselineTotal": 4639.160400000001,
+        "shareOfNonStructural": 0.07847611083365463,
+        "shareOfTotal": 0.03792978793616979
+      },
+      {
+        "key": "2",
+        "category": "ow",
+        "categoryName": "一般外牆外裝",
+        "blccId": "OW-1",
+        "name": "RC 外牆貼磁磚（基準）",
+        "source": "模型：牆「LEBR測試 RC外牆15cm 貼磁磚」× 12",
+        "area": 436.08,
+        "designNew": 12515.496,
+        "designRenew": 8568.972,
+        "designTotal": 21084.468,
+        "baselineBlccId": "OW-1",
+        "baselineTotal": 21084.467999999997,
+        "shareOfNonStructural": 0.35666519477029596,
+        "shareOfTotal": 0.17238666720533263
+      },
+      {
+        "key": "3",
+        "category": "w",
+        "categoryName": "外窗及透光帷幕外窗",
+        "blccId": "W-11-AL",
+        "name": "崁入式鋁框＋5+5mm 雙強化膠合玻璃",
+        "source": "模型：窗「LEBR測試 120x180 鋁框5+5」× 12",
+        "area": 25.92,
+        "designNew": 1265.9328000000003,
+        "designRenew": 0,
+        "designTotal": 1265.9328000000003,
+        "baselineBlccId": "W-11-AL",
+        "baselineTotal": 1265.9328000000003,
+        "shareOfNonStructural": 0.021414539303439204,
+        "shareOfTotal": 0.010350269985370983
+      }
+    ],
+    "potential": [
+      {
+        "key": "0",
+        "blccId": "CW-0",
+        "best": {
+          "blccId": "CW-3",
+          "name": "石材版內襯隔熱材帷幕牆",
+          "cfr": 0.26203426579963357,
+          "deltaCfr": 0.10065535410664961,
+          "grade": "1+級",
+          "deltaEec": -14611.188198454503
+        },
+        "options": [
+          {
+            "blccId": "CW-3",
+            "name": "石材版內襯隔熱材帷幕牆",
+            "cfr": 0.26203426579963357,
+            "deltaCfr": 0.10065535410664961,
+            "grade": "1+級",
+            "deltaEec": -14611.188198454503
+          },
+          {
+            "blccId": "CW-1",
+            "name": "金屬板面內襯隔熱材帷幕牆",
+            "cfr": 0.2078171139198261,
+            "deltaCfr": 0.04643820222684214,
+            "grade": "1+級",
+            "deltaEec": -6741.400182951649
+          },
+          {
+            "blccId": "CW-2",
+            "name": "玻璃面內襯隔熱材帷幕牆",
+            "cfr": 0.17347677103910664,
+            "deltaCfr": 0.012097859346122675,
+            "grade": "1級",
+            "deltaEec": -1756.295595167292
+          },
+          {
+            "blccId": "CW-5",
+            "name": "內襯隔熱材預鑄 PC 帷幕牆",
+            "cfr": 0.1424665148018025,
+            "deltaCfr": -0.01891239689118146,
+            "grade": "2級",
+            "deltaEec": 2745.66437517124
+          },
+          {
+            "blccId": "CW-4",
+            "name": "珐琅鋼板內襯隔熱材帷幕牆",
+            "cfr": 0.07499925183136481,
+            "deltaCfr": -0.08637965986161915,
+            "grade": "4級",
+            "deltaEec": 12541.076154109236
+          }
+        ],
+        "needsRuleCheck": true
+      },
+      {
+        "key": "1",
+        "blccId": "IW-1",
+        "best": {
+          "blccId": "IW-5",
+          "name": "清水空心磚牆",
+          "cfr": 0.18798772670244424,
+          "deltaCfr": 0.026608815009460274,
+          "grade": "1級",
+          "deltaEec": -3862.8578086378257
+        },
+        "options": [
+          {
+            "blccId": "IW-5",
+            "name": "清水空心磚牆",
+            "cfr": 0.18798772670244424,
+            "deltaCfr": 0.026608815009460274,
+            "grade": "1級",
+            "deltaEec": -3862.8578086378257
+          },
+          {
+            "blccId": "IW-3",
+            "name": "輕隔間牆（矽酸鈣板）",
+            "cfr": 0.18054753581835536,
+            "deltaCfr": 0.019168624125371403,
+            "grade": "1級",
+            "deltaEec": -2782.7691653245274
+          },
+          {
+            "blccId": "IW-6",
+            "name": "水泥雙面粉刷空心磚牆",
+            "cfr": 0.1777699583347869,
+            "deltaCfr": 0.016391046641802937,
+            "grade": "1級",
+            "deltaEec": -2379.5456991735555
+          },
+          {
+            "blccId": "IW-2",
+            "name": "輕質灌漿牆",
+            "cfr": 0.1751842277963544,
+            "deltaCfr": 0.013805316103370435,
+            "grade": "1級",
+            "deltaEec": -2004.170918097152
+          },
+          {
+            "blccId": "IW-4",
+            "name": "12cm RC 隔間牆",
+            "cfr": 0.1534559261071856,
+            "deltaCfr": -0.007922985585798376,
+            "grade": "2級",
+            "deltaEec": 1150.2326209942257
+          }
+        ],
+        "needsRuleCheck": false
+      },
+      {
+        "key": "2",
+        "blccId": "OW-1",
+        "best": {
+          "blccId": "OW-5",
+          "name": "金屬模板搗灌 RC 外牆（免砂漿粉刷）塗料外裝",
+          "cfr": 0.23751961971501645,
+          "deltaCfr": 0.07614070802203249,
+          "grade": "1+級",
+          "deltaEec": -11120.20363027342
+        },
+        "options": [
+          {
+            "blccId": "OW-5",
+            "name": "金屬模板搗灌 RC 外牆（免砂漿粉刷）塗料外裝",
+            "cfr": 0.23751961971501645,
+            "deltaCfr": 0.07614070802203249,
+            "grade": "1+級",
+            "deltaEec": -11120.20363027342
+          },
+          {
+            "blccId": "OW-6",
+            "name": "預鑄乾式 RC 外牆（免砂漿粉刷）塗料外裝",
+            "cfr": 0.23751961971501645,
+            "deltaCfr": 0.07614070802203249,
+            "grade": "1+級",
+            "deltaEec": -11120.20363027342
+          },
+          {
+            "blccId": "OW-2",
+            "name": "RC 外牆乾式鋼件掛石材",
+            "cfr": 0.2297387844042379,
+            "deltaCfr": 0.06835987271125393,
+            "grade": "1+級",
+            "deltaEec": -10105.575940967916
+          },
+          {
+            "blccId": "OW-3",
+            "name": "RC 外牆塗料外裝",
+            "cfr": 0.21048817008110893,
+            "deltaCfr": 0.049109258388124966,
+            "grade": "1+級",
+            "deltaEec": -7195.789731397235
+          },
+          {
+            "blccId": "OW-4",
+            "name": "金屬模板搗灌 RC 外牆（免砂漿粉刷）貼磁磚",
+            "cfr": 0.18840954495108958,
+            "deltaCfr": 0.02703063325810562,
+            "grade": "1級",
+            "deltaEec": -3924.092471304917
+          }
+        ],
+        "needsRuleCheck": false
+      },
+      {
+        "key": "3",
+        "blccId": "W-11-AL",
+        "best": {
+          "blccId": "W-1-PL",
+          "name": "崁入式塑鋼框＋6mm 普通或吸熱玻璃",
+          "cfr": 0.1640441978125928,
+          "deltaCfr": 0.0026652861196088395,
+          "grade": "1級",
+          "deltaEec": -639.2769014133082
+        },
+        "options": [
+          {
+            "blccId": "W-1-PL",
+            "name": "崁入式塑鋼框＋6mm 普通或吸熱玻璃",
+            "cfr": 0.1640441978125928,
+            "deltaCfr": 0.0026652861196088395,
+            "grade": "1級",
+            "deltaEec": -639.2769014133082
+          },
+          {
+            "blccId": "W-2-PL",
+            "name": "崁入式塑鋼框＋8mm 普通或吸熱玻璃",
+            "cfr": 0.16392516825256578,
+            "deltaCfr": 0.002546256559581822,
+            "grade": "1級",
+            "deltaEec": -533.5929713557853
+          },
+          {
+            "blccId": "W-8-PL",
+            "name": "崁入式塑鋼框＋6mm 強化玻璃",
+            "cfr": 0.16391356478862537,
+            "deltaCfr": 0.0025346530956414093,
+            "grade": "1級",
+            "deltaEec": -523.2822805785108
+          },
+          {
+            "blccId": "W-3-PL",
+            "name": "崁入式塑鋼框＋10mm 普通或吸熱玻璃",
+            "cfr": 0.16380630997092868,
+            "deltaCfr": 0.00242739827794472,
+            "grade": "1級",
+            "deltaEec": -427.9078571841819
+          },
+          {
+            "blccId": "W-5-PL",
+            "name": "崁入式塑鋼框＋8mm 反射玻璃",
+            "cfr": 0.1637512872797925,
+            "deltaCfr": 0.0023723755868085283,
+            "grade": "1級",
+            "deltaEec": -378.9314281469851
+          },
+          {
+            "blccId": "W-9-PL",
+            "name": "崁入式塑鋼框＋8mm 強化玻璃",
+            "cfr": 0.1637512872797925,
+            "deltaCfr": 0.0023723755868085283,
+            "grade": "1級",
+            "deltaEec": -378.9314281469851
+          },
+          {
+            "blccId": "W-11-PL",
+            "name": "崁入式塑鋼框＋5+5mm 雙強化膠合玻璃",
+            "cfr": 0.16370498082386886,
+            "deltaCfr": 0.0023260691308849,
+            "grade": "1級",
+            "deltaEec": -337.68792310492427
+          },
+          {
+            "blccId": "W-4-PL",
+            "name": "崁入式塑鋼框＋12mm 普通或吸熱玻璃",
+            "cfr": 0.16368762260228586,
+            "deltaCfr": 0.002308710909301903,
+            "grade": "1級",
+            "deltaEec": -322.22156247132807
+          },
+          {
+            "blccId": "W-6-PL",
+            "name": "崁入式塑鋼框＋10mm 反射玻璃",
+            "cfr": 0.16358932830364847,
+            "deltaCfr": 0.0022104166106645118,
+            "grade": "1級",
+            "deltaEec": -234.5783764271764
+          },
+          {
+            "blccId": "W-10-PL",
+            "name": "崁入式塑鋼框＋10mm 強化玻璃",
+            "cfr": 0.16358932830364847,
+            "deltaCfr": 0.0022104166106645118,
+            "grade": "1級",
+            "deltaEec": -234.5783764271764
+          }
+        ],
+        "needsRuleCheck": false
+      }
+    ],
+    "nextGrade": {
+      "grade": "1+級",
+      "cfrNeeded": 0.2,
+      "gap": 0.03862108830701605
+    }
+  }
+}

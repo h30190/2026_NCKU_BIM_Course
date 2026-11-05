@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "1.0",
+  "manual": "LEBR-2025",
+  "modelTitle": "專案1",
+  "savedAt": "2026-10-19T23:21:14.8181204+08:00",
+  "inputs": {
+    "aFu": 336,
+    "aFb": 0,
+    "s": 3,
+    "sb": 0,
+    "bh": 3.5,
+    "i": 1,
+    "saD": 0.3,
+    "fu": 3,
+    "rs": 1,
+    "l": 200,
+    "d0": 300,
+    "structure": "RC",
+    "wOverride": null,
+    "sp": 1.106,
+    "f": 1,
+    "cser": 0,
+    "ebf": 0,
+    "baselineWOverride": null,
+    "baselineSpOverride": null,
+    "baselineFOverride": null,
+    "wear": "Low",
+    "wasteUsage": "Other",
+    "ll": 0,
+    "reuseCredit": 0,
+    "recycledMaterialCredit": 0,
+    "lowCarbonMethodCredit": 0,
+    "w": 1,
+    "averageFloorArea": 112,
+    "baselineW": 1,
+    "baselineSp": 1.6,
+    "baselineF": 1.2,
+    "lccr": 1,
+    "rn": 1
+  },
+  "designItems": [
+    {
+      "category": "CurtainWall",
+      "name": "傳統 15cm RC 外牆（基準）",
+      "area": 436.08,
+      "newEf": 73.67,
+      "renewEf": 0,
+      "blccId": "CW-0",
+      "source": "模型：牆「LEBR測試 RC外牆15cm 貼磁磚」× 12",
+      "newEmission": 32126.0136,
+      "renewEmission": 0
+    },
+    {
+      "category": "InteriorWall",
+      "name": "輕隔間牆（矽酸鈣板）",
+      "area": 82.43,
+      "newEf": 22.33,
+      "renewEf": 0,
+      "blccId": "IW-3",
+      "source": "模型：牆「LEBR測試 輕隔間 138mm」× 3",
+      "newEmission": 1840.6619,
+      "renewEmission": 0
+    },
+    {
+      "category": "ExteriorFinish",
+      "name": "RC 外牆貼磁磚（基準）",
+      "area": 436.08,
+      "newEf": 28.7,
+      "renewEf": 19.65,
+      "blccId": "OW-1",
+      "source": "模型：牆「LEBR測試 RC外牆15cm 貼磁磚」× 12",
+      "newEmission": 12515.496,
+      "renewEmission": 8568.972
+    },
+    {
+      "category": "Window",
+      "name": "崁入式鋁框＋5+5mm 雙強化膠合玻璃",
+      "area": 25.92,
+      "newEf": 48.84,
+      "renewEf": 0,
+      "blccId": "W-11-AL",
+      "source": "模型：窗「LEBR測試 120x180 鋁框5+5」× 12",
+      "newEmission": 1265.9328000000003,
+      "renewEmission": 0
+    }
+  ],
+  "baselineItems": [],
+  "shape": {
+    "pAr": 1.172,
+    "aspect": 1.75,
+    "rc": 0,
+    "levelName": "FL1",
+    "f1": 1,
+    "f2": 1,
+    "f3": 1,
+    "f": 1
+  },
+  "groundLevelName": "FL1",
+  "excludedLevels": [
+    "RF"
+  ],
+  "includedLevels": []
+}

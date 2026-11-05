@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Revit 介接層（計畫書第 3 節）：所有 Revit API 呼叫集中在這個專案 -->
+  <PropertyGroup>
+    <!-- Revit 2026.5（API 26.5）已改用 .NET 10，因此介接層必須以 net10 編譯 -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>LebrCarbon.Revit</RootNamespace>
+    <PlatformTarget>x64</PlatformTarget>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <!-- Revit 會自己載入這些 DLL，不需要複製到輸出 -->
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <AddinDeployDir>$(AppData)\Autodesk\Revit\Addins\2026</AddinDeployDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="RevitAPI">
+      <HintPath>$(RevitInstallDir)\RevitAPI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>$(RevitInstallDir)\RevitAPIUI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- 記下編譯時 console 資料夾的位置，讓「網頁控制台」按鈕找得到 start.ps1（部署後 DLL 不在 repo 裡） -->
+  <ItemGroup>
+    <AssemblyMetadata Include="ConsoleDir" Value="$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\..\console'))" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LebrCarbon.Core\LebrCarbon.Core.csproj" />
+    <ProjectReference Include="..\LebrCarbon.Data\LebrCarbon.Data.csproj" />
+    <ProjectReference Include="..\LebrCarbon.Reports\LebrCarbon.Reports.csproj" />
+    <ProjectReference Include="..\LebrCarbon.Dashboard\LebrCarbon.Dashboard.csproj" />
+    <ProjectReference Include="..\LebrCarbon.Reports.Pdf\LebrCarbon.Reports.Pdf.csproj" />
+  </ItemGroup>
+
+  <!-- 編譯後自動部署到 Revit 2026 的 Addins 資料夾，重開 Revit 即可載入 -->
+  <Target Name="DeployToRevit" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+    <ItemGroup>
+      <DeployFiles Include="$(TargetDir)**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DeployFiles)"
+          DestinationFiles="@(DeployFiles->'$(AddinDeployDir)\LebrCarbon\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" ContinueOnError="true" />
+    <Copy SourceFiles="..\..\LebrCarbon.addin" DestinationFolder="$(AddinDeployDir)"
+          SkipUnchangedFiles="true" ContinueOnError="true" />
+    <Message Importance="high" Text="LebrCarbon 已部署到 $(AddinDeployDir)" />
+  </Target>
+</Project>

@@ -1,0 +1,8 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+# 課程規定不 commit .rvt（測試模型放 tests/TestModels/，只留在本機）
+*.rvt
+!TestModels/.gitkeep

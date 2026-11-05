@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 資料層：讀取係數庫、對應規則、快照（計畫書第 4 節） -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>LebrCarbon.Data</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LebrCarbon.Core\LebrCarbon.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 係數與規則放外部檔，手冊改版不需重新編譯（2.2 可更新） -->
+    <None Update="Resources\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,21 @@
+{
+  // 材質名稱 → 係數 ID。由上往下比對，第一條符合者採用（計畫書 4.2 節）。
+  // 高爐混凝土規則必須放在一般混凝土之前。請依事務所 Revit 材質命名調整。
+  "schemaVersion": "1.0",
+  "rules": [
+    { "pattern": "(高爐|爐石|BFS).*(420|6000)", "factorId": "BFC-420" },
+    { "pattern": "(高爐|爐石|BFS).*(350|5000)", "factorId": "BFC-350" },
+    { "pattern": "(高爐|爐石|BFS).*(280|4000)", "factorId": "BFC-280" },
+    { "pattern": "(高爐|爐石|BFS).*(210|3000)", "factorId": "BFC-210" },
+    { "pattern": "(混凝土|concrete).*(420|6000)", "factorId": "CONC-420" },
+    { "pattern": "(混凝土|concrete).*(350|5000)", "factorId": "CONC-350" },
+    { "pattern": "(混凝土|concrete).*(280|4000)", "factorId": "CONC-280" },
+    { "pattern": "(混凝土|concrete).*(245|3500)", "factorId": "CONC-280", "note": "3500psi 手冊無係數，保守取 4000psi" },
+    { "pattern": "(混凝土|concrete).*(210|3000)", "factorId": "CONC-210" },
+    { "pattern": "(混凝土|concrete).*(175|2500)", "factorId": "CONC-175" },
+    { "pattern": "(混凝土|concrete).*(140|2000)", "factorId": "CONC-140" },
+    { "pattern": "(混凝土|concrete)",             "factorId": "CONC-280", "note": "未標強度時暫以 280 計，請確認" },
+    { "pattern": "(鋼筋|rebar)",                  "factorId": "REBAR" },
+    { "pattern": "(鋼|steel)",                    "factorId": "STEEL-H" }
+  ]
+}

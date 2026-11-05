@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>LebrCarbon</Name>
+    <Assembly>LebrCarbon\LebrCarbon.Revit.dll</Assembly>
+    <FullClassName>LebrCarbon.Revit.App</FullClassName>
+    <ClientId>8c1b3f52-2a7e-4f0d-b6a1-3c9e5d7a0b21</ClientId>
+    <VendorId>LEBR</VendorId>
+    <VendorDescription>低碳建築蘊含碳排試算外掛</VendorDescription>
+  </AddIn>
+</RevitAddIns>

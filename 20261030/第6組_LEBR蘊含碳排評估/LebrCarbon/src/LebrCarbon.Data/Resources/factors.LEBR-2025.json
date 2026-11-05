@@ -1,0 +1,29 @@
+{
+  // 數值取自《低碳（低蘊含碳）建築評估手冊》2025 年版 附錄一 ABRI 初級資材碳排資料庫（P-LCC, 2022）
+  // ef 單位：kgCO2e / unit；範圍 A1-A4（原料開採至成品運輸）
+  // kgf/cm2 與 psi 對應：210≈3000psi、280≈4000psi、350≈5000psi、420≈6000psi
+  // 注意：依手冊 4-1 節，用材料數量計算主結構屬「BIM 模型估算」替代方法，正式評定須附數量估算報告
+  "schemaVersion": "1.0",
+  "manual": "LEBR-2025",
+  "factors": [
+    { "id": "CONC-140", "name": "預拌混凝土 2000psi（140 kgf/cm2）", "category": "concrete", "unit": "m3", "ef": 243.78, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁52" },
+    { "id": "CONC-175", "name": "預拌混凝土 2500psi（175 kgf/cm2）", "category": "concrete", "unit": "m3", "ef": 285.77, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁52" },
+    { "id": "CONC-210", "name": "預拌混凝土 3000psi（210 kgf/cm2）", "category": "concrete", "unit": "m3", "ef": 327.75, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁52" },
+    { "id": "CONC-280", "name": "預拌混凝土 4000psi（280 kgf/cm2）", "category": "concrete", "unit": "m3", "ef": 369.88, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁52" },
+    { "id": "CONC-350", "name": "預拌混凝土 5000psi（350 kgf/cm2）", "category": "concrete", "unit": "m3", "ef": 433.45, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁52" },
+    { "id": "CONC-420", "name": "預拌混凝土 6000psi（420 kgf/cm2）", "category": "concrete", "unit": "m3", "ef": 497.15, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁52" },
+    { "id": "BFC-140",  "name": "預拌高爐混凝土 2000psi", "category": "concrete", "unit": "m3", "ef": 181.74, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁52" },
+    { "id": "BFC-175",  "name": "預拌高爐混凝土 2500psi", "category": "concrete", "unit": "m3", "ef": 194.06, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁52" },
+    { "id": "BFC-210",  "name": "預拌高爐混凝土 3000psi", "category": "concrete", "unit": "m3", "ef": 206.37, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁52" },
+    { "id": "BFC-280",  "name": "預拌高爐混凝土 4000psi", "category": "concrete", "unit": "m3", "ef": 231.00, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁52" },
+    { "id": "BFC-350",  "name": "預拌高爐混凝土 5000psi", "category": "concrete", "unit": "m3", "ef": 268.98, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁52" },
+    { "id": "BFC-420",  "name": "預拌高爐混凝土 6000psi", "category": "concrete", "unit": "m3", "ef": 306.23, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁52" },
+    { "id": "REBAR",    "name": "鋼筋及鐵件", "category": "rebar", "unit": "kg", "ef": 1.15, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁51" },
+    { "id": "STEEL-H",  "name": "型鋼",       "category": "steel", "unit": "kg", "ef": 1.16, "stage": "A1-A4", "source": "LEBR-2025 附錄一 P-LCC 頁51" }
+  ],
+  "defaults": {
+    // 手冊未提供配筋量（主結構標準法採迴歸公式），此值需由結構技師或事務所經驗提供
+    "rebarRatio":        { "unit": "kg/m3", "value": 0.0, "source": "手冊未規定，待事務所提供" },
+    "steelDensity":      { "unit": "kg/m3", "value": 7850, "source": "鋼材一般密度，供體積換算重量" }
+  }
+}

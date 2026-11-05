@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- 報表層（F10）。第一版先輸出 CSV，階段 4 改用 ClosedXML / QuestPDF -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>LebrCarbon.Reports</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LebrCarbon.Core\LebrCarbon.Core.csproj" />
+  </ItemGroup>
+</Project>
