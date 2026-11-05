@@ -5,7 +5,8 @@
   const plen = (pts) => pts.slice(1).reduce((s, p, i) => s + dist(pts[i], p), 0);
   const r2 = (n) => Math.round(n * 100) / 100;
 
-  const INSET = 0.5; // 最遠點離牆 0.5 m（第一階段假設，不是法規數字）
+  const CLEARANCE = 0.45; // 整段行走路線離牆／固定障礙物至少 0.45 m（使用者指定的專案設定，不是法規數字）
+  const GEOMETRY_VERSION = "0.3.2-clearance";
   const STEP = 0.25; // 沿內縮外框每 0.25 m 取一個候選點，再在可能更遠的區間細找
 
   // 外框每條邊往房內平移 d，相鄰兩條平移線的交點就是內縮後的角點（凹角、斜牆都適用，不管點的順序）
@@ -27,9 +28,9 @@
     });
   }
 
-  // 最遠點候選：外框角點往內縮 0.5 m
+  // 相容舊呼叫；內縮是可行路線範圍，不再單獨縮起點後沿原外框排路。
   function insetCorners(boundary) {
-    return insetPolygon(boundary, INSET);
+    return insetPolygon(boundary, CLEARANCE);
   }
 
   // 只有一扇門時的最遠點：離門直線距離最遠的候選點
@@ -110,41 +111,67 @@
       }),
     ];
     const viaCorridor = ends.filter((e) => !e.sps.length);
-    const net = corridorNetwork(corridors, viaCorridor.map((e) => e.p), spaces.map((s) => s.boundary));
-    const node = ends.map((e) => (e.sps.length ? net.nodeOf(e.p) : net.foot[viaCorridor.indexOf(e)]));
+    const net = corridorNetwork(corridors, viaCorridor.map((e) => e.p), spaces.flatMap((s) => [s.boundary, insetPolygon(s.boundary, CLEARANCE)]));
+    // 中心線只能依已提供的淨寬檢查，不假裝快照有未擷取的牆。進入已知空間的部分仍逐段驗證牆距。
+    const corridorEdge = (a, b) => {
+      if (!awayFrom(a, b, obstacles) || obstacles.some((o) => inPoly(a, o) >= 0 || inPoly(b, o) >= 0)) return false;
+      const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      const containing = spaces.filter((s) => inPoly(mid, s.boundary) >= 0);
+      if (containing.length) return containing.some((s) => canWalk(a, b, s.boundary, obstacles));
+      const c = corridorAt(corridors, mid);
+      const margin = c && c.clear_width_m / 2 - CLEARANCE;
+      return c && Number.isFinite(c.clear_width_m) && margin >= -EPS && c.centerline.slice(1).some((q, i) =>
+        dist(a, closestOnSeg(a, c.centerline[i], q)) <= margin + EPS && dist(b, closestOnSeg(b, c.centerline[i], q)) <= margin + EPS) &&
+        spaces.every((s) => awayFrom(a, b, [s.boundary]));
+    };
+    net.adj = net.nodes.map((a, i) => (net.adj[i] || []).filter(([j]) => corridorEdge(a, net.nodes[j])));
+    // 不用 5 cm 合併淨距節點，否則門、內縮轉角可能被吸到牆邊。
+    const nodeOf = (p) => {
+      let i = net.nodes.findIndex((q) => dist(p, q) < EPS);
+      if (i < 0) { i = net.nodes.length; net.nodes.push(p); net.adj.push([]); }
+      return i;
+    };
+    const node = ends.map((e) => nodeOf(e.p));
     const link = (u, v) => {
       if (u === v) return;
       const w = dist(net.nodes[u], net.nodes[v]);
       (net.adj[u] = net.adj[u] || []).push([v, w]);
       (net.adj[v] = net.adj[v] || []).push([u, w]);
     };
-    // 先把所有節點放好，再連邊：後面空間新增的點如果也在前面的空間裡，才不會漏連
-    const gates = [];
+    const portals = [];
+    // 房間兩側各有 CLEARANCE 接入點；只有指定門／樓梯能透過短接入段穿越邊界。
     for (const s of spaces) {
-      s.boundary.forEach(net.nodeOf);
-      turnPoints(s.boundary, obstacles).forEach(net.nodeOf);
-      // 門的座標常在牆心、落在房間外框外：門先走到這個空間外框上最近的點，再進空間
+      routeRegion(s.boundary, obstacles).nodes.forEach(nodeOf);
       ends.forEach((e, i) => {
-        if (!e.sps.includes(s) || node[i] == null) return;
-        const g = gateOn(e.p, s.boundary);
-        if (!g) return;
-        let k = net.nodeOf(g);
-        if (inPoly(net.nodes[k], s.boundary) < 0) { net.nodes.push(g); k = net.nodes.length - 1; }
-        gates.push([node[i], k]);
+        if (!e.sps.includes(s)) return;
+        for (const anchor of entryAnchors(e.p, s.boundary, obstacles)) {
+          const k = nodeOf(anchor); link(node[i], k);
+          if (k !== node[i]) portals.push([e.p, anchor]);
+        }
       });
     }
-    gates.forEach(([u, v]) => link(u, v));
     for (const s of spaces) {
-      // 空間裡（含邊上）的所有節點：空間角點、柱角、門、樓梯、走廊中心線穿進來的點
-      const ids = net.nodes.map((p, i) => (inPoly(p, s.boundary) >= 0 ? i : -1)).filter((i) => i >= 0);
+      const ids = net.nodes.map((p, i) => (clearPoint(p, s.boundary, obstacles) ? i : -1)).filter((i) => i >= 0);
       for (let a = 0; a < ids.length; a++) for (let b = a + 1; b < ids.length; b++)
         if (canWalk(net.nodes[ids[a]], net.nodes[ids[b]], s.boundary, obstacles)) link(ids[a], ids[b]);
     }
-    return { nodes: net.nodes, adj: net.adj, doorNode: node.slice(0, doors.length), stairNode: node.slice(doors.length) };
+    viaCorridor.forEach((e, i) => {
+      const foot = net.foot[i];
+      if (foot == null) return;
+      const p = net.nodes[foot], c = corridorAt(corridors, p), id = node[ends.indexOf(e)];
+      if (!c || !Number.isFinite(c.clear_width_m) || c.clear_width_m < 2 * CLEARANCE - EPS ||
+          dist(e.p, p) > c.clear_width_m / 2 + DOOR_WALL_MAX || !awayFrom(e.p, p, obstacles) ||
+          obstacles.some((o) => inPoly(e.p, o) >= 0 || inPoly(p, o) >= 0) ||
+          spaces.some((s) => !awayFrom(e.p, p, [s.boundary]))) return;
+      link(id, foot);
+      if (id !== foot) portals.push([e.p, p]);
+    });
+    return { nodes: net.nodes, adj: net.adj, doorNode: node.slice(0, doors.length), stairNode: node.slice(doors.length), portals };
   }
 
   // 門的座標在牆裡時，取房間外框上最近的點當進出口；已在房內或邊上就用原座標。太遠回傳 null（不是這間房的門）
   const DOOR_WALL_MAX = 0.6; // 牆心到牆面的容許距離，自訂假設，不是法規數字
+  const HOST_ANGLE = Math.sin(0.1 * Math.PI / 180), HOST_OFFSET = 0.005; // 宿主牆分段容差：0.1°、5 mm，不放寬路線淨距
   function gateOn(p, poly) {
     if (inPoly(p, poly) >= 0) return p;
     let q = null;
@@ -214,7 +241,7 @@
       const a = out[i - 1], b = out[i + 1];
       const cross = (p[0] - a[0]) * (b[1] - p[1]) - (p[1] - a[1]) * (b[0] - p[0]);
       const dot = (p[0] - a[0]) * (b[0] - p[0]) + (p[1] - a[1]) * (b[1] - p[1]);
-      return Math.abs(cross) > EPS || dot < 0;
+      return Math.abs(cross) > 1e-9 * Math.max(EPS, dist(a, b)) || dot < 0;
     });
   }
 
@@ -230,7 +257,7 @@
   }
 
   // 線段 ab 能不能直接走：在每個碰到邊或角點的地方切開，每一小段的中點都要在房內、不在障礙物裡
-  function canWalk(a, b, room, obstacles) {
+  function inFreeSpace(a, b, room, obstacles) {
     const L = dist(a, b);
     if (L < EPS) return true;
     const t = (x) => ((x[0] - a[0]) * (b[0] - a[0]) + (x[1] - a[1]) * (b[1] - a[1])) / (L * L);
@@ -257,6 +284,89 @@
     return true;
   }
 
+  function segmentDistance(a, b, c, d) {
+    if (segCross(a, b, c, d)) return 0;
+    return Math.min(dist(a, closestOnSeg(a, c, d)), dist(b, closestOnSeg(b, c, d)),
+      dist(c, closestOnSeg(c, a, b)), dist(d, closestOnSeg(d, a, b)));
+  }
+
+  function awayFrom(a, b, polygons) {
+    return polygons.every((poly) => poly.every((p, i) => segmentDistance(a, b, p, poly[(i + 1) % poly.length]) >= CLEARANCE - EPS));
+  }
+
+  function clearPoint(p, room, obstacles) {
+    return inPoly(p, room) > 0 && !obstacles.some((o) => inPoly(p, o) >= 0) && awayFrom(p, p, [room, ...obstacles]);
+  }
+
+  // 每一整段都檢查最小距離，不能只檢查端點，否則斜線仍會切到牆角／柱角。
+  function canWalk(a, b, room, obstacles) {
+    return clearPoint(a, room, obstacles) && clearPoint(b, room, obstacles) &&
+      inFreeSpace(a, b, room, obstacles) && awayFrom(a, b, [room, ...obstacles]);
+  }
+
+  // 內縮外框、外擴障礙物提供轉彎候選。凹多邊形內縮可能自交或消失，
+  // 所以它們只提供候選；每個點和線段仍回到原始幾何驗證 CLEARANCE，絕不靠錯誤外框放行。
+  // 轉角採平移邊的交點（保守的折線），不以圓弧近似最短路徑。
+  function routeRegion(room, obstacles) {
+    const contours = [insetPolygon(room, CLEARANCE), ...obstacles.map((o) => insetPolygon(o, -CLEARANCE))];
+    const nodes = contours.flat();
+    contours.forEach((p, i) => contours.slice(i + 1).forEach((q) => p.forEach((a, j) => q.forEach((b, k) => {
+      const x = segCross(a, p[(j + 1) % p.length], b, q[(k + 1) % q.length]);
+      if (x) nodes.push(x);
+    }))));
+    return { contours, nodes: nodes.filter((p, i) => clearPoint(p, room, obstacles) && nodes.findIndex((q) => dist(p, q) < EPS) === i) };
+  }
+
+  // 門／樓梯可以在牆面上。只豁免「端點垂直接入可行範圍」的短段與其宿主邊，
+  // 其餘牆面與所有障礙物仍保留淨距；一般路線不得藉門口貼牆抄近路。
+  function entryAnchors(p, room, obstacles) {
+    if (clearPoint(p, room, obstacles)) return [p];
+    const area = room.reduce((s, a, i) => { const b = room[(i + 1) % room.length]; return s + a[0] * b[1] - b[0] * a[1]; }, 0);
+    const sides = room.map((a, i) => {
+      const b = room[(i + 1) % room.length], q = closestOnSeg(p, a, b), L = dist(a, b), sign = area > 0 ? 1 : -1;
+      return { a, b, q, L, i, distance: dist(p, q), n: [-(b[1] - a[1]) / L * sign, (b[0] - a[0]) / L * sign] };
+    }).filter((s) => s.L > EPS);
+    const nearest = Math.min(...sides.map((s) => s.distance));
+    if (inPoly(p, room) < 0 && nearest > DOOR_WALL_MAX) return [];
+    return sides.filter((s) => s.distance <= nearest + EPS).map((s) => {
+      const anchor = [s.q[0] + s.n[0] * CLEARANCE, s.q[1] + s.n[1] * CLEARANCE];
+      if (!clearPoint(anchor, room, obstacles) || !inFreeSpace(s.q, anchor, room, obstacles) || !awayFrom(p, anchor, obstacles)) return null;
+      // Revit 同一面牆的相鄰邊段可能有微小角度差。只將連續、近共線的邊段併入宿主，
+      // 不把遠處平行牆或真正轉角當成門洞；anchor 與後續整段路線仍須完整保留 CLEARANCE。
+      const sameWall = (t) => Math.abs((t.b[0] - t.a[0]) * s.n[0] + (t.b[1] - t.a[1]) * s.n[1]) <= HOST_ANGLE * t.L &&
+        (t.b[0] - t.a[0]) * (s.b[0] - s.a[0]) + (t.b[1] - t.a[1]) * (s.b[1] - s.a[1]) > 0 &&
+        [t.a, t.b].every((v) => dist(v, closestOnLine(v, s.a, s.b)) <= HOST_OFFSET);
+      const host = new Set([s]);
+      for (const direction of [-1, 1]) for (let j = 1; j < sides.length; j++) {
+        const t = sides[(sides.indexOf(s) + direction * j + sides.length) % sides.length];
+        if (!sameWall(t)) break;
+        host.add(t);
+      }
+      if (sides.some((t) => !host.has(t) && segmentDistance(p, anchor, t.a, t.b) < CLEARANCE - EPS)) return null;
+      return anchor;
+    }).filter(Boolean);
+  }
+
+  function roomGraph(room, obstacles, entries) {
+    const region = routeRegion(room, obstacles);
+    const anchors = entries.map((p) => entryAnchors(p, room, obstacles));
+    const nodes = [...region.nodes], add = (p) => {
+      let i = nodes.findIndex((q) => dist(p, q) < EPS);
+      if (i < 0) { i = nodes.length; nodes.push(p); }
+      return i;
+    };
+    const anchorIds = anchors.map((ps) => ps.map(add));
+    const adj = visibility(nodes, room, obstacles);
+    const entryIds = entries.map((p, i) => {
+      const id = add(p); adj[id] = adj[id] || [];
+      for (const a of anchorIds[i]) if (a !== id) {
+        const w = dist(p, nodes[a]); adj[id].push([a, w]); adj[a].push([id, w]);
+      }
+      return id;
+    });
+    return { nodes, adj, entryIds, region };
+  }
+
   // 繞障礙物時可以轉彎的點：落在空間裡的障礙物角點，加上障礙物邊和空間外框的交點。
   // 柱子常一半埋在牆裡，角點在空間外；只用角點的話，貼牆的柱子旁邊沒有轉彎點，路線會繞遠路
   function turnPoints(poly, obstacles) {
@@ -279,32 +389,33 @@
     return adj;
   }
 
-  // 房內路徑：最遠點走到門的最短路線，繞過凹角和柱子（可見性圖＋Dijkstra）；走不到回傳 null
-  // 路線可以貼著牆角、柱角轉彎，不另外留淨空
+  // 房內路徑只在已內縮的路線範圍行走；門口透過受限的垂直接入段連接。
   function indoorPath(from, door, room, obstacles) {
-    const nodes = [from, door, ...room, ...turnPoints(room, obstacles)];
-    return netPath({ nodes, adj: visibility(nodes, room, obstacles) }, 0, 1);
+    if (!clearPoint(from, room, obstacles)) return null;
+    const graph = roomGraph(room, obstacles, [door, from]);
+    return netPath(graph, graph.entryIds[1], graph.entryIds[0]);
   }
 
-  // 最遠點：在內縮 0.5 m 的外框上找「走到樓梯最短距離」最大的點
+  // 最遠點：在同一份「路線可行範圍」上找走到樓梯距離最大的候選。
   // exitCost[i] 是從第 i 扇門出去、走到最近樓梯的走廊段長度
-  // 房內任一點的距離 ＝ 看得到的節點中，min(直線距離 ＋ 該節點走到樓梯的距離)；最大值一定在外框上，所以只找外框
+  // 保留邊界取樣與局部搜尋，並非任意平面最遠點的精確證明。
   function farthestPoint(room, obstacles, doorPts, exitCost) {
-    const nodes = [...doorPts, ...room, ...turnPoints(room, obstacles)];
-    const D = distAll(visibility(nodes, room, obstacles), nodes.map((_, i) => (i < doorPts.length ? exitCost[i] : Infinity)));
-    const ok = (p) => inPoly(p, room) > 0 && !obstacles.some((o) => inPoly(p, o) >= 0);
+    const graph = roomGraph(room, obstacles, doorPts), { nodes } = graph;
+    const init = nodes.map(() => Infinity);
+    graph.entryIds.forEach((id, i) => { init[id] = Math.min(init[id], exitCost[i]); });
+    const D = distAll(graph.adj, init);
+    const ok = (p) => clearPoint(p, room, obstacles);
     const f = (p) => nodes.reduce((m, v, i) => (D[i] < Infinity && canWalk(p, v, room, obstacles) ? Math.min(m, dist(p, v) + D[i]) : m), Infinity);
-    const poly = insetPolygon(room, INSET);
 
     // 先取角點（照外框順序），再沿每條邊每 0.25 m 取點
-    const samples = poly.filter(ok).map((p) => ({ p, v: f(p) }));
-    const edges = poly.map((a, i) => {
+    const samples = graph.region.nodes.map((p) => ({ p, v: f(p) }));
+    const edges = graph.region.contours.flatMap((poly) => poly.map((a, i) => {
       const b = poly[(i + 1) % poly.length], k = Math.max(1, Math.ceil(dist(a, b) / STEP));
       const at = (t) => [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])];
       const pts = [];
       for (let j = 0; j <= k; j++) { const p = at(j / k); pts.push(ok(p) ? { p, t: j / k, v: f(p) } : null); }
       return { at, k, pts };
-    });
+    }));
     edges.forEach((e) => e.pts.forEach((s, j) => { if (s && j > 0 && j < e.k) samples.push(s); }));
     if (!samples.length) return null;
     if (samples.some((s) => s.v === Infinity)) return { p: samples.find((s) => s.v === Infinity).p, v: Infinity };
@@ -314,7 +425,7 @@
     // 這個上限比目前最遠還大的區間才細找（三分法）
     for (const e of edges) for (let j = 1; j <= e.k; j++) {
       const s1 = e.pts[j - 1], s2 = e.pts[j];
-      if (!s1 || !s2 || (s1.v + s2.v + dist(s1.p, s2.p)) / 2 <= best.v + EPS) continue;
+      if (!s1 || !s2 || !canWalk(s1.p, s2.p, room, obstacles) || (s1.v + s2.v + dist(s1.p, s2.p)) / 2 <= best.v + EPS) continue;
       let lo = s1.t, hi = s2.t;
       for (let it = 0; it < 40; it++) {
         const m1 = lo + (hi - lo) / 3, m2 = hi - (hi - lo) / 3;
@@ -382,9 +493,9 @@
       const d = dist(net.nodes[a], net.nodes[b]);
       if (!gap || d < gap.d) gap = { a: net.nodes[a], b: net.nodes[b], d };
     }
-    if (!gap) return `門 ${label(door)} 接上的通道和所有直通樓梯都沒有連起來`;
+    if (!gap) return `門 ${label(door)} 接上的通道和所有直通樓梯都沒有連起來（需保留 ${CLEARANCE} m 路線淨距，中心線走廊需有至少 ${r2(2 * CLEARANCE)} m 的已知淨寬）`;
     const at = (p) => { const c = corridorAt(corridors, p); return (c ? c.name + " " : "") + pt(p); };
-    return `門 ${label(door)} 走不到樓梯：最可能的斷口在 ${at(gap.a)} 和 ${at(gap.b)} 之間，相距 ${r2(gap.d)} m（超過 ${SNAP * 100} cm 就當作沒接上）`;
+    return `門 ${label(door)} 走不到樓梯：可行範圍斷口在 ${at(gap.a)} 和 ${at(gap.b)} 之間，相距 ${r2(gap.d)} m；請確認 ${CLEARANCE} m 路線淨距、門口接入點與走廊淨寬`;
   }
 
   // 房間外框和通行空間外框重疊（共線、相距 5 cm 內）且長 0.3 m 以上的邊段 → 開口，位置取重疊段中點
@@ -456,23 +567,22 @@
     const passDoors = (snapshot.doors || []).filter((d) => isPt(d.position) && !doors.includes(d) && (d.room_ids || []).filter((id) => spaceIds.has(id)).length >= 2);
     const net = walkNetwork(corridors, spaces, [...doors, ...passDoors], stairs, obstacles);
 
-    // 門在牆心時，房內路線先走到外框上的進出口，再接到門的座標
-    const gates = doors.map((d) => gateOn(d.position, room.boundary) || d.position);
+    // 直接以真實門座標建圖；宿主牆內的短接入也由同一個淨距檢查處理，不能事後盲目補線。
+    const gates = doors.map((d) => d.position);
     const exitCost = doors.map((d, di) => Math.min(...stairs.map((s, si) => {
-      const path = routeTo([gates[di], d.position], s, net, net.doorNode[di], net.stairNode[si]);
+      const path = routeTo([d.position], s, net, net.doorNode[di], net.stairNode[si]);
       return path ? plen(path) : Infinity;
     })));
     if (exitCost.every((c) => c === Infinity))
       return { missing: doors.map((d, di) => gapReport(net, corridors, d, net.doorNode[di], net.stairNode)).join("；") };
     doors.forEach((d, di) => { if (exitCost[di] === Infinity) notes.push(gapReport(net, corridors, d, net.doorNode[di], net.stairNode) + "，這扇門不列入計算"); });
     const fp = farthestPoint(room.boundary, obstacles, gates, exitCost);
-    if (!fp) return { missing: "房間內找不到可站立的最遠點候選（內縮 0.5 m 後的點都落在房外或柱子裡）" };
-    if (fp.v === Infinity) return { missing: `房內 ${pt(fp.p)} 附近被障礙物圍住，走不到任何一扇門` };
+    if (!fp) return { missing: `房間內沒有保留 ${CLEARANCE} m 路線淨距的候選位置；請檢查房間邊界、通道寬度與障礙物` };
+    if (fp.v === Infinity) return { missing: `房內 ${pt(fp.p)} 附近在保留 ${CLEARANCE} m 路線淨距後走不到任何一扇門；請檢查狹窄通道或障礙物` };
 
     const far = fp.p, pi = 0;
     const insides = [doors.map((d, di) => {
-      const path = indoorPath(far, gates[di], room.boundary, obstacles);
-      return path && [...path, d.position];
+      return indoorPath(far, gates[di], room.boundary, obstacles);
     })];
     const route = (pi, di, si) => {
       const path = routeTo(insides[pi][di], stairs[si], net, net.doorNode[di], net.stairNode[si]);
@@ -492,7 +602,10 @@
     if (through.length) notes.push(`路線穿過 ${through.map(label).join("、")}（居室），請確認這條路線實際可通行`);
     if (best.s.is_direct_stair !== true) notes.push(`算到的 ${label(best.s)} 還沒確認是直通樓梯`);
     if (String(best.s.endpoint_source || "").startsWith("auto:")) notes.push(`${label(best.s)} 的第一階位置是外掛從梯段路徑自動推的`);
+    notes.push(`路線以 ${CLEARANCE} m 牆面／固定障礙物淨距計算；門口與樓梯終點僅保留垂直接入短段。這是專案幾何假設，不是法定數字`);
+    if (corridors.length) notes.push(`只有中心線的走廊依已提供的有效淨寬檢查，並非從實體牆面量得路線淨距；未知或小於 ${r2(2 * CLEARANCE)} m 的走廊不作路線`);
     return {
+      geometry_version: GEOMETRY_VERSION, route_clearance_m: CLEARANCE,
       door_id: best.door.element_id,
       far_point: far, path: best.path, stair_id: best.s.element_id, stair_name: best.s.name,
       stair_confirmed: best.s.is_direct_stair === true, endpoint_source: best.s.endpoint_source || null,
