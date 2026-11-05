@@ -1,0 +1,21 @@
+# Revit models, local databases and backups are not hand-in source files.
+*.rvt
+*.rfa
+*.db
+*.db-*
+*.sqlite*
+*.log
+*.exe
+*.dll
+*.pdb
+**/bin/
+**/obj/
+**/logs/
+**/data/
+!GreenPassport/backend/static/
+**/node_modules/
+.vs/
+.build/
+backup*/
+rollback/
+*.zip
