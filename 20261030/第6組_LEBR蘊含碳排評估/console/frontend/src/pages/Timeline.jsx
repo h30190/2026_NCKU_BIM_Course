@@ -4,8 +4,8 @@ import GradeBadge from '../components/GradeBadge.jsx'
 
 export const MAX_COMPARE = 3
 
-// 快照時間軸：某案子所有快照由新到舊，勾選 2 ~ 3 筆進入比較（W3、W5）。
-export default function Timeline({ snapshots, selected, onToggle, onOpen, onCompare }) {
+// 快照時間軸：某案件所有快照由新到舊，勾選 2 ~ 3 筆進入比較（W3、W5）。
+export default function Timeline({ snapshots, selected, onToggle, onOpen, onCompare, onDelete }) {
   const full = selected.length >= MAX_COMPARE
   return (
     <section className="card">
@@ -29,6 +29,7 @@ export default function Timeline({ snapshots, selected, onToggle, onOpen, onComp
               <th className="num">EEC kgCO2e</th>
               <th>時間</th>
               <th>計算書</th>
+              <th><span className="sr-only">刪除</span></th>
             </tr>
           </thead>
           <tbody>
@@ -48,6 +49,10 @@ export default function Timeline({ snapshots, selected, onToggle, onOpen, onComp
                   <td className="num">{kg(s.eec)}</td>
                   <td>{time(s.createdAt)}</td>
                   <td>{s.hasExcel ? <a href={excelUrl(s.id)} download>下載</a> : <span className="muted">—</span>}</td>
+                  <td>
+                    <button type="button" className="danger-link" aria-label={`刪除快照 ${s.name}`}
+                      onClick={() => onDelete(s)}>刪除</button>
+                  </td>
                 </tr>
               )
             })}

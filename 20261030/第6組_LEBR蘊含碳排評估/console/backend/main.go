@@ -37,6 +37,12 @@ func main() {
 		}
 	}
 
+	if n, err := srv.ImportMappingCases(); err != nil {
+		log.Printf("從材料對照建立案子失敗：%v", err)
+	} else if n > 0 {
+		fmt.Printf("已從材料對照表建立 %d 個案子\n", n)
+	}
+
 	mux := http.NewServeMux()
 	srv.routes(mux)
 
@@ -47,7 +53,7 @@ func main() {
 func withCORS(next http.Handler, origin string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { health, listProjects, listSnapshots, getSnapshot, compareSnapshots } from './api.js'
+import { health, listProjects, listSnapshots, getSnapshot, compareSnapshots, deleteProject, deleteSnapshot } from './api.js'
 import ProjectList from './pages/ProjectList.jsx'
 import Overview from './pages/Overview.jsx'
 import Timeline, { MAX_COMPARE } from './pages/Timeline.jsx'
@@ -16,7 +16,7 @@ const VIEWS = [
   ['compare', '方案比較'],
 ]
 
-// 單頁應用：左側案子清單，右側材料對照／評估總覽／快照時間軸／方案比較（控制台計畫書第 6 節）。
+// 單頁應用：左側案件清單，右側材料對照／評估總覽／快照時間軸／方案比較（控制台計畫書第 6 節）。
 export default function App() {
   const [online, setOnline] = useState(null) // null = 檢查中
   const [projects, setProjects] = useState([])
@@ -45,7 +45,7 @@ export default function App() {
 
   useEffect(() => { refresh() }, [refresh])
 
-  // 換案子：清掉比較選取，回到總覽（材料對照不受案子影響，留在原頁）
+  // 換案件：清掉比較選取，回到總覽（材料對照跟著案件切換，留在原頁）
   useEffect(() => {
     setSelected([])
     setCompare(null)
@@ -71,6 +71,9 @@ export default function App() {
     return () => { alive = false }
   }, [snapshotId])
 
+  const current = projects.find((p) => p.id === projectId)
+  const evaluated = (current?.snapshotCount ?? 0) > 0
+
   const toggle = (id) =>
     setSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length < MAX_COMPARE ? [...cur, id] : cur))
 
@@ -88,6 +91,33 @@ export default function App() {
   const openSnapshot = (id) => {
     setSnapshotId(id)
     setView('overview')
+  }
+
+  // 刪除無法復原，先確認；刪完重新整理（案件、快照清單會跟著重載，選取的快照退回最新一筆）
+  const removeProject = async (p) => {
+    const detail = p.snapshotCount > 0 ? `與它的 ${p.snapshotCount} 筆快照` : ''
+    const msg = `刪除案件「${p.title}」${detail}？刪除後無法復原。\n（之後在 Revit 再開這個模型，會重新建立空的案件。）`
+    if (!window.confirm(msg)) return
+    setError('')
+    try {
+      await deleteProject(p.id)
+      await refresh()
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
+  const removeSnapshot = async (s) => {
+    if (!window.confirm(`刪除快照「${s.name}」？刪除後無法復原。`)) return
+    setError('')
+    try {
+      await deleteSnapshot(s.id)
+      setSelected((cur) => cur.filter((x) => x !== s.id))
+      setCompare(null)
+      await refresh()
+    } catch (e) {
+      setError(e.message)
+    }
   }
 
   return (
@@ -109,7 +139,7 @@ export default function App() {
         <Offline />
       ) : (
         <div className="layout">
-          <ProjectList projects={projects} selectedId={projectId} onSelect={setProjectId} />
+          <ProjectList projects={projects} selectedId={projectId} onSelect={setProjectId} onDelete={removeProject} />
           <main className="content">
             {error && <div className="banner banner-error">{error}</div>}
             {online && (
@@ -125,16 +155,16 @@ export default function App() {
                     </button>
                   ))}
                 </nav>
-                {view === 'mapping' && (
-                  <MaterialMap projectTitle={projects.find((p) => p.id === projectId)?.title} />
-                )}
-                {view !== 'mapping' && projects.length === 0 && <Empty />}
-                {view === 'overview' && projects.length > 0 && (
+                {view === 'mapping' && <MaterialMap projectKey={current?.key} />}
+                {view !== 'mapping' && view !== 'compare' && !evaluated && <Empty title={current?.title} />}
+                {view === 'overview' && evaluated && (
                   <Overview snapshot={snapshot} snapshots={snapshots} snapshotId={snapshotId} onSelectSnapshot={setSnapshotId} />
                 )}
-                {view === 'analysis' && projects.length > 0 && <Analysis snapshot={snapshot} />}
-                {view === 'timeline' && projects.length > 0 && (
-                  <Timeline snapshots={snapshots} selected={selected} onToggle={toggle} onOpen={openSnapshot} onCompare={runCompare} />
+                {view === 'analysis' && evaluated && (
+                  <Analysis snapshot={snapshot} snapshots={snapshots} snapshotId={snapshotId} onSelectSnapshot={setSnapshotId} />
+                )}
+                {view === 'timeline' && evaluated && (
+                  <Timeline snapshots={snapshots} selected={selected} onToggle={toggle} onOpen={openSnapshot} onCompare={runCompare} onDelete={removeSnapshot} />
                 )}
                 {view === 'compare' && <Compare data={compare} onBack={() => setView('timeline')} />}
               </>
@@ -159,10 +189,12 @@ function Offline() {
   )
 }
 
-function Empty() {
+// 沒有案件，或選取的案件只登記、還沒上傳快照（尚未評估）
+function Empty({ title }) {
   return (
     <div className="notice">
-      <h2>還沒有任何評估快照</h2>
+      <h2>{title ? `「${title}」尚未評估` : '還沒有任何評估快照'}</h2>
+      {title && <p className="muted">材料對照可以先做；計算並上傳快照後，這裡才會有等級與減碳率。</p>}
       <p>兩種方式加入第一筆：</p>
       <ol>
         <li>在 Revit「LEBR 評估」視窗按「計算」，再按「上傳到控制台」。</li>

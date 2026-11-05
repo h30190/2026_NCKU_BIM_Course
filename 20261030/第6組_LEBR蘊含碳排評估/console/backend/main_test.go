@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -260,5 +261,133 @@ func TestAnalysisStoredAndOldDBMigrated(t *testing.T) {
 	}
 	if string(without.Analysis) != "null" {
 		t.Fatalf("old snapshot analysis = %s", without.Analysis)
+	}
+}
+
+func listProjectsT(t *testing.T, mux *http.ServeMux) []Project {
+	t.Helper()
+	var projects []Project
+	_ = json.Unmarshal(do(t, mux, "GET", "/api/projects", "").Body.Bytes(), &projects)
+	return projects
+}
+
+// 刪快照：只刪那一筆與明細；刪到最後一筆時案件保留，回到「尚未評估」
+func TestDeleteSnapshot(t *testing.T) {
+	s, mux := newTestMux(t)
+	var a, b struct{ ID int64 }
+	_ = json.Unmarshal(do(t, mux, "POST", "/api/snapshots", snapshotJSON("專案1", "方案 A", "1級", 0.18, 1)).Body.Bytes(), &a)
+	_ = json.Unmarshal(do(t, mux, "POST", "/api/snapshots", snapshotJSON("專案1", "方案 B", "2級", 0.13, 1)).Body.Bytes(), &b)
+
+	if rec := do(t, mux, "DELETE", fmt.Sprintf("/api/snapshots/%d", a.ID), ""); rec.Code != http.StatusOK {
+		t.Fatalf("delete A = %d %s", rec.Code, rec.Body.String())
+	}
+	if p := listProjectsT(t, mux); len(p) != 1 || p[0].SnapshotCount != 1 {
+		t.Fatalf("projects after delete A = %+v", p)
+	}
+	var items int
+	_ = s.DB.QueryRow(`SELECT COUNT(*) FROM snapshot_items WHERE snapshot_id = ?`, a.ID).Scan(&items)
+	if items != 0 {
+		t.Fatalf("items of deleted snapshot = %d", items)
+	}
+
+	if rec := do(t, mux, "DELETE", fmt.Sprintf("/api/snapshots/%d", b.ID), ""); rec.Code != http.StatusOK {
+		t.Fatalf("delete B = %d %s", rec.Code, rec.Body.String())
+	}
+	if p := listProjectsT(t, mux); len(p) != 1 || p[0].SnapshotCount != 0 || p[0].Latest != nil {
+		t.Fatalf("case should stay without snapshots, got %+v", p)
+	}
+	if rec := do(t, mux, "DELETE", fmt.Sprintf("/api/snapshots/%d", b.ID), ""); rec.Code != http.StatusNotFound {
+		t.Fatalf("delete again = %d", rec.Code)
+	}
+}
+
+// 刪案子：連同所有快照與明細，其他案子不受影響
+func TestDeleteProject(t *testing.T) {
+	s, mux := newTestMux(t)
+	var a struct{ ProjectID int64 }
+	_ = json.Unmarshal(do(t, mux, "POST", "/api/snapshots", snapshotJSON("專案1", "方案 A", "1級", 0.18, 1)).Body.Bytes(), &a)
+	do(t, mux, "POST", "/api/snapshots", snapshotJSON("專案1", "方案 B", "2級", 0.13, 1))
+	do(t, mux, "POST", "/api/snapshots", snapshotJSON("專案2", "方案 A", "1級", 0.18, 1))
+
+	if rec := do(t, mux, "DELETE", fmt.Sprintf("/api/projects/%d", a.ProjectID), ""); rec.Code != http.StatusOK {
+		t.Fatalf("delete project = %d %s", rec.Code, rec.Body.String())
+	}
+	if p := listProjectsT(t, mux); len(p) != 1 || p[0].Key != "專案2" {
+		t.Fatalf("projects after delete = %+v", p)
+	}
+	var snaps, items int
+	_ = s.DB.QueryRow(`SELECT COUNT(*) FROM snapshots`).Scan(&snaps)
+	_ = s.DB.QueryRow(`SELECT COUNT(*) FROM snapshot_items`).Scan(&items)
+	if snaps != 1 || items != 2 {
+		t.Fatalf("left snapshots=%d items=%d, want 1 and 2", snaps, items)
+	}
+	if rec := do(t, mux, "DELETE", fmt.Sprintf("/api/projects/%d", a.ProjectID), ""); rec.Code != http.StatusNotFound {
+		t.Fatalf("delete again = %d", rec.Code)
+	}
+}
+
+// 範例只在第一次啟動匯入：使用者刪光案子後重啟，不會再冒出範例
+func TestSeedNotRepeatedAfterDeleteAll(t *testing.T) {
+	s, mux := newTestMux(t)
+	dir := t.TempDir()
+	_ = os.WriteFile(filepath.Join(dir, "a.json"), []byte(snapshotJSON("專案1", "範例", "1級", 0.18, 1)), 0o644)
+	if n, err := s.SeedIfEmpty(dir); err != nil || n != 1 {
+		t.Fatalf("seed = %d, %v", n, err)
+	}
+	p := listProjectsT(t, mux)
+	do(t, mux, "DELETE", fmt.Sprintf("/api/projects/%d", p[0].ID), "")
+	if n, err := s.SeedIfEmpty(dir); err != nil || n != 0 {
+		t.Fatalf("seed after delete-all = %d, %v", n, err)
+	}
+}
+
+// 開模型時登記案子：還沒快照也列出（排在有快照的後面）；重複登記只更新標題
+func TestRegisterProject(t *testing.T) {
+	_, mux := newTestMux(t)
+	do(t, mux, "POST", "/api/snapshots", snapshotJSON("已評估", "方案 A", "1級", 0.18, 1))
+
+	rec := do(t, mux, "POST", "/api/projects", `{"key":"SB_B_250212","title":"SB_B_250212"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("register = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := do(t, mux, "POST", "/api/projects", `{"key":"SB_B_250212","title":"新標題"}`); rec.Code != http.StatusOK {
+		t.Fatalf("register again = %d", rec.Code)
+	}
+	p := listProjectsT(t, mux)
+	if len(p) != 2 || p[0].Key != "已評估" || p[1].Key != "SB_B_250212" || p[1].Title != "新標題" || p[1].Latest != nil || p[1].SnapshotCount != 0 {
+		t.Fatalf("projects = %+v", p)
+	}
+	if rec := do(t, mux, "POST", "/api/projects", `{"key":"  "}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("empty key = %d", rec.Code)
+	}
+}
+
+// 材料對照表裡的模型只在第一次啟動時轉成案子；刪掉後不再冒出來，已有的案子不重複建立
+func TestImportMappingCasesOnce(t *testing.T) {
+	dir := t.TempDir()
+	blcc, mapping := filepath.Join(dir, "blcc.json"), filepath.Join(dir, "mapping.json")
+	_ = os.WriteFile(blcc, []byte(testBlcc), 0o644)
+	_ = os.WriteFile(mapping, []byte(testMapping), 0o644) // 專案1、SB
+	store, err := NewMappingStore(blcc, mapping)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, mux := newTestMux(t)
+	s.Mapping = store
+	do(t, mux, "POST", "/api/snapshots", snapshotJSON("專案1", "方案 A", "1級", 0.18, 1))
+
+	if n, err := s.ImportMappingCases(); err != nil || n != 1 {
+		t.Fatalf("import = %d, %v（只有 SB 是新的）", n, err)
+	}
+	p := listProjectsT(t, mux)
+	if len(p) != 2 || p[1].Key != "SB" {
+		t.Fatalf("projects = %+v", p)
+	}
+	do(t, mux, "DELETE", fmt.Sprintf("/api/projects/%d", p[1].ID), "")
+	if n, err := s.ImportMappingCases(); err != nil || n != 0 {
+		t.Fatalf("second import = %d, %v", n, err)
+	}
+	if p := listProjectsT(t, mux); len(p) != 1 {
+		t.Fatalf("deleted case came back: %+v", p)
 	}
 }

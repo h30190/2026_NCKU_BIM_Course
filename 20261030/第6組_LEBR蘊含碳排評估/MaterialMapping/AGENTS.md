@@ -67,7 +67,7 @@ rvt-mcp 實測踩到的坑：
 3. query_elements_with_filter(category=Walls, returnFields=["結構","面積","功能"...], maxCount=1000)
    一次批次讀取，不要逐一查詢369道牆這種事（會被Revit MCP連線擋，常常逾時）
 4. 依下面「判斷規則」給每個類型一個 BlccId 草稿
-5. 寫進 data/mapping.json（記得加 project 欄位！見下方「多專案」）
+5. 寫進 data/mapping.json（記得加 project 欄位，填模型檔名！見下方「多專案」）
 6. 請使用者開控制台（`../console/start.ps1`，http://localhost:5173）的「材料對照」分頁看過、改過；
    後端會在檔案修改後自動重讀，不用重啟
 7. 使用者確認後，用 modify_element_parameter 把 bodyId;finishId 寫進該類型的 LEBR_BlccId
@@ -190,7 +190,16 @@ rvt-mcp 實測踩到的坑：
 
 ## 多專案：project 欄位
 
-`mapping.json` 的每個項目都要有 `project` 欄位（填 `get_project_info` 回傳的 `ProjectName`）。**不同 Revit 檔案的 ElementId 可能剛好相同**（尤其是同一份範本帶出來的系統族類型，例如帷幕牆、預設磚牆類型），寫入/更新時一定要連 `project` 一起比對，控制台後端的 PATCH 已經這樣做了（看 `../console/backend/handlers_mapping.go` 的 `handleMappingUpdate`），新增程式碼時不要漏掉這個比對。
+`mapping.json` 的每個項目都要有 `project` 欄位，**填模型檔名（不含 `.rvt`）**，例如 `SB_B_250212.rvt` → `"SB_B_250212"`。
+這和控制台左側「案件」的名稱、外掛上傳快照與減碳建議用的 key 是同一個：外掛在 Revit 開啟模型時會自動用檔名建立案件，
+控制台「材料對照」只顯示與選取案件同名的項目，名稱不一致就看不到。
+
+- **不要填 `get_project_info` 回傳的 `ProjectName`**：那是 Revit「專案資訊」裡的專案名稱，很多模型沒改過、還是範本預設值，
+  不同檔案會撞名，也和檔名對不上。
+- 怎麼拿到檔名：看 Revit 視窗標題列（例如「Autodesk Revit 2026.5 - SB_B_250212.rvt - 3D 視圖」），
+  或 `GET http://127.0.0.1:8080/api/projects` 找使用者剛開的那個案件的 `key`。**不確定就問使用者，不要猜。**
+
+**不同 Revit 檔案的 ElementId 可能剛好相同**（尤其是同一份範本帶出來的系統族類型，例如帷幕牆、預設磚牆類型），寫入/更新時一定要連 `project` 一起比對，控制台後端的 PATCH 已經這樣做了（看 `../console/backend/handlers_mapping.go` 的 `handleMappingUpdate`），新增程式碼時不要漏掉這個比對。
 
 ## 不要做的事
 

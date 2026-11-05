@@ -29,7 +29,7 @@ type BlccOption struct {
 
 type MappingItem struct {
 	ElementID  int     `json:"elementId"`
-	Project    string  `json:"project"` // 來源 Revit 專案名；不同檔案的 elementId 可能相同，一律連 project 比對
+	Project    string  `json:"project"` // 模型檔名（= 案件 key）；不同檔案的 elementId 可能相同，一律連 project 比對
 	TypeName   string  `json:"typeName"`
 	Kind       string  `json:"kind"` // wall(CW+OW) / glazing(CW) / interior(IW) / window(W) / excluded
 	BodyID     *string `json:"bodyId"`
@@ -85,6 +85,24 @@ func NewMappingStore(blccPath, mappingPath string) (*MappingStore, error) {
 		return nil, err
 	}
 	return s, nil
+}
+
+// Projects 回傳對照表裡出現過的模型名稱（依第一次出現的順序）。
+func (s *MappingStore) Projects() ([]string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.refreshLocked(); err != nil {
+		return nil, err
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, it := range s.data.Items {
+		if it.Project != "" && !seen[it.Project] {
+			seen[it.Project] = true
+			out = append(out, it.Project)
+		}
+	}
+	return out, nil
 }
 
 // refreshLocked 在檔案修改時間變了時重新讀取；檔案不存在視為空表。

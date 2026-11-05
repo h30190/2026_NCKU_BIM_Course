@@ -14,10 +14,10 @@ const KINDS = [
   ['excluded', '排除／不計入'],
 ]
 
-export default function MaterialMap({ projectTitle }) {
+// 只顯示左側選取案件的資料（對照表 project 欄位 = 案件 key = 模型檔名）；沒有任何案件時顯示全部。
+export default function MaterialMap({ projectKey }) {
   const [items, setItems] = useState([])
   const [options, setOptions] = useState({ cw: [], ow: [], iw: [], w: [] })
-  const [project, setProject] = useState('')
   const [collapsed, setCollapsed] = useState(() => new Set(['excluded']))
   const [error, setError] = useState('')
   const [loaded, setLoaded] = useState(false)
@@ -31,16 +31,14 @@ export default function MaterialMap({ projectTitle }) {
   useEffect(() => {
     let alive = true
     Promise.all([reload(), ...['cw', 'ow', 'iw', 'w'].map(getBlccOptions)])
-      .then(([list, cw, ow, iw, w]) => {
+      .then(([, cw, ow, iw, w]) => {
         if (!alive) return
         setOptions({ cw, ow, iw, w })
-        // 預設篩選與左側選取的案子同名的 Revit 專案
-        if (projectTitle && list.some((it) => it.project === projectTitle)) setProject(projectTitle)
         setLoaded(true)
       })
       .catch((e) => alive && (setError(e.message), setLoaded(true)))
     return () => { alive = false }
-  }, [reload, projectTitle])
+  }, [reload, projectKey])
 
   const save = async (item, patch) => {
     setError('')
@@ -52,8 +50,7 @@ export default function MaterialMap({ projectTitle }) {
     }
   }
 
-  const projects = useMemo(() => [...new Set(items.map((it) => it.project).filter(Boolean))], [items])
-  const shown = project ? items.filter((it) => it.project === project) : items
+  const shown = useMemo(() => (projectKey ? items.filter((it) => it.project === projectKey) : items), [items, projectKey])
   const total = shown.reduce((s, it) => s + (it.subtotal || 0), 0)
   const pending = shown.filter((it) => it.kind !== 'excluded' && it.confidence !== 'confirmed').length
   const groups = KINDS.map(([kind, label]) => {
@@ -78,25 +75,16 @@ export default function MaterialMap({ projectTitle }) {
     <div className="overview">
       <div className="overview-head">
         <div>
-          <h1>材料對照</h1>
+          <h1>{projectKey ? `${projectKey}・材料對照` : '材料對照'}</h1>
           <p className="muted small">Revit 類型 → B-LCC 構件代碼。AI 依規則產生草稿，請逐項確認後再寫回模型的 LEBR_BlccId。</p>
         </div>
-        {projects.length > 0 && (
-          <label className="snapshot-picker">
-            <span className="muted small">Revit 專案</span>
-            <select value={project} onChange={(e) => setProject(e.target.value)}>
-              <option value="">全部</option>
-              {projects.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </label>
-        )}
       </div>
 
       {error && <div className="banner banner-error">{error}</div>}
 
       {!loaded && <p className="muted">載入中…</p>}
 
-      {loaded && items.length > 0 && (
+      {loaded && shown.length > 0 && (
       <section className="card mapping-summary">
         <div>
           <span className="muted small">材料試算合計</span>
@@ -112,10 +100,10 @@ export default function MaterialMap({ projectTitle }) {
       </section>
       )}
 
-      {loaded && items.length === 0 && !error && (
+      {loaded && shown.length === 0 && !error && (
         <div className="notice">
-          <h2>還沒有材料對照資料</h2>
-          <p>請 AI agent 依 <code>MaterialMapping/AGENTS.md</code> 透過 Revit MCP 辨識模型，結果會寫進 <code>MaterialMapping/data/mapping.json</code>，存檔後按右上角「重新整理」或切換分頁即可看到。</p>
+          <h2>{projectKey ? `「${projectKey}」還沒有材料對照資料` : '還沒有材料對照資料'}</h2>
+          <p>在 Revit 開啟這個模型，請 AI agent 依 <code>MaterialMapping/AGENTS.md</code> 透過 Revit MCP 辨識，結果會寫進 <code>MaterialMapping/data/mapping.json</code>（<code>project</code> 欄位填模型檔名），存檔後按右上角「重新整理」或切換分頁即可看到。</p>
         </div>
       )}
 
@@ -135,7 +123,7 @@ export default function MaterialMap({ projectTitle }) {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      {!project && <th>專案</th>}
+                      {!projectKey && <th>模型</th>}
                       <th>Revit 類型</th>
                       <th>本體</th>
                       <th>外裝</th>
@@ -149,7 +137,7 @@ export default function MaterialMap({ projectTitle }) {
                   <tbody>
                     {g.list.map((it) => (
                       <tr key={`${it.project}-${it.elementId}`}>
-                        {!project && <td className="muted small">{it.project}</td>}
+                        {!projectKey && <td className="muted small">{it.project}</td>}
                         <td className="wrap">{it.typeName}</td>
                         <td>
                           {it.kind === 'excluded' ? '—' : (

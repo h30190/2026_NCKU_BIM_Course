@@ -1,3 +1,4 @@
+using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
 using LebrCarbon.Revit.Commands;
 
@@ -41,10 +42,23 @@ public sealed class App : IExternalApplication
         var settings = app.CreateRibbonPanel(TabName, "設定");
         AddButton<FactorLibraryCommand>(settings, asm, "係數庫", "檢視、匯入、切換係數版本");
 
+        // 開啟或另存模型時在控制台登記案件（key = 檔名），還沒評估的模型也會出現在網頁左側
+        app.ControlledApplication.DocumentOpened += OnDocumentOpened;
+        app.ControlledApplication.DocumentSavedAs += OnDocumentSavedAs;
+
         return Result.Succeeded;
     }
 
-    public Result OnShutdown(UIControlledApplication app) => Result.Succeeded;
+    public Result OnShutdown(UIControlledApplication app)
+    {
+        app.ControlledApplication.DocumentOpened -= OnDocumentOpened;
+        app.ControlledApplication.DocumentSavedAs -= OnDocumentSavedAs;
+        return Result.Succeeded;
+    }
+
+    private static void OnDocumentOpened(object? sender, DocumentOpenedEventArgs e) => ConsoleCase.RegisterInBackground(e.Document);
+
+    private static void OnDocumentSavedAs(object? sender, DocumentSavedAsEventArgs e) => ConsoleCase.RegisterInBackground(e.Document);
 
     private static void AddButton<T>(RibbonPanel panel, string asm, string text, string tooltip)
         where T : IExternalCommand

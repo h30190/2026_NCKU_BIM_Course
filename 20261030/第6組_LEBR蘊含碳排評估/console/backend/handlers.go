@@ -29,8 +29,11 @@ func (s *Server) routes(mux *http.ServeMux) {
 	})
 	mux.HandleFunc("POST /api/snapshots", s.handleUploadSnapshot)
 	mux.HandleFunc("GET /api/projects", s.handleListProjects)
+	mux.HandleFunc("POST /api/projects", s.handleRegisterProject)
 	mux.HandleFunc("GET /api/projects/{id}/snapshots", s.handleListSnapshots)
+	mux.HandleFunc("DELETE /api/projects/{id}", s.handleDeleteProject)
 	mux.HandleFunc("GET /api/snapshots/{id}", s.handleGetSnapshot)
+	mux.HandleFunc("DELETE /api/snapshots/{id}", s.handleDeleteSnapshot)
 	mux.HandleFunc("GET /api/snapshots/{id}/excel", s.handleDownloadExcel)
 	mux.HandleFunc("GET /api/compare", s.handleCompare)
 	mux.HandleFunc("GET /api/blcc", s.handleBlcc)
@@ -149,11 +152,82 @@ func scanSummary(row interface{ Scan(...any) error }, x *SnapshotSummary, extra 
 		&x.Eec, &x.Eecc, &x.Cfr, &x.Grade, &x.HasExcel}, extra...)...)
 }
 
-// GET /api/projects — 案子列表，附最新快照的等級、CFR、時間；最近更新的排前面。
+// POST /api/projects — body: {key, title?}。外掛在 Revit 開啟模型時登記案子（key = 模型檔名），
+// 還沒上傳快照也會出現在左側列表；已存在時只更新標題。
+func (s *Server) handleRegisterProject(w http.ResponseWriter, r *http.Request) {
+	var body struct{ Key, Title string }
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&body); err != nil {
+		writeErr(w, http.StatusBadRequest, "JSON 無法解析："+err.Error())
+		return
+	}
+	p, err := s.registerProject(body.Key, body.Title)
+	var bad errBadSnapshot
+	if errors.As(err, &bad) {
+		writeErr(w, http.StatusBadRequest, bad.msg)
+		return
+	}
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, p)
+}
+
+func (s *Server) registerProject(key, title string) (Project, error) {
+	p := Project{Key: strings.TrimSpace(key), Title: strings.TrimSpace(title)}
+	if p.Key == "" {
+		return p, errBadSnapshot{"key 必填"}
+	}
+	if p.Title == "" {
+		p.Title = p.Key
+	}
+	if _, err := s.DB.Exec(`INSERT INTO projects (key, title) VALUES (?, ?)
+		ON CONFLICT(key) DO UPDATE SET title = excluded.title`, p.Key, p.Title); err != nil {
+		return p, err
+	}
+	err := s.DB.QueryRow(`SELECT p.id, COUNT(s.id) FROM projects p LEFT JOIN snapshots s ON s.project_id = p.id
+		WHERE p.key = ? GROUP BY p.id`, p.Key).Scan(&p.ID, &p.SnapshotCount)
+	return p, err
+}
+
+// ImportMappingCases 把材料對照表裡出現過、但還沒有案子的模型登記成案子，只在第一次執行。
+// 之後使用者刪掉的案子不會因為對照表還有資料又冒出來。
+func (s *Server) ImportMappingCases() (int, error) {
+	if s.Mapping == nil {
+		return 0, nil
+	}
+	var done int
+	if err := s.DB.QueryRow(`SELECT COUNT(*) FROM meta WHERE key = 'mapping-cases'`).Scan(&done); err != nil || done > 0 {
+		return 0, err
+	}
+	names, err := s.Mapping.Projects()
+	if err != nil {
+		return 0, err
+	}
+	n := 0
+	for _, name := range names {
+		var exists int
+		if err := s.DB.QueryRow(`SELECT COUNT(*) FROM projects WHERE key = ?`, name).Scan(&exists); err != nil {
+			return n, err
+		}
+		if exists > 0 {
+			continue
+		}
+		if _, err := s.registerProject(name, name); err != nil {
+			return n, err
+		}
+		n++
+	}
+	_, err = s.DB.Exec(`INSERT INTO meta (key, value) VALUES ('mapping-cases', '1')`)
+	return n, err
+}
+
+// GET /api/projects — 案子列表，附最新快照的等級、CFR、時間；有快照的依最近上傳排前面，
+// 只登記、還沒評估的排在後面（依登記先後）。
 func (s *Server) handleListProjects(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.DB.Query(`SELECT p.id, p.key, p.title, COUNT(s.id), MAX(s.id)
 		FROM projects p LEFT JOIN snapshots s ON s.project_id = p.id
-		GROUP BY p.id ORDER BY MAX(s.id) DESC`)
+		GROUP BY p.id ORDER BY MAX(s.id) IS NULL, MAX(s.id) DESC, p.id`)
 	if err != nil {
 		writeErr(w, 500, err.Error())
 		return
@@ -265,11 +339,100 @@ func (s *Server) loadSnapshot(id int64) (*SnapshotDetail, error) {
 	return &d, rows.Err()
 }
 
-// SeedIfEmpty 在資料庫沒有任何案子時，匯入資料夾裡的 *.json 快照（依檔名排序）。
-// 教室沒有 Revit 2026 時，用事先產生的快照 demo 網頁。
-func (s *Server) SeedIfEmpty(dir string) (int, error) {
+// DELETE /api/snapshots/{id} — 刪除一筆快照與明細。案件（對應一個模型）保留，刪光快照就回到「尚未評估」。
+func (s *Server) handleDeleteSnapshot(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r)
+	if !ok {
+		return
+	}
+	tx, err := s.DB.Begin()
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	defer tx.Rollback()
+
+	var projID int64
+	if err := tx.QueryRow(`SELECT project_id FROM snapshots WHERE id = ?`, id).Scan(&projID); errors.Is(err, sql.ErrNoRows) {
+		writeErr(w, http.StatusNotFound, "找不到這筆快照")
+		return
+	} else if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	err = execAll(tx,
+		[]string{`DELETE FROM snapshot_items WHERE snapshot_id = ?`, `DELETE FROM snapshots WHERE id = ?`}, id)
+	if err == nil {
+		err = tx.Commit()
+	}
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]int64{"id": id, "projectId": projID})
+}
+
+// DELETE /api/projects/{id} — 刪除案子與它所有的快照、明細。
+func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(w, r)
+	if !ok {
+		return
+	}
+	tx, err := s.DB.Begin()
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	defer tx.Rollback()
+
 	var n int
-	if err := s.DB.QueryRow(`SELECT COUNT(*) FROM projects`).Scan(&n); err != nil || n > 0 {
+	err = execAll(tx, []string{
+		`DELETE FROM snapshot_items WHERE snapshot_id IN (SELECT id FROM snapshots WHERE project_id = ?)`,
+		`DELETE FROM snapshots WHERE project_id = ?`,
+	}, id)
+	if err == nil {
+		var res sql.Result
+		if res, err = tx.Exec(`DELETE FROM projects WHERE id = ?`, id); err == nil {
+			affected, _ := res.RowsAffected()
+			n = int(affected)
+		}
+	}
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	if n == 0 {
+		writeErr(w, http.StatusNotFound, "找不到這個案子")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]int64{"id": id})
+}
+
+func execAll(tx *sql.Tx, stmts []string, args ...any) error {
+	for _, q := range stmts {
+		if _, err := tx.Exec(q, args...); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SeedIfEmpty 在第一次啟動、資料庫沒有任何案子時，匯入資料夾裡的 *.json 快照（依檔名排序）。
+// 教室沒有 Revit 2026 時，用事先產生的快照 demo 網頁。匯入過一次就記在 meta 表，
+// 之後使用者把案子刪光也不會再匯入（刪 db 檔重來才會）。
+func (s *Server) SeedIfEmpty(dir string) (int, error) {
+	var seeded, n int
+	if err := s.DB.QueryRow(`SELECT COUNT(*) FROM meta WHERE key = 'seeded'`).Scan(&seeded); err != nil || seeded > 0 {
+		return 0, err
+	}
+	if err := s.DB.QueryRow(`SELECT COUNT(*) FROM projects`).Scan(&n); err != nil {
+		return 0, err
+	}
+	if _, err := s.DB.Exec(`INSERT INTO meta (key, value) VALUES ('seeded', '1')`); err != nil || n > 0 {
 		return 0, err
 	}
 	files, err := filepath.Glob(filepath.Join(dir, "*.json"))

@@ -2,19 +2,26 @@ import { useCallback, useEffect, useState } from 'react'
 import { listProposals, setProposalStatus } from '../api.js'
 import { kg, pct, time } from '../format.js'
 import GradeBadge from '../components/GradeBadge.jsx'
+import SnapshotPicker from '../components/SnapshotPicker.jsx'
 
 // 分析與建議（AI 分析計畫書 5、6 節）：哪裡佔比最多、每項還能降多少、距下一級，以及 AI 建議清單。
 // 數字全部來自快照的 analysis（外掛用同一個計算核心逐項試算），網頁不另外計算碳排。
-export default function Analysis({ snapshot }) {
+// 快照切換與評估總覽共用同一個選取；減碳建議屬於案件，不隨快照變。
+export default function Analysis({ snapshot, snapshots, snapshotId, onSelectSnapshot }) {
   if (!snapshot) return <p className="muted">載入中…</p>
   const a = snapshot.analysis
   const r = snapshot.result ?? {}
 
   return (
     <div className="overview">
-      <div>
-        <h1>{snapshot.projectTitle}・分析與建議</h1>
-        <p className="muted small">快照「{snapshot.name}」・{time(snapshot.createdAt)}</p>
+      <div className="overview-head">
+        <div>
+          <h1>{snapshot.projectTitle}・分析與建議</h1>
+          <p className="muted small">快照「{snapshot.name}」・{time(snapshot.createdAt)}</p>
+        </div>
+        <div className="head-actions">
+          <SnapshotPicker snapshots={snapshots} snapshotId={snapshotId} onSelect={onSelectSnapshot} />
+        </div>
       </div>
 
       {!a ? (

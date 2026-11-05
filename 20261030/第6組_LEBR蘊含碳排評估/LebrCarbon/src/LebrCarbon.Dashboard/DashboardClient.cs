@@ -47,6 +47,23 @@ public sealed class DashboardClient : IDisposable
         }
     }
 
+    /// <summary>POST /api/projects 登記案件（已存在時只更新標題）；後端沒開或失敗回 false，不丟例外。</summary>
+    public async Task<bool> RegisterProjectAsync(string key, string title, CancellationToken ct = default)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(TimeSpan.FromSeconds(3));
+        using var content = new StringContent(JsonSerializer.Serialize(new { key, title }), Encoding.UTF8, "application/json");
+        try
+        {
+            using var res = await _http.PostAsync("api/projects", content, cts.Token).ConfigureAwait(false);
+            return res.IsSuccessStatusCode;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>先確認後端有開，再 POST /api/snapshots。</summary>
     public async Task<UploadResult> UploadAsync(SnapshotDocument snapshot, CancellationToken ct = default)
     {

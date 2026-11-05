@@ -2,6 +2,7 @@ import { excelUrl } from '../api.js'
 import { kg, num, pct, text, time, STRUCTURE, WEAR, WASTE } from '../format.js'
 import GradeBadge from '../components/GradeBadge.jsx'
 import GradeScale from '../components/GradeScale.jsx'
+import SnapshotPicker from '../components/SnapshotPicker.jsx'
 import StageChart, { SEGMENTS } from '../components/StageChart.jsx'
 import ItemsTable from '../components/ItemsTable.jsx'
 
@@ -23,14 +24,7 @@ export default function Overview({ snapshot, snapshots, snapshotId, onSelectSnap
         </div>
         <div className="head-actions">
           {snapshot.hasExcel && <a className="button" href={excelUrl(snapshot.id)} download>下載 Excel 計算書</a>}
-          <label className="snapshot-picker">
-            <span className="muted small">快照</span>
-            <select value={snapshotId ?? ''} onChange={(e) => onSelectSnapshot(Number(e.target.value))}>
-              {snapshots.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}（{s.grade}，{time(s.createdAt)}）</option>
-              ))}
-            </select>
-          </label>
+          <SnapshotPicker snapshots={snapshots} snapshotId={snapshotId} onSelect={onSelectSnapshot} />
         </div>
       </div>
 

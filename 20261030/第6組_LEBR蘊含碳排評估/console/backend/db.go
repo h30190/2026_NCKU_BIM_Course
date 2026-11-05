@@ -75,6 +75,11 @@ func migrate(db *sql.DB) error {
 			status TEXT NOT NULL DEFAULT 'pending',
 			created_at DATETIME NOT NULL DEFAULT (datetime('now'))
 		)`,
+		// 雜項旗標，例如範例快照是否已匯入過
+		`CREATE TABLE IF NOT EXISTS meta (
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL DEFAULT ''
+		)`,
 		`CREATE INDEX IF NOT EXISTS idx_snapshots_project ON snapshots(project_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_items_snapshot ON snapshot_items(snapshot_id)`,
 	}

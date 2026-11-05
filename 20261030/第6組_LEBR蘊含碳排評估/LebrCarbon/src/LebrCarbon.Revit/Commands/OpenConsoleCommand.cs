@@ -21,12 +21,16 @@ public sealed class OpenConsoleCommand : IExternalCommand
     public Result Execute(ExternalCommandData data, ref string message, ElementSet elements)
     {
         var settings = DashboardSettings.Load();
+        // 目前開著的模型順便登記成案件，網頁打開時左側就看得到它
+        var caseKey = ConsoleCase.RegistrableKey(data.Application.ActiveUIDocument?.Document);
 
         bool backendUp;
         using (var probe = new DashboardClient(settings.BaseUrl))
             backendUp = Task.Run(() => probe.IsRunningAsync()).GetAwaiter().GetResult();
         if (backendUp && Task.Run(() => IsUpAsync(settings.FrontendUrl, TimeSpan.FromSeconds(2))).GetAwaiter().GetResult())
         {
+            if (caseKey is not null)
+                Task.Run(() => ConsoleCase.RegisterAsync(settings.BaseUrl, caseKey)).GetAwaiter().GetResult();
             OpenBrowser(settings.FrontendUrl);
             return Result.Succeeded;
         }
@@ -62,8 +66,13 @@ public sealed class OpenConsoleCommand : IExternalCommand
         var url = settings.FrontendUrl;
         _ = Task.Run(async () =>
         {
-            if (await IsUpAsync(url, TimeSpan.FromMinutes(3)).ConfigureAwait(false))
-                OpenBrowser(url);
+            // go run 第一次要編譯，後端可能比前端晚好：兩邊都等到再登記、開瀏覽器
+            var ready = await IsUpAsync(settings.BaseUrl.TrimEnd('/') + "/api/health", TimeSpan.FromMinutes(3)).ConfigureAwait(false)
+                && await IsUpAsync(url, TimeSpan.FromMinutes(3)).ConfigureAwait(false);
+            if (!ready) return;
+            if (caseKey is not null)
+                await ConsoleCase.RegisterAsync(settings.BaseUrl, caseKey).ConfigureAwait(false);
+            OpenBrowser(url);
         });
 
         TaskDialog.Show(Title,
