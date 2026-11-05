@@ -15,4 +15,6 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Revit 2024 build failed.' }
 } finally { Pop-Location }
 
-Write-Host "REGRESSION PASS: backend rules/API and Revit 2024 compilation"
+& (Join-Path $PSScriptRoot 'verify-uninstall.ps1')
+
+Write-Host "REGRESSION PASS: backend workflow/rules/API, material policy, recoverable uninstall and Revit 2024 compilation"

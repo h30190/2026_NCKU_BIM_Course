@@ -18,6 +18,8 @@ func OpenDB(dbPath string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	// One local SQLite writer; revision guards still decide which request wins.
+	db.SetMaxOpenConns(1)
 	if err := migrate(db); err != nil {
 		db.Close()
 		return nil, err
@@ -115,6 +117,8 @@ func migrate(db *sql.DB) error {
 
 	// Existing course databases are upgraded in place; no prior data is removed.
 	columns := map[string]string{
+		"target_unique_id":           "TEXT NOT NULL DEFAULT ''",
+		"reserved_by":                "TEXT NOT NULL DEFAULT ''",
 		"source_element_id":          "TEXT NOT NULL DEFAULT ''",
 		"dimension_definition":       "TEXT NOT NULL DEFAULT ''",
 		"fire_minutes":               "INTEGER NOT NULL DEFAULT 0",

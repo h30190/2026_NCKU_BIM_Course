@@ -21,6 +21,7 @@ namespace TemporalBim
         private readonly ToolTip _sources = new ToolTip { AutoPopDelay = 20000, InitialDelay = 300, ReshowDelay = 100 };
         private int _demandRevision;
         private bool _matching;
+        private bool _workflowBusy;
 
         private readonly TextBox _width = Box();
         private readonly TextBox _height = Box();
@@ -324,7 +325,7 @@ namespace TemporalBim
 
         private async Task SubmitAsync()
         {
-            if (_matching) return;
+            if (_matching || _workflowBusy) return;
             try
             {
                 var missing = RequiredMissing();
@@ -402,54 +403,66 @@ namespace TemporalBim
             previous?.Dispose();
         }
 
+        private Task<PassportInfo> UpdateWorkflowAsync(PassportInfo p, string status, DoorSwapAudit audit = null)
+        {
+            return BackendClient.PatchPassportAsync(p.Id, status, _door.Document.Title,
+                _door.Id.Value.ToString(CultureInfo.InvariantCulture), _door.UniqueId,
+                audit?.OriginalUniqueId, BuildRequest().Basis, _actor,
+                audit?.OriginalTypeId, audit?.NewTypeId, p.Revision);
+        }
+
         private async Task ReserveAsync()
         {
+            if (_workflowBusy) return;
             var result = _grid.CurrentRow?.Tag as MatchResultInfo;
             if (result == null) { _status.Text = "請先選取一筆配對結果。"; return; }
-            if (result.Result != "Matched") { _status.Text = "只有所有必要條件都通過的 Matched 護照可以預留；待確認資料不可略過。"; return; }
+            if (result.Result != "Matched") { _status.Text = "只有 Matched 護照可以預留。"; return; }
+            _workflowBusy = true;
             try
             {
-                try { _uiDoc.Selection.SetElementIds(new[] { _door.Id }); _uiDoc.ShowElements(_door.Id); } catch { }
-                var updated = await BackendClient.PatchPassportAsync(result.Passport.Id, status: "Reserved", reason: BuildRequest().Basis, actor: _actor);
-                result.Passport = updated;
-                _status.Text = $"{updated.PassportId} 已預留。確認預覽內容後，可執行 B-1 替換。";
+                result.Passport = await UpdateWorkflowAsync(result.Passport, "Reserved");
+                _status.Text = $"{result.Passport.PassportId} 已為目前目標門預留。確認後可執行 B-1 替換。";
                 UpdatePreview();
             }
-            catch (Exception ex) { _status.Text = "預留失敗：" + ErrorText.RealMessage(ex); }
+            catch (Exception ex) { _status.Text = "預留失敗，請重新載入：" + ErrorText.RealMessage(ex); }
+            finally { _workflowBusy = false; }
         }
 
         private async Task ExecuteSwapAsync()
         {
+            if (_workflowBusy) return;
             var result = _grid.CurrentRow?.Tag as MatchResultInfo;
             if (result == null || result.Result != "Matched") { _status.Text = "只能替換 Matched 護照。"; return; }
-            if (result.Passport.Status != "Reserved") { _status.Text = "請先按「預覽並預留」，避免同一護照被重複配置。"; return; }
-            if (MessageBox.Show($"確定以 {result.Passport.PassportId} 建立 B-1 替換？\n將載入來源門族群與材質；請確認 A 模型已在同一個 Revit 開啟。", "確認 B-1 替換", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK) return;
-
-            DoorSwapAudit audit;
+            if (result.Passport.Status != "Reserved") { _status.Text = "請先按「預覽並預留」。"; return; }
+            if (MessageBox.Show($"確定以 {result.Passport.PassportId} 建立 B-1 替換？\n將載入來源門族群與材質；請確認 A 模型已在同一個 Revit 開啟。",
+                "確認 B-1 替換", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK) return;
+            _workflowBusy = true;
             try
             {
-                audit = DoorSwapHelper.Swap(_door.Document, _door, result.Passport);
+                DoorSwapAudit audit;
+                try
+                {
+                    // Confirm ownership and revision before modifying Revit.
+                    result.Passport = await UpdateWorkflowAsync(result.Passport, "Reserved");
+                    audit = DoorSwapHelper.Swap(_door.Document, _door, result.Passport);
+                }
+                catch (Exception ex)
+                {
+                    _status.Text = "替換未完成；請重新確認預留／來源模型：" + ErrorText.RealMessage(ex);
+                    return;
+                }
+                try
+                {
+                    result.Passport = await UpdateWorkflowAsync(result.Passport, "Allocated", audit);
+                    _status.Text = $"完成：{result.Passport.PassportId} 已套用來源族群與材質；請到 3D 著色／擬真視圖檢查並儲存。";
+                    UpdatePreview();
+                }
+                catch (Exception ex)
+                {
+                    _status.Text = "Revit 已完成替換，但後端稽核更新失敗；請勿重複替換，請保留模型並補登：" + ErrorText.RealMessage(ex);
+                }
             }
-            catch (Exception ex)
-            {
-                _status.Text = "Revit 替換失敗，Transaction 已回復：" + ErrorText.RealMessage(ex);
-                return;
-            }
-
-            try
-            {
-                var updated = await BackendClient.PatchPassportAsync(
-                    result.Passport.Id, "Allocated", _door.Document.Title, _door.Id.Value.ToString(CultureInfo.InvariantCulture),
-                    audit.TargetUniqueId, audit.OriginalUniqueId, BuildRequest().Basis, _actor,
-                    audit.OriginalTypeId, audit.NewTypeId);
-                result.Passport = updated;
-                _status.Text = $"完成：{updated.PassportId} 已套用來源族群與材質；請到 3D 著色／擬真視圖檢查外觀並儲存模型。";
-                UpdatePreview();
-            }
-            catch (Exception ex)
-            {
-                _status.Text = "Revit 已完成替換，但後端稽核更新失敗；護照仍為 Reserved，請勿重複替換並重新啟動後端後補登：" + ErrorText.RealMessage(ex);
-            }
+            finally { _workflowBusy = false; }
         }
 
         private static TextBox Box(string value = "") => new TextBox { Text = value };

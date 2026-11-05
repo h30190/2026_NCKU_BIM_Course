@@ -47,14 +47,22 @@ namespace TemporalBim
                 TaskDialogCommonButtons.Ok | TaskDialogCommonButtons.Cancel) != TaskDialogResult.Ok) return Result.Cancelled;
 
             DoorSwapAudit audit;
-            try { audit = DoorSwapHelper.Swap(doc, door, passport); }
+            try
+            {
+                passport = BackendClient.PatchPassportAsync(passport.Id, status: "Allocated", targetModel: doc.Title,
+                    targetElementId: door.Id.Value.ToString(CultureInfo.InvariantCulture), targetUniqueId: door.UniqueId,
+                    actor: data.Application.Application.Username, reason: "更新前確認既有配置與版本", expectedRevision: passport.Revision)
+                    .GetAwaiter().GetResult();
+                audit = DoorSwapHelper.Swap(doc, door, passport);
+            }
             catch (Exception ex) { message = "來源族群與材質更新未完成：" + ErrorText.RealMessage(ex); return Result.Failed; }
             try
             {
                 BackendClient.PatchPassportAsync(passport.Id, status: "Allocated", targetModel: doc.Title,
                     targetElementId: door.Id.Value.ToString(CultureInfo.InvariantCulture), targetUniqueId: audit.TargetUniqueId,
                     originalUniqueId: audit.OriginalUniqueId, reason: "更新既有配置：套用來源族群與護照材質",
-                    actor: data.Application.Application.Username, originalTypeId: audit.OriginalTypeId, newTypeId: audit.NewTypeId)
+                    actor: data.Application.Application.Username, originalTypeId: audit.OriginalTypeId, newTypeId: audit.NewTypeId,
+                    expectedRevision: passport.Revision)
                     .GetAwaiter().GetResult();
             }
             catch (Exception ex)

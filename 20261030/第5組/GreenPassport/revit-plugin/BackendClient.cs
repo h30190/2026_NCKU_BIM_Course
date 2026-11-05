@@ -132,11 +132,13 @@ namespace TemporalBim
             string reason = null,
             string actor = null,
             string originalTypeId = null,
-            string newTypeId = null)
+            string newTypeId = null,
+            int? expectedRevision = null)
         {
             using (var http = NewClient())
             {
                 var fields = new Dictionary<string, object>();
+                if (expectedRevision.HasValue) fields["expectedRevision"] = expectedRevision.Value;
                 if (status != null) fields["status"] = status;
                 if (targetModel != null) fields["targetModel"] = targetModel;
                 if (targetElementId != null) fields["targetElementId"] = targetElementId;

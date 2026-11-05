@@ -68,6 +68,8 @@ namespace TemporalBim
         [JsonProperty("status")] public string Status { get; set; } = "Unavailable";
         [JsonProperty("targetModel")] public string TargetModel { get; set; } = "";
         [JsonProperty("targetElementId")] public string TargetElementId { get; set; } = "";
+        [JsonProperty("targetUniqueId")] public string TargetUniqueId { get; set; } = "";
+        [JsonProperty("reservedBy")] public string ReservedBy { get; set; } = "";
         [JsonProperty("photo")] public string Photo { get; set; } = "";
         [JsonProperty("revision")] public int Revision { get; set; }
         [JsonProperty("createdAt")] public string CreatedAt { get; set; } = "";

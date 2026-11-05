@@ -62,6 +62,9 @@ namespace TemporalBim
             // 換門邏輯跟②需求配對視窗的「執行替換」按鈕共用，見 DoorSwapHelper.cs
             try
             {
+                chosen = BackendClient.PatchPassportAsync(chosen.Id, status: "Reserved", targetModel: doc.Title,
+                    targetElementId: doorEl.Id.Value.ToString(), targetUniqueId: doorEl.UniqueId,
+                    actor: data.Application.Application.Username, expectedRevision: chosen.Revision).GetAwaiter().GetResult();
                 DoorSwapHelper.Swap(doc, doorEl, chosen);
             }
             catch (Exception ex)
@@ -74,7 +77,8 @@ namespace TemporalBim
             try
             {
                 BackendClient.PatchPassportAsync(chosen.Id, status: "Allocated",
-                    targetModel: doc.Title, targetElementId: doorEl.Id.Value.ToString()).Wait();
+                    targetModel: doc.Title, targetElementId: doorEl.Id.Value.ToString(), targetUniqueId: doorEl.UniqueId,
+                    actor: data.Application.Application.Username, expectedRevision: chosen.Revision).Wait();
             }
             catch (Exception ex)
             {

@@ -386,12 +386,17 @@ func (s *Server) handleReviewPassport(w http.ResponseWriter, r *http.Request) {
 	sourcesJSON := mustJSON(reviewed.FieldSources, "{}")
 	status := supplyStatus(review.ReuseStatus, review.Quantity)
 	now := time.Now().UTC().Format(time.RFC3339)
-	_, err = s.DB.Exec(`UPDATE passports SET width_mm=?, height_mm=?, dimension_definition=?, leaf_thickness_mm=?, operation_type=?, swing_handing=?, use_type=?, material=?, clear_width_mm=?, fire_rating=?, fire_minutes=?,
-		reuse_status=?, condition_text=?, condition_grade=?, review_note=?, inspected_by=?, inspected_on=?, quantity=?, price_ntd=?, fire_certificate_reference=?, fire_certificate_verified=?, status=?, field_sources_json=?, revision=revision+1, updated_at=? WHERE id=?`,
+	reviewResult, err := s.DB.Exec(`UPDATE passports SET width_mm=?, height_mm=?, dimension_definition=?, leaf_thickness_mm=?, operation_type=?, swing_handing=?, use_type=?, material=?, clear_width_mm=?, fire_rating=?, fire_minutes=?,
+		reuse_status=?, condition_text=?, condition_grade=?, review_note=?, inspected_by=?, inspected_on=?, quantity=?, price_ntd=?, fire_certificate_reference=?, fire_certificate_verified=?, status=?, field_sources_json=?, revision=revision+1, updated_at=? WHERE id=? AND revision=? AND status IN ('Available','Unavailable')`,
 		reviewed.WidthMm, reviewed.HeightMm, reviewed.DimensionDefinition, reviewed.LeafThicknessMm, reviewed.OperationType, reviewed.SwingHanding, reviewed.UseType, reviewed.Material, reviewed.ClearWidthMm, reviewed.FireRating, reviewed.FireMinutes,
-		review.ReuseStatus, review.Condition, review.ConditionGrade, review.ReviewNote, review.InspectedBy, review.InspectedOn, review.Quantity, review.PriceNtd, reviewed.FireCertificateReference, boolInt(reviewed.FireCertificateVerified), status, sourcesJSON, now, id)
+		review.ReuseStatus, review.Condition, review.ConditionGrade, review.ReviewNote, review.InspectedBy, review.InspectedOn, review.Quantity, review.PriceNtd, reviewed.FireCertificateReference, boolInt(reviewed.FireCertificateVerified), status, sourcesJSON, now, id, old.Revision)
 	if err != nil {
 		writeErr(w, 500, err.Error())
+		return
+	}
+	changed, err := reviewResult.RowsAffected()
+	if err != nil || changed != 1 {
+		writeErr(w, http.StatusConflict, "護照已被其他操作更新，請重新載入")
 		return
 	}
 	logPassportEvent(s.DB, id, "review", review.InspectedBy, review)
@@ -451,55 +456,53 @@ func (s *Server) handlePatchPassport(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, err.Error())
 		return
 	}
-	var body struct {
-		Status           *string `json:"status"`
-		TargetModel      *string `json:"targetModel"`
-		TargetElementID  *string `json:"targetElementId"`
-		TargetUniqueID   string  `json:"targetUniqueId"`
-		OriginalUniqueID string  `json:"originalUniqueId"`
-		OriginalTypeID   string  `json:"originalTypeId"`
-		NewTypeID        string  `json:"newTypeId"`
-		Reason           string  `json:"reason"`
-		Actor            string  `json:"actor"`
-	}
+	var body WorkflowRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeErr(w, http.StatusBadRequest, "JSON 解析失敗: "+err.Error())
 		return
 	}
-	newStatus := old.Status
-	if body.Status != nil {
-		newStatus = *body.Status
-		if !validPassportStatus[newStatus] {
-			writeErr(w, http.StatusBadRequest, "status 不正確")
-			return
-		}
-		allowed := old.Status == newStatus ||
-			(old.Status == "Available" && newStatus == "Reserved") ||
-			(old.Status == "Reserved" && (newStatus == "Available" || newStatus == "Allocated")) ||
-			(old.Status == "Allocated" && newStatus == "Installed")
-		if !allowed {
-			writeErr(w, http.StatusConflict, fmt.Sprintf("不允許的狀態轉換：%s → %s", old.Status, newStatus))
-			return
-		}
-		if newStatus == "Reserved" && (old.ReuseStatus != "Approved" || old.Quantity <= 0) {
-			writeErr(w, http.StatusConflict, "只有 Approved 且有庫存的護照可以預留")
-			return
-		}
+	if body.ExpectedRevision == nil || *body.ExpectedRevision < 1 || strings.TrimSpace(body.Actor) == "" ||
+		!validPassportStatus[body.Status] || strings.TrimSpace(body.TargetModel) == "" ||
+		strings.TrimSpace(body.TargetElementID) == "" || strings.TrimSpace(body.TargetUniqueID) == "" {
+		writeErr(w, http.StatusBadRequest, "請更新外掛；預留／配置須提供版本、操作者及完整目標門識別")
+		return
 	}
-	targetModel, targetElement := old.TargetModel, old.TargetElementID
-	if body.TargetModel != nil {
-		targetModel = *body.TargetModel
-	}
-	if body.TargetElementID != nil {
-		targetElement = *body.TargetElementID
+	updated, err := planWorkflow(old, body)
+	if err != nil {
+		writeErr(w, http.StatusConflict, err.Error())
+		return
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	if _, err := s.DB.Exec(`UPDATE passports SET status=?, target_model=?, target_element_id=?, revision=revision+1, updated_at=? WHERE id=?`, newStatus, targetModel, targetElement, now, id); err != nil {
+	tx, err := s.DB.Begin()
+	if err != nil {
 		writeErr(w, 500, err.Error())
 		return
 	}
-	logPassportEvent(s.DB, id, "workflow:"+newStatus, body.Actor, body)
-	out, _ := getPassportByID(s.DB, id)
+	defer tx.Rollback()
+	result, err := tx.Exec(`UPDATE passports SET status=?, target_model=?, target_element_id=?, target_unique_id=?, reserved_by=?, revision=revision+1, updated_at=? WHERE id=? AND revision=? AND status=? AND (? <> 'Available' OR (reuse_status='Approved' AND quantity>0))`,
+		updated.Status, updated.TargetModel, updated.TargetElementID, updated.TargetUniqueID, updated.ReservedBy, now, id, *body.ExpectedRevision, old.Status, old.Status)
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	changed, err := result.RowsAffected()
+	if err != nil || changed != 1 {
+		writeErr(w, http.StatusConflict, "護照已被其他操作更新，請重新載入；未改動配置")
+		return
+	}
+	if _, err := tx.Exec(`INSERT INTO passport_events(passport_id,action,actor,details_json) VALUES(?,?,?,?)`, id, "workflow:"+updated.Status, body.Actor, mustJSON(body, "{}")); err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
+	out, err := getPassportByID(s.DB, id)
+	if err != nil {
+		writeErr(w, 500, err.Error())
+		return
+	}
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -507,7 +510,7 @@ const passportColumns = `id, passport_id, category, source_model, source_unique_
 	width_mm, height_mm, dimension_definition, leaf_thickness_mm, frame_dimensions, operation_type, swing_handing, use_type,
 	clear_width_mm, leaf_count, material, fire_rating, fire_minutes, fire_certificate_reference, fire_certificate_verified,
 	condition_text, condition_grade, reuse_status, review_note, quantity, price_ntd,
-	placement_requirements, inspected_by, inspected_on, status, target_model, target_element_id, photo,
+	placement_requirements, inspected_by, inspected_on, status, target_model, target_element_id, target_unique_id, reserved_by, photo,
 	revision, raw_parameters_json, field_sources_json, mapping_warnings_json, created_at, updated_at`
 
 type rowScanner interface{ Scan(dest ...any) error }
@@ -520,7 +523,7 @@ func scanPassportRow(row rowScanner) (Passport, error) {
 		&p.WidthMm, &p.HeightMm, &p.DimensionDefinition, &p.LeafThicknessMm, &p.FrameDimensions, &p.OperationType, &p.SwingHanding, &p.UseType,
 		&p.ClearWidthMm, &p.LeafCount, &p.Material, &p.FireRating, &p.FireMinutes, &p.FireCertificateReference, &fireVerified,
 		&p.Condition, &p.ConditionGrade, &p.ReuseStatus, &p.ReviewNote, &p.Quantity, &p.PriceNtd,
-		&p.PlacementRequirements, &p.InspectedBy, &p.InspectedOn, &p.Status, &p.TargetModel, &p.TargetElementID, &p.Photo,
+		&p.PlacementRequirements, &p.InspectedBy, &p.InspectedOn, &p.Status, &p.TargetModel, &p.TargetElementID, &p.TargetUniqueID, &p.ReservedBy, &p.Photo,
 		&p.Revision, &rawJSON, &sourcesJSON, &warningsJSON, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return p, err

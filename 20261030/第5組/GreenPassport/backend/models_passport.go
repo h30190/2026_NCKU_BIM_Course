@@ -68,6 +68,8 @@ type Passport struct {
 	Status          string `json:"status"` // Unavailable / Available / Reserved / Allocated / Installed
 	TargetModel     string `json:"targetModel"`
 	TargetElementID string `json:"targetElementId"`
+	TargetUniqueID  string `json:"targetUniqueId"`
+	ReservedBy      string `json:"reservedBy"`
 	Revision        int    `json:"revision"`
 	CreatedAt       string `json:"createdAt"`
 	UpdatedAt       string `json:"updatedAt"`
