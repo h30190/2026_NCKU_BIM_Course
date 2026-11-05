@@ -1,0 +1,12 @@
+{
+    "servers": {
+        "revit-mcp": {
+            "type": "stdio",
+            "command": "node",
+            "args": [
+                "${workspaceFolder}/MCP-Server/build/index.js"
+            ],
+            "env": {}
+        }
+    }
+}

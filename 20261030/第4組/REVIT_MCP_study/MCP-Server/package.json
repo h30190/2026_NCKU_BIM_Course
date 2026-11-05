@@ -1,0 +1,59 @@
+{
+  "name": "@shuotao/revit-mcp-server",
+  "mcpName": "io.github.shuotao/revit-mcp-server",
+  "version": "1.6.0",
+  "description": "MCP Server for Revit integration - AI-Powered Revit Control",
+  "main": "build/index.js",
+  "type": "module",
+  "bin": {
+    "revit-mcp-server": "build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shuotao/REVIT_MCP_study.git"
+  },
+  "homepage": "https://github.com/shuotao/REVIT_MCP_study#readme",
+  "bugs": {
+    "url": "https://github.com/shuotao/REVIT_MCP_study/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc && node scripts/build-apps.mjs",
+    "test:opening-candidate-contract": "node scripts/test-opening-candidate-contract.mjs",
+    "start": "node build/index.js",
+    "dev": "tsc && node build/index.js",
+    "watch": "tsc --watch",
+    "clean": "rimraf build",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "revit",
+    "ai",
+    "claude",
+    "autodesk",
+    "bim"
+  ],
+  "author": "shuotao",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.7.5",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "three": "^0.186.1",
+    "ws": "^8.18.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/ws": "^8.5.13",
+    "esbuild": "^0.24.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MCP", "MCP", "{60D02A9B-BD8A-21E2-79E7-27A6B3D0EB49}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RevitMCP", "MCP\RevitMCP.csproj", "{57BBD698-7815-98B7-0A48-203ED174CAF3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{57BBD698-7815-98B7-0A48-203ED174CAF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57BBD698-7815-98B7-0A48-203ED174CAF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57BBD698-7815-98B7-0A48-203ED174CAF3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57BBD698-7815-98B7-0A48-203ED174CAF3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{57BBD698-7815-98B7-0A48-203ED174CAF3} = {60D02A9B-BD8A-21E2-79E7-27A6B3D0EB49}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C334955B-457A-4CE1-ACB7-7DCED4416BA9}
+	EndGlobalSection
+EndGlobal

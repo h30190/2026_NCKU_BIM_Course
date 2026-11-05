@@ -1,0 +1,4577 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Architecture;
+using Autodesk.Revit.DB.Mechanical;
+using Autodesk.Revit.DB.Plumbing;
+using Autodesk.Revit.UI;
+using Newtonsoft.Json.Linq;
+using RevitMCP.Models;
+
+// Revit 2025+ ElementId: int → long
+#if REVIT2025_OR_GREATER
+using IdType = System.Int64;
+#else
+using IdType = System.Int32;
+#endif
+
+namespace RevitMCP.Core
+{
+    /// <summary>
+    /// 命令執行器 - 執行各種 Revit 操作
+    /// </summary>
+    public partial class CommandExecutor
+    {
+        private readonly UIApplication _uiApp;
+
+        public CommandExecutor(UIApplication uiApp)
+        {
+            _uiApp = uiApp ?? throw new ArgumentNullException(nameof(uiApp));
+        }
+
+        /// <summary>
+        /// 共用方法：查找樓層
+        /// </summary>
+        private Level FindLevel(Document doc, string levelName, bool useFirstIfNotFound = true)
+        {
+            var level = new FilteredElementCollector(doc)
+                .OfClass(typeof(Level))
+                .Cast<Level>()
+                .FirstOrDefault(l => l.Name == levelName || l.Name.Contains(levelName) || levelName.Contains(l.Name));
+
+            if (level == null && useFirstIfNotFound)
+            {
+                level = new FilteredElementCollector(doc)
+                    .OfClass(typeof(Level))
+                    .Cast<Level>()
+                    .OrderBy(l => l.Elevation)
+                    .FirstOrDefault();
+            }
+
+            if (level == null)
+            {
+                throw new Exception($"找不到樓層: {levelName}");
+            }
+
+            return level;
+        }
+
+        /// <summary>
+        /// 執行命令
+        /// </summary>
+        public RevitCommandResponse ExecuteCommand(RevitCommandRequest request)
+        {
+            try
+            {
+                var parameters = request.Parameters as JObject ?? new JObject();
+                object result = null;
+
+                switch (request.CommandName.ToLower())
+                {
+                    case "create_wall":
+                        result = CreateWall(parameters);
+                        break;
+                    
+                    case "get_project_info":
+                        result = GetProjectInfo();
+                        break;
+
+                    case "set_project_units":
+                        result = SetProjectUnits(parameters);
+                        break;
+
+                    case "get_mep_segments_and_sizes":
+                        result = GetMepSegmentsAndSizes(parameters);
+                        break;
+
+                    case "get_mep_settings":
+                        result = GetMepSettings(parameters);
+                        break;
+
+                    case "get_mep_size_usage":
+                        result = GetMepSizeUsage(parameters);
+                        break;
+
+                    case "curate_mep_sizes":
+                        result = CurateMepSizes(parameters);
+                        break;
+
+
+                    case "create_floor":
+                        result = CreateFloor(parameters);
+                        break;
+                    
+                    case "get_all_levels":
+                        result = GetAllLevels();
+                        break;
+                    
+                    case "get_element_info":
+                        result = GetElementInfo(parameters);
+                        break;
+                    
+                    case "delete_element":
+                        result = DeleteElement(parameters);
+                        break;
+                    
+                    case "modify_element_parameter":
+                        result = ModifyElementParameter(parameters);
+                        break;
+
+                    case "load_shared_parameters":
+                        result = LoadSharedParameters(parameters);
+                        break;
+
+                    case "create_green_material":
+                        result = CreateGreenMaterial(parameters);
+                        break;
+
+                    case "get_all_materials":
+                        result = GetAllMaterials(parameters);
+                        break;
+                    case "create_material":
+                        result = CreateCustomMaterial(parameters);
+                        break;
+                    case "create_material_by_domain":
+                        result = CreateMaterialByDomain(parameters);
+                        break;
+                    case "duplicate_element_type":
+                        result = DuplicateElementType(parameters);
+                        break;
+
+                    case "set_green_material_type_parameters":
+                        result = SetGreenMaterialTypeParameters(parameters);
+                        break;
+
+                    case "create_single_material_type":
+                        result = CreateSingleMaterialType(parameters);
+                        break;
+
+                    case "create_multi_layer_type":
+                        result = CreateMultiLayerType(parameters);
+                        break;
+
+                    case "duplicate_type_only":
+                        result = DuplicateTypeOnly(parameters);
+                        break;
+
+                    case "set_material_surface_pattern":
+                        result = SetMaterialSurfacePattern(parameters);
+                        break;
+
+                    case "inject_green_material_into_family":
+                        result = InjectGreenMaterialIntoFamily(parameters);
+                        break;
+
+                    case "create_door":
+                        result = CreateDoor(parameters);
+                        break;
+                    
+                    case "create_window":
+                        result = CreateWindow(parameters);
+                        break;
+
+                    case "door-window-legend-tools":
+                        result = DoorWindowLegendTools(parameters);
+                        break;
+
+                    case "list_seeds":
+                        result = ListSeeds(parameters);
+                        break;
+
+                    case "list_dimension_types":
+                        result = ListDimensionTypes(parameters);
+                        break;
+
+                    case "list_legend_views":
+                        result = ListLegendViews(parameters);
+                        break;
+                    
+                    case "get_all_grids":
+                        result = GetAllGrids();
+                        break;
+                    
+                    case "get_column_types":
+                        result = GetColumnTypes(parameters);
+                        break;
+                    
+                    case "create_column":
+                        result = CreateColumn(parameters);
+                        break;
+                    
+                    case "get_furniture_types":
+                        result = GetFurnitureTypes(parameters);
+                        break;
+                    
+                    case "place_furniture":
+                        result = PlaceFurniture(parameters);
+                        break;
+
+                    case "place_family_instances":
+                        result = PlaceFamilyInstances(parameters);
+                        break;
+
+                    case "get_room_info":
+                        result = GetRoomInfo(parameters);
+                        break;
+                    
+                    case "get_rooms_by_level":
+                        result = GetRoomsByLevel(parameters);
+                        break;
+
+                    case "renumber_rooms_by_level":
+                        result = RenumberRoomsByLevel(parameters);
+                        break;
+
+                    case "get_room_surface_areas":
+                        result = GetRoomSurfaceAreas(parameters);
+                        break;
+
+                    case "create_finish_legend":
+                        result = CreateFinishLegend(parameters);
+                        break;
+                    
+                    case "get_all_views":
+                        result = GetAllViews(parameters);
+                        break;
+                    
+                    case "get_active_view":
+                        result = GetActiveView();
+                        break;
+                    
+                    case "rename_view":
+                        result = RenameView(parameters);
+                        break;
+                    
+                    case "set_active_view":
+                        result = SetActiveView(parameters);
+                        break;
+                    
+                    case "select_element":
+                        result = SelectElement(parameters);
+                        break;
+                    
+                    case "zoom_to_element":
+                        result = ZoomToElement(parameters);
+                        break;
+                    
+                    case "measure_distance":
+                        result = MeasureDistance(parameters);
+                        break;
+                    
+                    case "get_wall_info":
+                        result = GetWallInfo(parameters);
+                        break;
+                    
+                    case "create_dimension":
+                        result = CreateDimension(parameters);
+                        break;
+
+                    case "create_corridor_dimension":
+                        result = CreateCorridorDimension(parameters);
+                        break;
+                    case "analyze_corridor_width":
+                        result = AnalyzeCorridorWidth(parameters);
+                        break;
+
+                    case "query_walls_by_location":
+                        result = QueryWallsByLocation(parameters);
+                        break;
+                    
+                                        case "query_elements":
+                    
+                                            result = QueryElements(parameters);
+                    
+                                            break;
+                    
+                                        case "get_active_schema":
+                    
+                                            result = GetActiveSchema(parameters);
+                    
+                                            break;
+                    
+                                        case "get_category_fields":
+                    
+                                            result = GetCategoryFields(parameters);
+                    
+                                            break;
+                    
+                                        case "get_field_values":
+                    
+                                            result = GetFieldValues(parameters);
+                    
+                                            break;
+                    
+                                        case "override_element_graphics":
+                        result = OverrideElementGraphics(parameters);
+                        break;
+                    
+                    case "clear_element_override":
+                        result = ClearElementOverride(parameters);
+                        break;
+                    
+                    case "unjoin_wall_joins":
+                        result = UnjoinWallJoins(parameters);
+                        break;
+                    
+                    case "rejoin_wall_joins":
+                        result = RejoinWallJoins(parameters);
+                        break;
+
+                    case "join_wall_tops":
+                        result = JoinWallTops(parameters);
+                        break;
+
+                    // === 解除幾何接合（劉可 PR#30 bundle②）===
+                    case "unjoin_column_joins":
+                        result = UnjoinColumnJoins(parameters);
+                        break;
+
+                    case "unjoin_element_joins":
+                        result = UnjoinElementJoins(parameters);
+                        break;
+
+                    case "check_exterior_wall_openings":
+                        result = CheckExteriorWallOpenings(parameters);
+                        break;
+
+                    case "get_room_daylight_info":
+                        result = GetRoomDaylightInfo(parameters);
+                        break;
+
+                    case "sync_room_ceiling_finish_from_ceilings":
+                        result = SyncRoomCeilingFinishFromCeilings(parameters);
+                        break;
+
+                    case "remap_room_finish_codes":
+                        result = RemapRoomFinishCodes(parameters);
+                        break;
+
+                    case "get_view_templates":
+                        result = GetViewTemplates(parameters);
+                        break;
+
+                    case "create_view_schedule":
+                        result = CreateViewSchedule(parameters);
+                        break;
+
+                    case "list_schedules":
+                        result = ListSchedules(parameters);
+                        break;
+
+                    case "read_schedule":
+                        result = ReadSchedule(parameters);
+                        break;
+
+                    case "get_selected_elements":
+                        result = GetSelectedElements();
+                        break;
+
+                    case "get_connector_info":
+                        result = GetConnectorInfo(parameters);
+                        break;
+
+                    case "add_pipe_cap":
+                        result = AddPipeCap(parameters);
+                        break;
+
+                    case "export_families":
+                        result = ExportFamilies(parameters);
+                        break;
+
+                    case "list_categories":
+                        result = ListCategories(parameters);
+                        break;
+
+                    // === 帷幕牆模組 (PR#11) ===
+                    case "get_curtain_wall_info":
+                        result = GetCurtainWallInfo(parameters);
+                        break;
+                    case "get_curtain_panel_types":
+                        result = GetCurtainPanelTypes(parameters);
+                        break;
+                    case "create_curtain_panel_type":
+                        result = CreateCurtainPanelType(parameters);
+                        break;
+                    case "apply_panel_pattern":
+                        result = ApplyPanelPattern(parameters);
+                        break;
+                    case "create_facade_panel":
+                        result = CreateFacadePanel(parameters);
+                        break;
+                    case "create_facade_from_analysis":
+                        result = CreateFacadeFromAnalysis(parameters);
+                        break;
+
+                    // === 牆面平行剖面 ===
+                    case "create_parallel_section_view":
+                        result = CreateParallelSectionView(parameters);
+                        break;
+                    case "batch_create_wall_sections":
+                        result = BatchCreateWallSections(parameters);
+                        break;
+
+                    // === 偵煙探測器設置檢討 ===
+                    case "analyze_smoke_detectors":
+                        result = AnalyzeSmokeDetectors(parameters);
+                        break;
+                    case "visualize_detector_results":
+                        result = VisualizeDetectorResults(parameters);
+                        break;
+
+                    // === 排煙窗模組 (PR#12) ===
+                    case "check_smoke_exhaust_windows":
+                        result = CheckSmokeExhaustWindows(parameters);
+                        break;
+
+                    case "plan_smoke_exhaust_window_plan":
+                        result = PlanSmokeExhaustWindowPlan(parameters);
+                        break;
+
+                    case "apply_smoke_exhaust_window_plan":
+                        result = ApplySmokeExhaustWindowPlan(parameters);
+                        break;
+
+                    case "undo_smoke_exhaust_window_plan":
+                        result = UndoSmokeExhaustWindowPlan(parameters);
+                        break;
+                    case "plan_smoke_exhaust_window_retrofit":
+                        result = PlanSmokeExhaustWindowRetrofit(parameters);
+                        break;
+                    case "apply_smoke_exhaust_window_retrofit":
+                        result = ApplySmokeExhaustWindowRetrofit(parameters);
+                        break;
+                    case "undo_smoke_exhaust_window_retrofit":
+                        result = UndoSmokeExhaustWindowRetrofit(parameters);
+                        break;
+                    case "plan_smoke_exhaust_window_replacement":
+                        result = PlanSmokeExhaustWindowReplacement(parameters);
+                        break;
+                    case "apply_smoke_exhaust_window_replacement":
+                        result = ApplySmokeExhaustWindowReplacement(parameters);
+                        break;
+                    case "undo_smoke_exhaust_window_replacement":
+                        result = UndoSmokeExhaustWindowReplacement(parameters);
+                        break;
+                    case "check_floor_effective_openings":
+                        result = CheckFloorEffectiveOpenings(parameters);
+                        break;
+                    case "create_section_view":
+                        result = CreateSectionView(parameters);
+                        break;
+                    case "create_detail_lines":
+                        result = CreateDetailLines(parameters);
+                        break;
+                    case "create_filled_region":
+                        result = CreateFilledRegion(parameters);
+                        break;
+                    case "create_text_note":
+                        result = CreateTextNote(parameters);
+                        break;
+                    case "export_smoke_review_excel":
+                        result = ExportSmokeReviewExcel(parameters);
+                        break;
+
+                    // === 樓梯法規檢核模組 ===
+                    case "create_stair_section_view":
+                        result = CreateStairSectionView(parameters);
+                        break;
+                    case "get_stair_actual_width":
+                        result = GetStairActualWidth(parameters);
+                        break;
+                    case "check_stair_headroom":
+                        result = CheckStairHeadroom(parameters);
+                        break;
+                    case "create_stair_text_note_with_leader":
+                        result = CreateTextNoteWithLeader(parameters);
+                        break;
+
+                    // === 圖紙管理模組 ===
+                    case "get_all_sheets":
+                        result = GetAllSheets();
+                        break;
+                    case "get_titleblocks":
+                        result = GetTitleBlocks();
+                        break;
+                    case "create_sheets":
+                        result = CreateSheets(parameters);
+                        break;
+                    case "auto_renumber_sheets":
+                        result = AutoRenumberSheets(parameters);
+                        break;
+                    case "get_viewport_map":
+                        result = GetViewportMap();
+                        break;
+
+                    // === 圖紙/視埠管理（劉可 PR#30 bundle①）===
+                    case "get_sheet_viewport_details":
+                        result = GetSheetViewportDetails(parameters);
+                        break;
+                    case "arrange_viewports_on_sheet":
+                        result = ArrangeViewportsOnSheet(parameters);
+                        break;
+                    case "scale_drafting_view_width":
+                        result = ScaleDraftingViewWidth(parameters);
+                        break;
+                    case "scale_drafting_view_height":
+                        result = ScaleDraftingViewHeight(parameters);
+                        break;
+                    case "create_floor_plans_from_template":
+                        result = CreateFloorPlansFromTemplate(parameters);
+                        break;
+                    case "batch_apply_view_template":
+                        result = BatchApplyViewTemplate(parameters);
+                        break;
+                    case "position_viewports_on_sheet":
+                        result = PositionViewportsOnSheet(parameters);
+                        break;
+                    case "debug_viewport_geometry":
+                        result = DebugViewportGeometry(parameters);
+                        break;
+                    case "align_titleblocks_on_sheets":
+                        result = AlignTitleblocksOnSheets(parameters);
+                        break;
+                    case "move_viewport_titles":
+                        result = MoveViewportTitles(parameters);
+                        break;
+
+                    // === 跨檔案圖紙複製（劉可 PR#30 bundle③）===
+                    case "read_source_file_sheets":
+                        result = ReadSourceFileSheets(parameters);
+                        break;
+                    case "copy_sheets_from_file":
+                        result = CopySheetsFromFile(parameters);
+                        break;
+                    case "sync_sheet_parameters_from_source":
+                        result = SyncSheetParametersFromSource(parameters);
+                        break;
+
+                    // === Excel/Legend 批次（劉可 PR#30 bundle④）===
+                    case "create_legends":
+                        result = CreateLegends(parameters);
+                        break;
+                    case "read_excel_tables":
+                        result = ReadExcelTables(parameters);
+                        break;
+                    case "import_excel_to_drafting_views":
+                        result = ImportExcelToDraftingViews(parameters);
+                        break;
+
+                    // === 材質批次修改（劉可 PR#30 bundle④）===
+                    case "get_types_by_category":
+                        result = GetTypesByCategory(parameters);
+                        break;
+                    case "batch_set_material":
+                        result = BatchSetMaterial(parameters);
+                        break;
+                    case "assign_existing_material":
+                        result = AssignExistingMaterial(parameters);
+                        break;
+
+                    // === 詳圖元件模組 ===
+                    case "get_detail_components":
+                        result = GetDetailComponents(parameters);
+                        break;
+                    case "create_detail_component_type":
+                        result = CreateDetailComponentType(parameters);
+                        break;
+                    case "sync_detail_component_numbers":
+                        result = SyncDetailComponentNumbers();
+                        break;
+                    case "list_family_symbols":
+                        result = ListFamilySymbols(parameters);
+                        break;
+
+                    // === 詳圖項目複製 / 去重（劉可 PR#30 bundle②）===
+                    case "copy_detail_items_to_views":
+                        result = CopyDetailItemsToViews(parameters);
+                        break;
+                    case "dedup_detail_elements_in_view":
+                        result = DedupDetailElementsInView(parameters);
+                        break;
+
+                    // === 房間高度 / 視圖細部（劉可 PR#30 bundle⑥）===
+                    case "batch_set_room_height":
+                        result = BatchSetRoomHeight(parameters);
+                        break;
+                    case "set_scope_box_for_views":
+                        result = SetScopeBoxForViews(parameters);
+                        break;
+                    case "align_view_cropbox_to_element":
+                        result = AlignViewCropBoxToElement(parameters);
+                        break;
+                    case "shift_view_cropbox":
+                        result = ShiftViewCropBox(parameters);
+                        break;
+                    case "move_text_notes_in_views":
+                        result = MoveTextNotesInViews(parameters);
+                        break;
+                    case "hide_elements":
+                        result = HideElements(parameters);
+                        break;
+                    case "unhide_elements":
+                        result = UnhideElements(parameters);
+                        break;
+                    case "set_category_visibility":
+                        result = SetCategoryVisibility(parameters);
+                        break;
+
+                    // === 尺寸標註模組 ===
+                    case "create_dimension_by_ray":
+                        result = CreateDimensionByRay(parameters);
+                        break;
+                    case "create_dimension_by_bounding_box":
+                        result = CreateDimensionByBoundingBox(parameters);
+                        break;
+                    case "auto_dimension_walls":
+                        result = AutoDimensionWalls(parameters);
+                        break;
+
+                    // === 從屬視圖模組 ===
+                    case "calculate_grid_bounds":
+                        result = CalculateGridBounds(parameters);
+                        break;
+                    case "create_dependent_views":
+                        result = CreateDependentViews(parameters);
+                        break;
+
+                    // === 牆類型與元素管理模組 ===
+                    case "get_wall_types":
+                        result = GetWallTypes(parameters);
+                        break;
+                    case "change_element_type":
+                        result = ChangeElementType(parameters);
+                        break;
+                    case "get_line_styles":
+                        result = GetLineStyles();
+                        break;
+                    case "trace_stair_geometry":
+                        result = TraceStairGeometry(parameters);
+                        break;
+
+                    // === 樓層建立 ===
+                    case "create_level":
+                        result = CreateLevel(parameters);
+                        break;
+
+                    // === DWG 圖層批次建柱模組 ===
+                    case "get_dwg_column_layers":
+                        result = DwgColumnExecutor.GetDwgColumnLayers(_uiApp.ActiveUIDocument.Document);
+                        break;
+                    case "preview_dwg_columns":
+                        result = DwgColumnExecutor.PreviewDwgColumns(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+                    case "create_columns_from_dwg":
+                        result = DwgColumnExecutor.CreateColumnsFromDwg(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+
+                    // === CAD 圖塊點位放置模組（Block/INSERT → FamilyInstance，issue #100/#113）===
+                    case "get_dwg_block_instances":
+                        result = CadBlockPlacementExecutor.GetDwgBlockInstances(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+                    case "preview_family_instances_from_dwg_blocks":
+                        result = CadBlockPlacementExecutor.PreviewFamilyInstancesFromDwgBlocks(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+                    case "create_family_instances_from_dwg_blocks":
+                        result = CadBlockPlacementExecutor.CreateFamilyInstancesFromDwgBlocks(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+
+                    // === CAD 連結模組 ===
+                    case "link_cad_to_view":
+                        result = CadLinkExecutor.LinkCadToView(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+
+                    case "link_cads_by_floor":
+                        result = CadLinkExecutor.LinkCadsByFloor(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+
+                    // === DWG 圖層批次建樑模組 ===
+                    case "get_dwg_beam_layers":
+                        result = DwgBeamExecutor.GetDwgBeamLayers(_uiApp.ActiveUIDocument.Document);
+                        break;
+                    case "preview_dwg_beams":
+                        result = DwgBeamExecutor.PreviewDwgBeams(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+                    case "create_beams_from_dwg":
+                        result = DwgBeamExecutor.CreateBeamsFromDwg(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+
+                    case "get_linked_models":
+                        result = GetLinkedModels();
+                        break;
+                    case "query_linked_elements":
+                        result = QueryLinkedElements(parameters);
+                        break;
+                    case "get_element_geometry":
+                        result = GetElementGeometry(parameters);
+                        break;
+                    case "detect_clashes":
+                        result = DetectClashes(parameters);
+                        break;
+                    case "scan_opening_candidates":
+                        result = ScanOpeningCandidates(parameters);
+                        break;
+                    case "colorize_clashes":
+                        result = ColorizeClashes(parameters);
+                        break;
+                    case "export_clash_report":
+                        result = ExportClashReport(parameters);
+                        break;
+                    case "move_element":
+                        result = MoveElement(parameters);
+                        break;
+                    case "flip_element":
+                        result = FlipElement(parameters);
+                        break;
+
+                    // === 視圖與基準線調整模組 ===
+                    case "adjust_section_datums":
+                        result = AdjustSectionDatums(parameters);
+                        break;
+
+                    // === 樓板坡度分析（Issue #45, 原作者 yunchen-kt）===
+                    case "analyze_floor_slopes":
+                        result = FloorSlopeAnalyzer.Run(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+
+                    // === RC 穿梁套管自動檢核（PR #68, 作者 鈺傑 SEven777-a）===
+                    case "analyze_beam_penetration":
+                        result = AnalyzeBeamPenetration(parameters);
+                        break;
+                    case "scan_penetrated_beams_in_view":
+                        result = ScanPenetratedBeamsInView(parameters);
+                        break;
+                    case "clear_previous_annotations":
+                        result = ClearPreviousAnnotations(parameters);
+                        break;
+
+#if REVIT2024_OR_GREATER
+                    case "grade_toposolid_to_floors":
+                        result = GradeToposolidToFloors(parameters);
+                        break;
+#endif
+
+                    // === 施工架/隔間/門窗/RC填充 算量 + 圖案轉換 (PR #79/#81/#82, 作者 Jacky820507) ===
+                    case "calculate_exterior_wall_scaffold_perimeter":
+                        result = CalculateExteriorWallScaffoldPerimeter(parameters);
+                        break;
+                    case "calculate_room_scaffold_perimeters":
+                        result = CalculateRoomScaffoldPerimeters(parameters);
+                        break;
+                    case "calculate_selected_detail_line_perimeter":
+                        result = CalculateSelectedDetailLinePerimeter(parameters);
+                        break;
+                    case "analyze_tall_partition_rooms":
+                        result = AnalyzeTallPartitionRooms(parameters);
+                        break;
+                    case "duplicate_views_with_detailing":
+                        result = DuplicateViewsWithDetailing(parameters);
+                        break;
+                    case "create_room_filled_regions":
+                        result = CreateRoomFilledRegions(parameters);
+                        break;
+                    case "get_room_door_counts":
+                        result = GetRoomDoorCounts(parameters);
+                        break;
+                    case "get_room_window_counts":
+                        result = GetRoomWindowCounts(parameters);
+                        break;
+                    case "get_space_centroid":
+                        result = GetSpaceCentroid(parameters);
+                        break;
+                    case "auto_convert_rotated_viewport_patterns":
+                        result = AutoConvertRotatedViewportPatterns();
+                        break;
+                    case "batch_create_rc_filled_region":
+                        result = BatchCreateRCFilledRegions(parameters);
+                        break;
+                    case "convert_drafting_to_model_pattern":
+                        result = ConvertDraftingToModelPattern();
+                        break;
+                    case "create_rc_filled_region":
+                        result = CreateRCFilledRegion(parameters);
+                        break;
+                    case "sync_ifc_structural_to_native":
+                        result = SyncIfcStructuralToNative(parameters);
+                        break;
+
+                    // === 帷幕立面 (PR #85, 作者 林孟毅 916kevin-gif) ===
+                    case "create_curtain_wall_elevations":
+                        result = CreateCurtainWallElevations(parameters);
+                        break;
+                    case "diagnose_curtain_wall_elevation_direction":
+                        result = DiagnoseCurtainWallElevationDirection(parameters);
+                        break;
+                    case "diagnose_curtain_wall_elevation_dimensions":
+                        result = DiagnoseCurtainWallElevationDimensions(parameters);
+                        break;
+                    case "diagnose_curtain_wall_elevation_directions":
+                        result = DiagnoseCurtainWallElevationDirections(parameters);
+                        break;
+
+                    // === MEP 風管系統 (Stage 1) ===
+                    case "create_duct_system":
+                        result = CreateDuctSystem(parameters);
+                        break;
+
+                    // === 避難路徑法規檢核 ===
+                    case "audit_room_egress":
+                        result = EgressAuditService.ExecuteEgressAudit(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+                    case "generate_egress_sheet_note":
+                        result = EgressSheetNoteService.GenerateEgressSheetNote(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+
+                    default:
+                        throw new NotImplementedException($"未實作的命令: {request.CommandName}");
+                }
+
+                return new RevitCommandResponse
+                {
+                    Success = true,
+                    Data = result,
+                    RequestId = request.RequestId
+                };
+            }
+            catch (Exception ex)
+            {
+                return new RevitCommandResponse
+                {
+                    Success = false,
+                    Error = ex.Message,
+                    RequestId = request.RequestId
+                };
+            }
+        }
+
+        #region 命令實作
+
+        /// <summary>
+        /// 建立牆
+        /// </summary>
+        private object CreateWall(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            double startX = parameters["startX"]?.Value<double>() ?? 0;
+            double startY = parameters["startY"]?.Value<double>() ?? 0;
+            double endX = parameters["endX"]?.Value<double>() ?? 0;
+            double endY = parameters["endY"]?.Value<double>() ?? 0;
+            double height = parameters["height"]?.Value<double>() ?? 3000;
+
+            // 轉換為英尺 (Revit 內部單位)
+            XYZ start = new XYZ(startX / 304.8, startY / 304.8, 0);
+            XYZ end = new XYZ(endX / 304.8, endY / 304.8, 0);
+
+            using (Transaction trans = new Transaction(doc, "建立牆"))
+            {
+                trans.Start();
+
+                // 建立線
+                Line line = Line.CreateBound(start, end);
+
+                // 取得預設樓層
+                Level level = new FilteredElementCollector(doc)
+                    .OfClass(typeof(Level))
+                    .Cast<Level>()
+                    .FirstOrDefault();
+
+                if (level == null)
+                {
+                    throw new Exception("找不到樓層");
+                }
+
+                // 建立牆
+                Wall wall = Wall.Create(doc, line, level.Id, false);
+                
+                // 設定高度
+                Parameter heightParam = wall.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM);
+                if (heightParam != null && !heightParam.IsReadOnly)
+                {
+                    heightParam.Set(height / 304.8);
+                }
+
+                trans.Commit();
+
+                return new
+                {
+                    ElementId = wall.Id.GetIdValue(),
+                    Message = $"成功建立牆，ID: {wall.Id.GetIdValue()}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// 取得專案資訊
+        /// </summary>
+        private object GetProjectInfo()
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            ProjectInfo projInfo = doc.ProjectInformation;
+
+            return new
+            {
+                ProjectName = doc.Title,
+                BuildingName = projInfo.BuildingName,
+                OrganizationName = projInfo.OrganizationName,
+                Author = projInfo.Author,
+                Address = projInfo.Address,
+                ClientName = projInfo.ClientName,
+                ProjectNumber = projInfo.Number,
+                ProjectStatus = projInfo.Status
+            };
+        }
+
+        /// <summary>
+        /// 取得所有樓層
+        /// </summary>
+        private object GetAllLevels()
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            var levels = new FilteredElementCollector(doc)
+                .OfClass(typeof(Level))
+                .Cast<Level>()
+                .OrderBy(l => l.Elevation)
+                .Select(l => new
+                {
+                    ElementId = l.Id.GetIdValue(),
+                    Name = l.Name,
+                    Elevation = Math.Round(l.Elevation * 304.8, 2) // 轉換為公釐
+                })
+                .ToList();
+
+            return new
+            {
+                Count = levels.Count,
+                Levels = levels
+            };
+        }
+
+        /// <summary>
+        /// 取得元素資訊
+        /// </summary>
+        private object GetElementInfo(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            IdType elementId = parameters["elementId"]?.Value<IdType>() ?? 0;
+
+            Element element = doc.GetElement(new ElementId(elementId));
+            if (element == null)
+            {
+                throw new Exception($"找不到元素 ID: {elementId}");
+            }
+
+            var parameterList = new List<object>();
+            foreach (Parameter param in element.Parameters)
+            {
+                if (param.HasValue)
+                {
+                    parameterList.Add(new
+                    {
+                        Name = param.Definition.Name,
+                        Value = param.AsValueString() ?? param.AsString(),
+                        Type = param.StorageType.ToString()
+                    });
+                }
+            }
+
+            return new
+            {
+                ElementId = element.Id.GetIdValue(),
+                Name = element.Name,
+                Category = element.Category?.Name,
+                Type = doc.GetElement(element.GetTypeId())?.Name,
+                Level = doc.GetElement(element.LevelId)?.Name,
+                Parameters = parameterList
+            };
+        }
+
+        /// <summary>
+        /// 刪除元素
+        /// </summary>
+        private object DeleteElement(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            IdType elementId = parameters["elementId"]?.Value<IdType>() ?? 0;
+
+            using (Transaction trans = new Transaction(doc, "刪除元素"))
+            {
+                trans.Start();
+
+                Element element = doc.GetElement(new ElementId(elementId));
+                if (element == null)
+                {
+                    throw new Exception($"找不到元素 ID: {elementId}");
+                }
+
+                doc.Delete(new ElementId(elementId));
+                trans.Commit();
+
+                return new
+                {
+                    Message = $"成功刪除元素 ID: {elementId}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// 建立樓板
+        /// </summary>
+        private object CreateFloor(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            
+            var pointsArray = parameters["points"] as JArray;
+            string levelName = parameters["levelName"]?.Value<string>() ?? "Level 1";
+            
+            if (pointsArray == null || pointsArray.Count < 3)
+            {
+                throw new Exception("需要至少 3 個點來建立樓板");
+            }
+
+            using (Transaction trans = new Transaction(doc, "建立樓板"))
+            {
+                trans.Start();
+
+                // 取得樓層
+                Level level = FindLevel(doc, levelName, true);
+
+                // 建立邊界曲線
+                var points = pointsArray.Select(p => new XYZ(
+                    p["x"]?.Value<double>() / 304.8 ?? 0,
+                    p["y"]?.Value<double>() / 304.8 ?? 0,
+                    0
+                )).ToList();
+
+                // 取得預設樓板類型
+                FloorType floorType = new FilteredElementCollector(doc)
+                    .OfClass(typeof(FloorType))
+                    .Cast<FloorType>()
+                    .FirstOrDefault();
+
+                if (floorType == null)
+                {
+                    throw new Exception("找不到樓板類型");
+                }
+
+                // 建立 CurveLoop (Revit 2022+ 使用)
+                CurveLoop curveLoop = new CurveLoop();
+                for (int i = 0; i < points.Count; i++)
+                {
+                    XYZ start = points[i];
+                    XYZ end = points[(i + 1) % points.Count];
+                    curveLoop.Append(Line.CreateBound(start, end));
+                }
+
+                // 使用 Floor.Create (適用於 Revit 2022+)
+                Floor floor = Floor.Create(doc, new List<CurveLoop> { curveLoop }, floorType.Id, level.Id);
+
+                trans.Commit();
+
+                return new
+                {
+                    ElementId = floor.Id.GetIdValue(),
+                    Level = level.Name,
+                    Message = $"成功建立樓板，ID: {floor.Id.GetIdValue()}"
+                };
+            }
+        }
+
+
+        /// <summary>
+        /// 修改元素參數
+        /// </summary>
+        private object ModifyElementParameter(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            IdType elementId = parameters["elementId"]?.Value<IdType>() ?? 0;
+            string parameterName = parameters["parameterName"]?.Value<string>();
+            string value = parameters["value"]?.Value<string>();
+
+            if (string.IsNullOrEmpty(parameterName))
+            {
+                throw new Exception("請指定參數名稱");
+            }
+
+            Element element = doc.GetElement(new ElementId(elementId));
+            if (element == null)
+            {
+                throw new Exception($"找不到元素 ID: {elementId}");
+            }
+
+            using (Transaction trans = new Transaction(doc, "修改參數"))
+            {
+                trans.Start();
+
+                bool success = false;
+
+                // Element.Name 是 Revit API 的特殊 property，LookupParameter("Name") 會回 null。
+                // 攔截四種重命名意圖（含中英與 BuiltInParameter ALL_MODEL_TYPE_NAME=-1002001），直接寫 element.Name。
+                if (parameterName == "Name" || parameterName == "名稱"
+                    || parameterName == "類型名稱" || parameterName == "-1002001")
+                {
+                    element.Name = value;
+                    success = true;
+                }
+                else
+                {
+                    Parameter param = element.LookupParameter(parameterName);
+                    if (param == null)
+                    {
+                        throw new Exception($"找不到參數: {parameterName}");
+                    }
+
+                    if (param.IsReadOnly)
+                    {
+                        throw new Exception($"參數 {parameterName} 是唯讀的");
+                    }
+
+                    switch (param.StorageType)
+                    {
+                        case StorageType.String:
+                            success = param.Set(value);
+                            break;
+                        case StorageType.Double:
+                            if (double.TryParse(value, out double dVal))
+                                success = param.Set(dVal);
+                            break;
+                        case StorageType.Integer:
+                            if (int.TryParse(value, out int iVal))
+                                success = param.Set(iVal);
+                            break;
+                        default:
+                            throw new Exception($"不支援的參數類型: {param.StorageType}");
+                    }
+                }
+
+                if (!success)
+                {
+                    throw new Exception($"設定參數失敗");
+                }
+
+                trans.Commit();
+
+                return new
+                {
+                    ElementId = elementId,
+                    ParameterName = parameterName,
+                    NewValue = value,
+                    Message = $"成功修改參數 {parameterName}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// 建立門。支援 doorType 篩選與 sourceElementId 來源複製（poisonsam fork 擴寫）
+        /// 4 級類型 fallback：doorType → sourceElement type → 任意第一個
+        /// 來源 fork: poisonsam/main:MCP/Core/Commands/CommandExecutor.Architecture.cs:217-318
+        /// </summary>
+        private object CreateDoor(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            IdType wallId = parameters["wallId"]?.Value<IdType>() ?? 0;
+            double locationX = parameters["locationX"]?.Value<double>() ?? 0;
+            double locationY = parameters["locationY"]?.Value<double>() ?? 0;
+            string doorType = parameters["doorType"]?.Value<string>();
+            IdType? sourceElementId = parameters["sourceElementId"]?.Value<IdType>();
+
+            Wall wall = doc.GetElement(new ElementId(wallId)) as Wall;
+            if (wall == null)
+            {
+                throw new Exception($"找不到牆 ID: {wallId}");
+            }
+
+            using (Transaction trans = new Transaction(doc, "建立門"))
+            {
+                trans.Start();
+
+                FamilySymbol doorSymbol = null;
+                Element sourceElement = null;
+
+                // 1. 若有來源 ID，先取得來源元素以供後續複製
+                if (sourceElementId.HasValue && sourceElementId.Value > 0)
+                {
+                    sourceElement = doc.GetElement(new ElementId(sourceElementId.Value));
+                }
+
+                // 2. 優先使用指定類型名稱
+                if (!string.IsNullOrEmpty(doorType))
+                {
+                    doorSymbol = new FilteredElementCollector(doc)
+                        .OfClass(typeof(FamilySymbol))
+                        .OfCategory(BuiltInCategory.OST_Doors)
+                        .Cast<FamilySymbol>()
+                        .FirstOrDefault(fs => fs.Name == doorType || (fs.FamilyName + ": " + fs.Name) == doorType);
+                }
+
+                // 3. 如果沒指定名稱或找不到，則使用來源元素的類型
+                if (doorSymbol == null && sourceElement != null)
+                {
+                    doorSymbol = doc.GetElement(sourceElement.GetTypeId()) as FamilySymbol;
+                }
+
+                // 4. 最後回退到預設（第一個）
+                if (doorSymbol == null)
+                {
+                    doorSymbol = new FilteredElementCollector(doc)
+                        .OfClass(typeof(FamilySymbol))
+                        .OfCategory(BuiltInCategory.OST_Doors)
+                        .Cast<FamilySymbol>()
+                        .FirstOrDefault();
+                }
+
+                if (doorSymbol == null)
+                {
+                    throw new Exception("找不到門類型");
+                }
+
+                if (!doorSymbol.IsActive)
+                {
+                    doorSymbol.Activate();
+                    doc.Regenerate();
+                }
+
+                // 取得牆的樓層
+                Level level = doc.GetElement(wall.LevelId) as Level;
+                XYZ location = new XYZ(locationX / 304.8, locationY / 304.8, level?.Elevation ?? 0);
+
+                FamilyInstance door = doc.Create.NewFamilyInstance(
+                    location, doorSymbol, wall, level,
+                    Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+
+                // 若有來源，複製 instance parameters 與 Facing/Hand 朝向
+                if (sourceElement != null)
+                {
+                    CopyInstanceParameters(sourceElement, door);
+
+                    if (sourceElement is FamilyInstance sourceFI)
+                    {
+                        if (sourceFI.FacingFlipped != door.FacingFlipped) door.flipFacing();
+                        if (sourceFI.HandFlipped != door.HandFlipped) door.flipHand();
+                    }
+                }
+
+                trans.Commit();
+
+                return new
+                {
+                    ElementId = door.Id.GetIdValue(),
+                    DoorType = doorSymbol.Name,
+                    WallId = wallId,
+                    SourceElementId = sourceElement?.Id.GetIdValue(),
+                    Message = $"成功建立門，ID: {door.Id.GetIdValue()}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// 建立窗。支援 windowType 篩選與 sourceElementId 來源複製（poisonsam fork 擴寫）
+        /// 4 級類型 fallback：windowType → sourceElement type → 任意第一個
+        /// 來源 fork: poisonsam/main:MCP/Core/Commands/CommandExecutor.Architecture.cs:320-420
+        /// </summary>
+        private object CreateWindow(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            IdType wallId = parameters["wallId"]?.Value<IdType>() ?? 0;
+            double locationX = parameters["locationX"]?.Value<double>() ?? 0;
+            double locationY = parameters["locationY"]?.Value<double>() ?? 0;
+            string windowType = parameters["windowType"]?.Value<string>();
+            IdType? sourceElementId = parameters["sourceElementId"]?.Value<IdType>();
+
+            Wall wall = doc.GetElement(new ElementId(wallId)) as Wall;
+            if (wall == null)
+            {
+                throw new Exception($"找不到牆 ID: {wallId}");
+            }
+
+            using (Transaction trans = new Transaction(doc, "建立窗"))
+            {
+                trans.Start();
+
+                FamilySymbol windowSymbol = null;
+                Element sourceElement = null;
+
+                // 1. 若有來源 ID，先取得來源元素
+                if (sourceElementId.HasValue && sourceElementId.Value > 0)
+                {
+                    sourceElement = doc.GetElement(new ElementId(sourceElementId.Value));
+                }
+
+                // 2. 優先使用指定類型名稱
+                if (!string.IsNullOrEmpty(windowType))
+                {
+                    windowSymbol = new FilteredElementCollector(doc)
+                        .OfClass(typeof(FamilySymbol))
+                        .OfCategory(BuiltInCategory.OST_Windows)
+                        .Cast<FamilySymbol>()
+                        .FirstOrDefault(fs => fs.Name == windowType || (fs.FamilyName + ": " + fs.Name) == windowType);
+                }
+
+                // 3. 如果沒指定名稱或找不到，則使用來源元素的類型
+                if (windowSymbol == null && sourceElement != null)
+                {
+                    windowSymbol = doc.GetElement(sourceElement.GetTypeId()) as FamilySymbol;
+                }
+
+                // 4. 最後回退到預設（第一個）
+                if (windowSymbol == null)
+                {
+                    windowSymbol = new FilteredElementCollector(doc)
+                        .OfClass(typeof(FamilySymbol))
+                        .OfCategory(BuiltInCategory.OST_Windows)
+                        .Cast<FamilySymbol>()
+                        .FirstOrDefault();
+                }
+
+                if (windowSymbol == null)
+                {
+                    throw new Exception("找不到窗類型");
+                }
+
+                if (!windowSymbol.IsActive)
+                {
+                    windowSymbol.Activate();
+                    doc.Regenerate();
+                }
+
+                // 取得牆的樓層
+                Level level = doc.GetElement(wall.LevelId) as Level;
+                XYZ location = new XYZ(locationX / 304.8, locationY / 304.8, (level?.Elevation ?? 0) + 3); // 窗戶高度 3 英尺
+
+                FamilyInstance window = doc.Create.NewFamilyInstance(
+                    location, windowSymbol, wall, level,
+                    Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+
+                // 若有來源，複製 instance parameters 與 Facing/Hand 朝向
+                if (sourceElement != null)
+                {
+                    CopyInstanceParameters(sourceElement, window);
+
+                    if (sourceElement is FamilyInstance sourceFI)
+                    {
+                        if (sourceFI.FacingFlipped != window.FacingFlipped) window.flipFacing();
+                        if (sourceFI.HandFlipped != window.HandFlipped) window.flipHand();
+                    }
+                }
+
+                trans.Commit();
+
+                return new
+                {
+                    ElementId = window.Id.GetIdValue(),
+                    WindowType = windowSymbol.Name,
+                    WallId = wallId,
+                    SourceElementId = sourceElement?.Id.GetIdValue(),
+                    Message = $"成功建立窗，ID: {window.Id.GetIdValue()}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// 取得所有網格線
+        /// </summary>
+        private object GetAllGrids()
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            var grids = new FilteredElementCollector(doc)
+                .OfClass(typeof(Grid))
+                .Cast<Grid>()
+                .Select(g =>
+                {
+                    // 取得 Grid 的曲線（通常是直線）
+                    Curve curve = g.Curve;
+                    XYZ startPoint = curve.GetEndPoint(0);
+                    XYZ endPoint = curve.GetEndPoint(1);
+
+                    // 判斷方向（水平或垂直）
+                    double dx = Math.Abs(endPoint.X - startPoint.X);
+                    double dy = Math.Abs(endPoint.Y - startPoint.Y);
+                    string direction = dx > dy ? "水平" : "垂直";
+
+                    return new
+                    {
+                        ElementId = g.Id.GetIdValue(),
+                        Name = g.Name,
+                        Direction = direction,
+                        StartX = Math.Round(startPoint.X * 304.8, 2),  // 英尺 → 公釐
+                        StartY = Math.Round(startPoint.Y * 304.8, 2),
+                        EndX = Math.Round(endPoint.X * 304.8, 2),
+                        EndY = Math.Round(endPoint.Y * 304.8, 2)
+                    };
+                })
+                .OrderBy(g => g.Name)
+                .ToList();
+
+            return new
+            {
+                Count = grids.Count,
+                Grids = grids
+            };
+        }
+
+        /// <summary>
+        /// 取得柱類型
+        /// </summary>
+        private object GetColumnTypes(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            string materialFilter = parameters["material"]?.Value<string>();
+
+            // 查詢結構柱和建築柱的 FamilySymbol
+            var columnTypes = new FilteredElementCollector(doc)
+                .OfClass(typeof(FamilySymbol))
+                .Cast<FamilySymbol>()
+                .Where(fs => fs.Category != null && 
+                    (fs.Category.Id.GetIdValue() == (IdType)BuiltInCategory.OST_Columns ||
+                     fs.Category.Id.GetIdValue() == (IdType)BuiltInCategory.OST_StructuralColumns))
+                .Select(fs =>
+                {
+                    // 嘗試取得尺寸參數
+                    double width = 0, depth = 0;
+                    
+                    // 常見的柱尺寸參數名稱
+                    Parameter widthParam = fs.LookupParameter("寬度") ?? 
+                                          fs.LookupParameter("Width") ?? 
+                                          fs.LookupParameter("b");
+                    Parameter depthParam = fs.LookupParameter("深度") ?? 
+                                          fs.LookupParameter("Depth") ?? 
+                                          fs.LookupParameter("h");
+                    
+                    if (widthParam != null && widthParam.HasValue)
+                        width = Math.Round(widthParam.AsDouble() * 304.8, 0);  // 轉公釐
+                    if (depthParam != null && depthParam.HasValue)
+                        depth = Math.Round(depthParam.AsDouble() * 304.8, 0);
+
+                    return new
+                    {
+                        ElementId = fs.Id.GetIdValue(),
+                        TypeName = fs.Name,
+                        FamilyName = fs.FamilyName,
+                        Category = fs.Category?.Name,
+                        Width = width,
+                        Depth = depth,
+                        SizeDescription = width > 0 && depth > 0 ? $"{width}x{depth}" : "未知尺寸"
+                    };
+                })
+                .Where(ct => string.IsNullOrEmpty(materialFilter) || 
+                             ct.FamilyName.Contains(materialFilter) || 
+                             ct.TypeName.Contains(materialFilter))
+                .OrderBy(ct => ct.FamilyName)
+                .ThenBy(ct => ct.TypeName)
+                .ToList();
+
+            return new
+            {
+                Count = columnTypes.Count,
+                ColumnTypes = columnTypes
+            };
+        }
+
+        /// <summary>
+        /// 建立柱子
+        /// </summary>
+        private object CreateColumn(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            // 解析參數
+            double x = parameters["x"]?.Value<double>() ?? 0;
+            double y = parameters["y"]?.Value<double>() ?? 0;
+            string bottomLevelName = parameters["bottomLevel"]?.Value<string>() ?? "Level 1";
+            string topLevelName = parameters["topLevel"]?.Value<string>();
+            string columnTypeName = parameters["columnType"]?.Value<string>();
+
+            // 轉換座標（公釐 → 英尺）
+            XYZ location = new XYZ(x / 304.8, y / 304.8, 0);
+
+            using (Transaction trans = new Transaction(doc, "建立柱子"))
+            {
+                trans.Start();
+
+                // 取得底部樓層
+                Level bottomLevel = FindLevel(doc, bottomLevelName, true);
+
+                // 取得柱類型（FamilySymbol）
+                FamilySymbol columnSymbol = new FilteredElementCollector(doc)
+                    .OfClass(typeof(FamilySymbol))
+                    .Cast<FamilySymbol>()
+                    .Where(fs => fs.Category != null &&
+                        (fs.Category.Id.GetIdValue() == (IdType)BuiltInCategory.OST_Columns ||
+                         fs.Category.Id.GetIdValue() == (IdType)BuiltInCategory.OST_StructuralColumns))
+                    .FirstOrDefault(fs => string.IsNullOrEmpty(columnTypeName) || 
+                                          fs.Name == columnTypeName ||
+                                          fs.FamilyName.Contains(columnTypeName));
+
+                if (columnSymbol == null)
+                {
+                    throw new Exception(string.IsNullOrEmpty(columnTypeName) 
+                        ? "專案中沒有可用的柱類型" 
+                        : $"找不到柱類型: {columnTypeName}");
+                }
+
+                // 確保 FamilySymbol 已啟用
+                if (!columnSymbol.IsActive)
+                {
+                    columnSymbol.Activate();
+                    doc.Regenerate();
+                }
+
+                // 建立柱子
+                FamilyInstance column = doc.Create.NewFamilyInstance(
+                    location,
+                    columnSymbol,
+                    bottomLevel,
+                    Autodesk.Revit.DB.Structure.StructuralType.Column
+                );
+
+                // 設定頂部樓層（如果有指定）
+                if (!string.IsNullOrEmpty(topLevelName))
+                {
+                    Level topLevel = new FilteredElementCollector(doc)
+                        .OfClass(typeof(Level))
+                        .Cast<Level>()
+                        .FirstOrDefault(l => l.Name == topLevelName);
+
+                    if (topLevel != null)
+                    {
+                        Parameter topLevelParam = column.get_Parameter(BuiltInParameter.FAMILY_TOP_LEVEL_PARAM);
+                        if (topLevelParam != null && !topLevelParam.IsReadOnly)
+                        {
+                            topLevelParam.Set(topLevel.Id);
+                        }
+                    }
+                }
+
+                trans.Commit();
+
+                return new
+                {
+                    ElementId = column.Id.GetIdValue(),
+                    ColumnType = columnSymbol.Name,
+                    FamilyName = columnSymbol.FamilyName,
+                    Level = bottomLevel.Name,
+                    LocationX = x,
+                    LocationY = y,
+                    Message = $"成功建立柱子，ID: {column.Id.GetIdValue()}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// 取得家具類型
+        /// </summary>
+        private object GetFurnitureTypes(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            string categoryFilter = parameters["category"]?.Value<string>();
+
+            var furnitureTypes = new FilteredElementCollector(doc)
+                .OfClass(typeof(FamilySymbol))
+                .OfCategory(BuiltInCategory.OST_Furniture)
+                .Cast<FamilySymbol>()
+                .Select(fs => new
+                {
+                    ElementId = fs.Id.GetIdValue(),
+                    TypeName = fs.Name,
+                    FamilyName = fs.FamilyName,
+                    IsActive = fs.IsActive
+                })
+                .Where(ft => string.IsNullOrEmpty(categoryFilter) ||
+                             ft.FamilyName.Contains(categoryFilter) ||
+                             ft.TypeName.Contains(categoryFilter))
+                .OrderBy(ft => ft.FamilyName)
+                .ThenBy(ft => ft.TypeName)
+                .ToList();
+
+            return new
+            {
+                Count = furnitureTypes.Count,
+                FurnitureTypes = furnitureTypes
+            };
+        }
+
+        /// <summary>
+        /// 放置家具
+        /// </summary>
+        private object PlaceFurniture(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            double x = parameters["x"]?.Value<double>() ?? 0;
+            double y = parameters["y"]?.Value<double>() ?? 0;
+            string furnitureTypeName = parameters["furnitureType"]?.Value<string>();
+            string levelName = parameters["level"]?.Value<string>() ?? "Level 1";
+            double rotation = parameters["rotation"]?.Value<double>() ?? 0;
+
+            // 轉換座標（公釐 → 英尺）
+            XYZ location = new XYZ(x / 304.8, y / 304.8, 0);
+
+            using (Transaction trans = new Transaction(doc, "放置家具"))
+            {
+                trans.Start();
+
+                // 取得樓層
+                Level level = FindLevel(doc, levelName, true);
+
+                // 取得家具類型
+                FamilySymbol furnitureSymbol = new FilteredElementCollector(doc)
+                    .OfClass(typeof(FamilySymbol))
+                    .OfCategory(BuiltInCategory.OST_Furniture)
+                    .Cast<FamilySymbol>()
+                    .FirstOrDefault(fs => fs.Name == furnitureTypeName ||
+                                          fs.FamilyName.Contains(furnitureTypeName));
+
+                if (furnitureSymbol == null)
+                {
+                    throw new Exception($"找不到家具類型: {furnitureTypeName}");
+                }
+
+                // 確保 FamilySymbol 已啟用
+                if (!furnitureSymbol.IsActive)
+                {
+                    furnitureSymbol.Activate();
+                    doc.Regenerate();
+                }
+
+                // 放置家具
+                FamilyInstance furniture = doc.Create.NewFamilyInstance(
+                    location,
+                    furnitureSymbol,
+                    level,
+                    Autodesk.Revit.DB.Structure.StructuralType.NonStructural
+                );
+
+                // 旋轉
+                if (Math.Abs(rotation) > 0.001)
+                {
+                    Line axis = Line.CreateBound(location, location + XYZ.BasisZ);
+                    ElementTransformUtils.RotateElement(doc, furniture.Id, axis, rotation * Math.PI / 180);
+                }
+
+                trans.Commit();
+
+                return new
+                {
+                    ElementId = furniture.Id.GetIdValue(),
+                    FurnitureType = furnitureSymbol.Name,
+                    FamilyName = furnitureSymbol.FamilyName,
+                    Level = level.Name,
+                    LocationX = x,
+                    LocationY = y,
+                    Rotation = rotation,
+                    Message = $"成功放置家具，ID: {furniture.Id.GetIdValue()}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// 取得房間資訊
+        /// </summary>
+        private object GetRoomInfo(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            IdType? roomId = parameters["roomId"]?.Value<IdType>();
+            string roomName = parameters["roomName"]?.Value<string>();
+
+            Room room = null;
+
+            if (roomId.HasValue)
+            {
+                room = doc.GetElement(new ElementId(roomId.Value)) as Room;
+            }
+            else if (!string.IsNullOrEmpty(roomName))
+            {
+                room = new FilteredElementCollector(doc)
+                    .OfCategory(BuiltInCategory.OST_Rooms)
+                    .WhereElementIsNotElementType()
+                    .Cast<Room>()
+                    .FirstOrDefault(r => r.Name.Contains(roomName) || 
+                                         r.get_Parameter(BuiltInParameter.ROOM_NAME)?.AsString()?.Contains(roomName) == true);
+            }
+
+            if (room == null)
+            {
+                throw new Exception(roomId.HasValue 
+                    ? $"找不到房間 ID: {roomId}" 
+                    : $"找不到房間名稱包含: {roomName}");
+            }
+
+            // 取得房間位置點
+            LocationPoint locPoint = room.Location as LocationPoint;
+            XYZ center = locPoint?.Point ?? XYZ.Zero;
+
+            // 取得 BoundingBox
+            BoundingBoxXYZ bbox = room.get_BoundingBox(null);
+            
+            // 取得面積
+            double area = room.Area * 0.092903; // 平方英尺 → 平方公尺
+
+            return new
+            {
+                ElementId = room.Id.GetIdValue(),
+                Name = room.get_Parameter(BuiltInParameter.ROOM_NAME)?.AsString(),
+                Number = room.Number,
+                Level = doc.GetElement(room.LevelId)?.Name,
+                Area = Math.Round(area, 2),
+                CenterX = Math.Round(center.X * 304.8, 2),
+                CenterY = Math.Round(center.Y * 304.8, 2),
+                BoundingBox = bbox != null ? new
+                {
+                    MinX = Math.Round(bbox.Min.X * 304.8, 2),
+                    MinY = Math.Round(bbox.Min.Y * 304.8, 2),
+                    MaxX = Math.Round(bbox.Max.X * 304.8, 2),
+                    MaxY = Math.Round(bbox.Max.Y * 304.8, 2)
+                } : null,
+                BoundarySegments = GetRoomBoundarySegments(room)
+            };
+        }
+
+        /// <summary>
+        /// 取得樓層房間清單
+        /// </summary>
+        private object GetRoomsByLevel(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            string levelName = parameters["level"]?.Value<string>();
+            bool includeUnnamed = parameters["includeUnnamed"]?.Value<bool>() ?? true;
+
+            if (string.IsNullOrEmpty(levelName))
+            {
+                throw new Exception("請指定樓層名稱");
+            }
+
+            // 取得指定樓層
+            Level targetLevel = FindLevel(doc, levelName, false);
+
+            // 取得該樓層的所有房間
+            var rooms = new FilteredElementCollector(doc)
+                .OfCategory(BuiltInCategory.OST_Rooms)
+                .WhereElementIsNotElementType()
+                .Cast<Room>()
+                .Where(r => r.LevelId == targetLevel.Id)
+                .Where(r => r.Area > 0) // 排除面積為 0 的房間（未封閉）
+                .Select(r => 
+                {
+                    string roomName = r.get_Parameter(BuiltInParameter.ROOM_NAME)?.AsString();
+                    bool hasName = !string.IsNullOrEmpty(roomName) && roomName != "房間";
+                    
+                    // 取得房間中心點
+                    LocationPoint locPoint = r.Location as LocationPoint;
+                    XYZ center = locPoint?.Point ?? XYZ.Zero;
+                    
+                    // 取得面積（平方英尺 → 平方公尺）
+                    double areaM2 = r.Area * 0.092903;
+                    
+                    return new
+                    {
+                        ElementId = r.Id.GetIdValue(),
+                        Name = roomName ?? "未命名",
+                        Number = r.Number,
+                        Area = Math.Round(areaM2, 2),
+                        HasName = hasName,
+                        CenterX = Math.Round(center.X * 304.8, 2),
+                        CenterY = Math.Round(center.Y * 304.8, 2)
+                    };
+                })
+                .Where(r => includeUnnamed || r.HasName)
+                .OrderBy(r => r.Number)
+                .ToList();
+
+            // 計算統計
+            double totalArea = rooms.Sum(r => r.Area);
+            int roomsWithName = rooms.Count(r => r.HasName);
+            int roomsWithoutName = rooms.Count(r => !r.HasName);
+
+            return new
+            {
+                Level = targetLevel.Name,
+                LevelId = targetLevel.Id.GetIdValue(),
+                TotalRooms = rooms.Count,
+                TotalArea = Math.Round(totalArea, 2),
+                RoomsWithName = roomsWithName,
+                RoomsWithoutName = roomsWithoutName,
+                DataCompleteness = rooms.Count > 0 
+                    ? $"{Math.Round((double)roomsWithName / rooms.Count * 100, 1)}%" 
+                    : "N/A",
+                Rooms = rooms
+            };
+        }
+
+        /// <summary>
+        /// 取得房間採光資訊
+        /// </summary>
+        private object GetRoomDaylightInfo(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            string levelName = parameters["level"]?.Value<string>();
+
+            IEnumerable<Room> rooms;
+            if (!string.IsNullOrEmpty(levelName))
+            {
+                Level level = FindLevel(doc, levelName, false);
+                rooms = new FilteredElementCollector(doc)
+                    .OfCategory(BuiltInCategory.OST_Rooms)
+                    .WhereElementIsNotElementType()
+                    .Cast<Room>()
+                    .Where(r => r.LevelId == level.Id && r.Area > 0);
+            }
+            else
+            {
+                rooms = new FilteredElementCollector(doc)
+                    .OfCategory(BuiltInCategory.OST_Rooms)
+                    .WhereElementIsNotElementType()
+                    .Cast<Room>()
+                    .Where(r => r.Area > 0);
+            }
+
+
+            // 預先取得所有 Room Tags 並建立對照表 (RoomId -> List<TagId>)
+            // 預先取得所有 Room Tags 並建立對照表 (RoomId -> List<TagId>)
+            // 預先取得所有 Room Tags 並建立對照表 (RoomId -> List<TagId>)
+            var roomTagCollector = new FilteredElementCollector(doc)
+                .OfClass(typeof(SpatialElementTag))
+                .WhereElementIsNotElementType()
+                .Where(e => e is RoomTag)
+                .Cast<RoomTag>();
+
+            var roomTagMap = new Dictionary<IdType, List<IdType>>();
+            foreach (var tag in roomTagCollector)
+            {
+                // 注意：Tag 可能沒有關聯的 Room (Orphaned)
+                try {
+                    // Tag.Room 屬性在某些視圖可能無效，或需用 Tag.IsOrphaned
+                    if (tag.Room != null) 
+                    {
+                        IdType roomId = tag.Room.Id.GetIdValue();
+                        if (!roomTagMap.ContainsKey(roomId))
+                        {
+                            roomTagMap[roomId] = new List<IdType>();
+                        }
+                        roomTagMap[roomId].Add(tag.Id.GetIdValue());
+                    }
+                } catch {}
+            }
+
+            var roomData = new List<object>();
+            SpatialElementBoundaryOptions options = new SpatialElementBoundaryOptions();
+            // 記錄「開口 → 已歸屬房間」，同一開口只歸一個主房間（ToRoom 優先），避免先到先搶
+            var openingRoomMap = new Dictionary<IdType, IdType>();
+
+            foreach (Room room in rooms)
+            {
+                var openings = new List<object>();
+
+                IList<IList<BoundarySegment>> segments = room.GetBoundarySegments(options);
+                if (segments != null)
+                {
+                    foreach (IList<BoundarySegment> segmentList in segments)
+                    {
+                        foreach (BoundarySegment segment in segmentList)
+                        {
+                            Element element = doc.GetElement(segment.ElementId);
+                            if (element is Wall wall)
+                            {
+                                IList<ElementId> insertIds = wall.FindInserts(true, true, false, false);
+                                foreach (ElementId insertId in insertIds)
+                                {
+                                    // 同一開口只歸一個主房間，已歸屬則跳過
+                                    if (openingRoomMap.ContainsKey(insertId.GetIdValue())) continue;
+
+                                    Element insert = doc.GetElement(insertId);
+                                    if (insert is FamilyInstance fi &&
+                                        (fi.Category.Id.GetIdValue() == (IdType)BuiltInCategory.OST_Windows ||
+                                         fi.Category.Id.GetIdValue() == (IdType)BuiltInCategory.OST_Doors))
+                                    {
+                                        bool belongsToRoom = false;
+
+                                        // 對應邏輯：優先用 FamilyInstance 的 Room API 判定主房間（ToRoom 優先，其次 FromRoom），
+                                        // 只有當前房間 == 主房間才歸屬，避免走廊先迭代時用幾何投影把鄰房開口搶走。
+                                        // ToRoom/FromRoom 使用無參數版（預設 phase），與 get_room_window_counts 行為一致。
+                                        Room toRoom = TryGetToRoom(fi);
+                                        Room fromRoom = TryGetFromRoom(fi);
+
+                                        if (toRoom != null)
+                                        {
+                                            // 主房間 = ToRoom
+                                            belongsToRoom = (toRoom.Id == room.Id);
+                                        }
+                                        else if (fromRoom != null)
+                                        {
+                                            // ToRoom 為 null → 主房間 = FromRoom
+                                            belongsToRoom = (fromRoom.Id == room.Id);
+                                        }
+                                        else if (wall.Location is LocationCurve wallLocCurve && insert.Location is LocationPoint insertLoc)
+                                        {
+                                            // ToRoom / FromRoom 皆 null → 退回既有幾何投影 fallback
+                                            Curve wallCurve = wallLocCurve.Curve;
+                                            Curve segmentCurve = segment.GetCurve();
+
+                                            IntersectionResult resStart = wallCurve.Project(segmentCurve.GetEndPoint(0));
+                                            IntersectionResult resEnd = wallCurve.Project(segmentCurve.GetEndPoint(1));
+
+                                            if (resStart != null && resEnd != null)
+                                            {
+                                                double tMin = Math.Min(resStart.Parameter, resEnd.Parameter);
+                                                double tMax = Math.Max(resStart.Parameter, resEnd.Parameter);
+
+                                                IntersectionResult resWindow = wallCurve.Project(insertLoc.Point);
+                                                if (resWindow != null)
+                                                {
+                                                    double tWindow = resWindow.Parameter;
+                                                    // 500mm tolerance to catch windows near segment boundaries
+                                                    double tol = 500.0 / 304.8;
+                                                    if (tWindow >= tMin - tol && tWindow <= tMax + tol)
+                                                    {
+                                                        belongsToRoom = true;
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        if (!belongsToRoom) continue;
+                                        openingRoomMap[insertId.GetIdValue()] = room.Id.GetIdValue();
+
+                                        // IsExterior 判定：WallType 為 Exterior，或開口另一側無房間（FromRoom/ToRoom 恰好一側為 null）
+                                        // 視為臨外氣；IsExteriorSource 記錄判定依據供審計端使用。
+                                        bool isExterior;
+                                        string isExteriorSource;
+                                        if (wall.WallType.Function == WallFunction.Exterior)
+                                        {
+                                            isExterior = true;
+                                            isExteriorSource = "WallFunction";
+                                        }
+                                        else if ((toRoom == null) != (fromRoom == null))
+                                        {
+                                            isExterior = true;
+                                            isExteriorSource = "NoRoomOtherSide";
+                                        }
+                                        else
+                                        {
+                                            isExterior = false;
+                                            isExteriorSource = "None";
+                                        }
+
+                                        const double FEET_TO_MM = 304.8;
+                                        Element symbol = fi.Symbol;
+
+                                        BuiltInParameter[] widthBips = new BuiltInParameter[] { BuiltInParameter.FAMILY_WIDTH_PARAM, BuiltInParameter.WINDOW_WIDTH };
+                                        string[] widthNames = new string[] { "粗略寬度", "寬度", "Width", "寬" };
+
+                                        BuiltInParameter[] heightBips = new BuiltInParameter[] { BuiltInParameter.FAMILY_HEIGHT_PARAM, BuiltInParameter.WINDOW_HEIGHT };
+                                        string[] heightNames = new string[] { "粗略高度", "高度", "Height", "高" };
+
+                                        BuiltInParameter[] sillBips = new BuiltInParameter[] { BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM };
+                                        string[] sillNames = new string[] { "窗台高度", "Sill Height", "底高度", "窗臺高度" };
+
+                                        BuiltInParameter[] headBips = new BuiltInParameter[] { BuiltInParameter.INSTANCE_HEAD_HEIGHT_PARAM };
+                                        string[] headNames = new string[] { "窗頂高度", "Head Height", "頂高度" };
+
+                                        double? wVal = GetParamValue(fi, widthBips, widthNames);
+                                        if (wVal == null || wVal == 0)
+                                        {
+                                            wVal = GetParamValue(symbol, widthBips, widthNames);
+                                        }
+                                        double widthRaw = wVal ?? 0;
+                                        double width = widthRaw * FEET_TO_MM;
+
+                                        double? hVal = GetParamValue(fi, heightBips, heightNames);
+                                        if (hVal == null || hVal == 0)
+                                        {
+                                            hVal = GetParamValue(symbol, heightBips, heightNames);
+                                        }
+                                        double heightRaw = hVal ?? 0;
+                                        double height = heightRaw * FEET_TO_MM;
+
+                                        double sillHeightRaw = GetParamValue(fi, sillBips, sillNames) ?? 0;
+                                        double sillHeight = sillHeightRaw * FEET_TO_MM;
+
+                                        double headHeightRaw = GetParamValue(fi, headBips, headNames) ?? (sillHeightRaw + heightRaw);
+                                        double headHeight = headHeightRaw * FEET_TO_MM;
+
+                                        openings.Add(new
+                                        {
+                                            Id = insert.Id.GetIdValue(),
+                                            Name = insert.Name,
+                                            FamilyName = fi.Symbol.FamilyName,
+                                            Category = insert.Category.Name,
+                                            Width = Math.Round(width, 2),
+                                            Height = Math.Round(height, 2),
+                                            SillHeight = Math.Round(sillHeight, 2),
+                                            HeadHeight = Math.Round(headHeight, 2),
+                                            IsExterior = isExterior,
+                                            IsExteriorSource = isExteriorSource,
+                                            HostWallId = wall.Id.GetIdValue()
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 取得房間標籤 ID
+                List<IdType> tagIds = new List<IdType>();
+                if (roomTagMap.ContainsKey(room.Id.GetIdValue()))
+                {
+                    tagIds = roomTagMap[room.Id.GetIdValue()];
+                }
+
+                roomData.Add(new
+                {
+                    ElementId = room.Id.GetIdValue(),
+                    Name = room.get_Parameter(BuiltInParameter.ROOM_NAME)?.AsString() ?? "未命名",
+                    Number = room.Number,
+                    Level = doc.GetElement(room.LevelId)?.Name,
+                    Area = Math.Round(room.Area * 0.092903, 2),
+                    Openings = openings,
+                    TagIds = tagIds
+                });
+            }
+
+            return new
+            {
+                Count = roomData.Count,
+                Rooms = roomData
+            };
+        }
+
+        private double? GetParamDouble(Element e, BuiltInParameter bip)
+        {
+            Parameter p = e.get_Parameter(bip);
+            if (p != null && (p.StorageType == StorageType.Double)) return p.AsDouble();
+            return null;
+        }
+
+        private double? GetParamValue(Element e, BuiltInParameter[] bips, string[] names)
+        {
+            if (e == null) return null;
+            
+            foreach (BuiltInParameter bip in bips)
+            {
+                var val = GetParamDouble(e, bip);
+                if (val.HasValue)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Found via BIP: {bip} = {val}");
+                    return val;
+                }
+            }
+            
+            foreach (var name in names)
+            {
+                Parameter p = e.LookupParameter(name);
+                if (p != null && p.StorageType == StorageType.Double)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Found via Name: {name} = {p.AsDouble()}");
+                    return p.AsDouble();
+                }
+            }
+            
+            // Fallback: iterate all parameters to find by name match
+            foreach (Parameter param in e.Parameters)
+            {
+                if (param.StorageType != StorageType.Double) continue;
+                
+                string paramName = param.Definition.Name;
+                foreach (var name in names)
+                {
+                    if (paramName == name)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Found via iteration: {paramName} = {param.AsDouble()}");
+                        return param.AsDouble();
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        /// <summary>
+        /// 安全讀取 FamilyInstance.ToRoom（無參數版 / 預設 phase）。
+        /// FromRoom/ToRoom 於某些相位或未放置時會擲例外，以 try/catch 保護。
+        /// </summary>
+        private static Room TryGetToRoom(FamilyInstance fi)
+        {
+            try { return fi.ToRoom; }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// 安全讀取 FamilyInstance.FromRoom（無參數版 / 預設 phase）。
+        /// </summary>
+        private static Room TryGetFromRoom(FamilyInstance fi)
+        {
+            try { return fi.FromRoom; }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// 取得所有視圖
+        /// </summary>
+        private object GetAllViews(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            string viewTypeFilter = parameters["viewType"]?.Value<string>();
+            string levelNameFilter = parameters["levelName"]?.Value<string>();
+
+            var views = new FilteredElementCollector(doc)
+                .OfClass(typeof(View))
+                .Cast<View>()
+                .Where(v => !v.IsTemplate && v.CanBePrinted)
+                .Select(v =>
+                {
+                    string levelName = "";
+                    if (v.GenLevel != null)
+                    {
+                        levelName = v.GenLevel.Name;
+                    }
+
+                    return new
+                    {
+                        ElementId = v.Id.GetIdValue(),
+                        Name = v.Name,
+                        ViewType = v.ViewType.ToString(),
+                        LevelName = levelName,
+                        Scale = v.Scale
+                    };
+                })
+                .Where(v => string.IsNullOrEmpty(viewTypeFilter) || 
+                            v.ViewType.ToLower().Contains(viewTypeFilter.ToLower()))
+                .Where(v => string.IsNullOrEmpty(levelNameFilter) || 
+                            v.LevelName.Contains(levelNameFilter))
+                .OrderBy(v => v.ViewType)
+                .ThenBy(v => v.Name)
+                .ToList();
+
+            return new
+            {
+                Count = views.Count,
+                Views = views
+            };
+        }
+
+        /// <summary>
+        /// 取得目前視圖
+        /// </summary>
+        private object GetActiveView()
+        {
+            View activeView = _uiApp.ActiveUIDocument.ActiveView;
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            string levelName = "";
+            if (activeView.GenLevel != null)
+            {
+                levelName = activeView.GenLevel.Name;
+            }
+
+            return new
+            {
+                ElementId = activeView.Id.GetIdValue(),
+                Name = activeView.Name,
+                ViewType = activeView.ViewType.ToString(),
+                LevelName = levelName,
+                Scale = activeView.Scale
+            };
+        }
+
+        /// <summary>
+        /// 切換視圖
+        /// </summary>
+        private object SetActiveView(JObject parameters)
+        {
+            IdType viewId = parameters["viewId"]?.Value<IdType>() ?? 0;
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            View view = doc.GetElement(new ElementId(viewId)) as View;
+            if (view == null)
+            {
+                throw new Exception($"找不到視圖 ID: {viewId}");
+            }
+
+            _uiApp.ActiveUIDocument.ActiveView = view;
+
+            return new
+            {
+                Success = true,
+                ViewId = viewId,
+                ViewName = view.Name,
+                Message = $"已切換至視圖: {view.Name}"
+            };
+        }
+
+        /// <summary>
+        /// 選取元素
+        /// </summary>
+        private object SelectElement(JObject parameters)
+        {
+            var elementIds = new List<ElementId>();
+            
+            // 支援單一 ID
+            if (parameters.ContainsKey("elementId"))
+            {
+                IdType id = parameters["elementId"].Value<IdType>();
+                if (id > 0) elementIds.Add(new ElementId(id));
+            }
+
+            // 支援多個 ID
+            if (parameters.ContainsKey("elementIds"))
+            {
+                var ids = parameters["elementIds"].Values<int>();
+                foreach (var id in ids)
+                {
+                    if (id > 0) elementIds.Add(new ElementId(id));
+                }
+            }
+
+            if (elementIds.Count == 0)
+            {
+                throw new Exception("未提供有效的 elementId 或 elementIds");
+            }
+
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            
+            // 選取元素
+            _uiApp.ActiveUIDocument.Selection.SetElementIds(elementIds);
+
+            return new
+            {
+                Success = true,
+                Count = elementIds.Count,
+                Message = $"已選取 {elementIds.Count} 個元素"
+            };
+        }
+
+        /// <summary>
+        /// 縮放至元素
+        /// </summary>
+        private object ZoomToElement(JObject parameters)
+        {
+            IdType elementId = parameters["elementId"]?.Value<IdType>() ?? 0;
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            Element element = doc.GetElement(new ElementId(elementId));
+            if (element == null)
+            {
+                throw new Exception($"找不到元素 ID: {elementId}");
+            }
+
+            // 顯示元素（會自動縮放）
+            var elementIds = new List<ElementId> { new ElementId(elementId) };
+            _uiApp.ActiveUIDocument.ShowElements(elementIds);
+
+            return new
+            {
+                Success = true,
+                ElementId = elementId,
+                ElementName = element.Name,
+                Message = $"已縮放至元素: {element.Name}"
+            };
+        }
+
+        /// <summary>
+        /// 測量距離
+        /// </summary>
+        private object MeasureDistance(JObject parameters)
+        {
+            double p1x = parameters["point1X"]?.Value<double>() ?? 0;
+            double p1y = parameters["point1Y"]?.Value<double>() ?? 0;
+            double p1z = parameters["point1Z"]?.Value<double>() ?? 0;
+            double p2x = parameters["point2X"]?.Value<double>() ?? 0;
+            double p2y = parameters["point2Y"]?.Value<double>() ?? 0;
+            double p2z = parameters["point2Z"]?.Value<double>() ?? 0;
+
+            // 轉換為英尺
+            XYZ point1 = new XYZ(p1x / 304.8, p1y / 304.8, p1z / 304.8);
+            XYZ point2 = new XYZ(p2x / 304.8, p2y / 304.8, p2z / 304.8);
+
+            double distanceFeet = point1.DistanceTo(point2);
+            double distanceMm = distanceFeet * 304.8;
+
+            return new
+            {
+                Distance = Math.Round(distanceMm, 2),
+                Unit = "mm",
+                Point1 = new { X = p1x, Y = p1y, Z = p1z },
+                Point2 = new { X = p2x, Y = p2y, Z = p2z }
+            };
+        }
+
+        /// <summary>
+        /// 取得牆資訊
+        /// </summary>
+        private object GetWallInfo(JObject parameters)
+        {
+            IdType wallId = parameters["wallId"]?.Value<IdType>() ?? 0;
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            Wall wall = doc.GetElement(new ElementId(wallId)) as Wall;
+            if (wall == null)
+            {
+                throw new Exception($"找不到牆 ID: {wallId}");
+            }
+
+            // 取得牆的位置曲線
+            LocationCurve locCurve = wall.Location as LocationCurve;
+            Curve curve = locCurve?.Curve;
+
+            XYZ startPoint = curve?.GetEndPoint(0) ?? XYZ.Zero;
+            XYZ endPoint = curve?.GetEndPoint(1) ?? XYZ.Zero;
+
+            // 取得牆厚度
+            double thickness = wall.Width * 304.8; // 英尺 → 公釐
+
+            // 取得牆長度
+            double length = curve != null ? curve.Length * 304.8 : 0;
+
+            // 取得牆高度
+            Parameter heightParam = wall.get_Parameter(BuiltInParameter.WALL_USER_HEIGHT_PARAM);
+            double height = heightParam != null ? heightParam.AsDouble() * 304.8 : 0;
+
+            Parameter baseConstraintParam = wall.get_Parameter(BuiltInParameter.WALL_BASE_CONSTRAINT);
+            ElementId baseConstraintId = baseConstraintParam?.AsElementId() ?? ElementId.InvalidElementId;
+            Level baseConstraintLevel = baseConstraintId != ElementId.InvalidElementId
+                ? doc.GetElement(baseConstraintId) as Level
+                : null;
+            Level wallLevel = doc.GetElement(wall.LevelId) as Level;
+            Level resolvedBaseLevel = baseConstraintLevel ?? wallLevel;
+            Parameter baseOffsetParam = wall.get_Parameter(BuiltInParameter.WALL_BASE_OFFSET);
+            double baseOffsetFeet = baseOffsetParam?.AsDouble() ?? 0.0;
+            double? baseElevationFeet = resolvedBaseLevel != null
+                ? (double?)(resolvedBaseLevel.Elevation + baseOffsetFeet)
+                : null;
+
+            Parameter topConstraintParam = wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE);
+            ElementId topConstraintId = topConstraintParam?.AsElementId() ?? ElementId.InvalidElementId;
+            Level topConstraintLevel = topConstraintId != ElementId.InvalidElementId
+                ? doc.GetElement(topConstraintId) as Level
+                : null;
+            Parameter topOffsetParam = wall.get_Parameter(BuiltInParameter.WALL_TOP_OFFSET);
+            double topOffsetFeet = topOffsetParam?.AsDouble() ?? 0.0;
+            double? unconnectedHeightFeet = heightParam != null && heightParam.HasValue
+                ? (double?)(heightParam.AsDouble())
+                : null;
+
+            BoundingBoxXYZ boundingBox = wall.get_BoundingBox(null);
+            double? boundingBoxMinZMm = boundingBox != null ? (double?)(boundingBox.Min.Z * 304.8) : null;
+            double? boundingBoxMaxZMm = boundingBox != null ? (double?)(boundingBox.Max.Z * 304.8) : null;
+
+            double? topElevationFeet = null;
+            if (topConstraintLevel != null)
+            {
+                topElevationFeet = topConstraintLevel.Elevation + topOffsetFeet;
+            }
+            else if (baseElevationFeet.HasValue && unconnectedHeightFeet.HasValue)
+            {
+                topElevationFeet = baseElevationFeet.Value + unconnectedHeightFeet.Value;
+            }
+            else if (boundingBox != null)
+            {
+                topElevationFeet = boundingBox.Max.Z;
+            }
+
+            object baseConstraintIdValue = baseConstraintId != ElementId.InvalidElementId
+                ? (object)baseConstraintId.GetIdValue()
+                : null;
+            object topConstraintIdValue = topConstraintId != ElementId.InvalidElementId
+                ? (object)topConstraintId.GetIdValue()
+                : null;
+            string baseConstraintName = baseConstraintLevel?.Name ?? baseConstraintParam?.AsValueString();
+            string topConstraintName = topConstraintLevel?.Name
+                ?? (topConstraintId == ElementId.InvalidElementId ? "Unconnected" : topConstraintParam?.AsValueString());
+
+            // Stage 3.5：補 Wall.Flipped + Wall.Orientation 兩個 native property
+            // Wall.Flipped = bool（是否被 flip 過）
+            // Wall.Orientation = XYZ 單位向量，指向 exterior side
+            return new
+            {
+                ElementId = wallId,
+                Name = wall.Name,
+                WallType = wall.WallType.Name,
+                Thickness = Math.Round(thickness, 2),
+                Length = Math.Round(length, 2),
+                Height = Math.Round(height, 2),
+                StartX = Math.Round(startPoint.X * 304.8, 2),
+                StartY = Math.Round(startPoint.Y * 304.8, 2),
+                EndX = Math.Round(endPoint.X * 304.8, 2),
+                EndY = Math.Round(endPoint.Y * 304.8, 2),
+                Level = doc.GetElement(wall.LevelId)?.Name,
+                BaseConstraintName = baseConstraintName,
+                BaseConstraintId = baseConstraintIdValue,
+                BaseOffsetMm = Math.Round(baseOffsetFeet * 304.8, 2),
+                BaseElevationMm = baseElevationFeet.HasValue ? (double?)Math.Round(baseElevationFeet.Value * 304.8, 2) : null,
+                TopConstraintName = topConstraintName,
+                TopConstraintId = topConstraintIdValue,
+                TopOffsetMm = Math.Round(topOffsetFeet * 304.8, 2),
+                TopElevationMm = topElevationFeet.HasValue ? (double?)Math.Round(topElevationFeet.Value * 304.8, 2) : null,
+                UnconnectedHeightMm = unconnectedHeightFeet.HasValue ? (double?)Math.Round(unconnectedHeightFeet.Value * 304.8, 2) : null,
+                BoundingBoxMinZMm = boundingBoxMinZMm.HasValue ? (double?)Math.Round(boundingBoxMinZMm.Value, 2) : null,
+                BoundingBoxMaxZMm = boundingBoxMaxZMm.HasValue ? (double?)Math.Round(boundingBoxMaxZMm.Value, 2) : null,
+                Flipped = wall.Flipped,
+                OrientationX = Math.Round(wall.Orientation.X, 4),
+                OrientationY = Math.Round(wall.Orientation.Y, 4)
+            };
+        }
+
+        /// <summary>
+        /// 建立尺寸標註
+        /// </summary>
+        private object CreateDimension(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            
+            IdType viewId = parameters["viewId"]?.Value<IdType>() ?? 0;
+            double startX = parameters["startX"]?.Value<double>() ?? 0;
+            double startY = parameters["startY"]?.Value<double>() ?? 0;
+            double endX = parameters["endX"]?.Value<double>() ?? 0;
+            double endY = parameters["endY"]?.Value<double>() ?? 0;
+            double offset = parameters["offset"]?.Value<double>() ?? 500;
+
+            View view = doc.GetElement(new ElementId(viewId)) as View;
+            if (view == null)
+            {
+                throw new Exception($"找不到視圖 ID: {viewId}");
+            }
+
+            using (Transaction trans = new Transaction(doc, "建立尺寸標註"))
+            {
+                trans.Start();
+
+                // 轉換座標
+                XYZ start = new XYZ(startX / 304.8, startY / 304.8, 0);
+                XYZ end = new XYZ(endX / 304.8, endY / 304.8, 0);
+
+                // 建立參考線
+                Line line = Line.CreateBound(start, end);
+
+                // 建立尺寸標註用的參考陣列
+                ReferenceArray refArray = new ReferenceArray();
+
+                // 使用 DetailCurve 作為參考
+                // 先建立兩個詳圖線作為參考點
+                XYZ perpDir = new XYZ(-(end.Y - start.Y), end.X - start.X, 0).Normalize();
+                double offsetFeet = offset / 304.8;
+
+                // 偏移後的標註線位置
+                XYZ dimLinePoint = start.Add(perpDir.Multiply(offsetFeet));
+                Line dimLine = Line.CreateBound(
+                    start.Add(perpDir.Multiply(offsetFeet)),
+                    end.Add(perpDir.Multiply(offsetFeet))
+                );
+
+                // 使用 NewDetailCurve 建立參考（建立足夠長的線段）
+                // 詳圖線應垂直於標註方向，作為標註的參考點
+                double lineLength = 1.0; // 1 英尺 = 約 305mm
+
+                // 使用 perpDir（垂直方向）來建立詳圖線
+                DetailCurve dc1 = doc.Create.NewDetailCurve(view, Line.CreateBound(
+                    start.Subtract(perpDir.Multiply(lineLength / 2)), 
+                    start.Add(perpDir.Multiply(lineLength / 2))));
+                DetailCurve dc2 = doc.Create.NewDetailCurve(view, Line.CreateBound(
+                    end.Subtract(perpDir.Multiply(lineLength / 2)), 
+                    end.Add(perpDir.Multiply(lineLength / 2))));
+
+                refArray.Append(dc1.GeometryCurve.Reference);
+                refArray.Append(dc2.GeometryCurve.Reference);
+
+                // 建立尺寸標註
+                Dimension dim = doc.Create.NewDimension(view, dimLine, refArray);
+
+                // 注意：保留詳圖線作為標註參考點（如需刪除請手動處理）
+
+                trans.Commit();
+
+                double dimValue = dim.Value.HasValue ? dim.Value.Value * 304.8 : 0;
+
+                return new
+                {
+                    DimensionId = dim.Id.GetIdValue(),
+                    Value = Math.Round(dimValue, 2),
+                    Unit = "mm",
+                    ViewId = viewId,
+                    ViewName = view.Name,
+                    Message = $"成功建立尺寸標註: {Math.Round(dimValue, 0)} mm"
+                };
+            }
+        }
+
+        /// <summary>
+        /// 走廊寬度標註 — 使用房間邊界線段找平行牆對，建立精確的牆到牆標註
+        /// </summary>
+        private object CreateCorridorDimension(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            IdType roomId = parameters["roomId"]?.Value<IdType>() ?? 0;
+            IdType viewId = parameters["viewId"]?.Value<IdType>() ?? 0;
+
+            Room room = doc.GetElement(new ElementId(roomId)) as Room;
+            if (room == null) throw new Exception($"找不到房間 ID: {roomId}");
+
+            View view = doc.GetElement(new ElementId(viewId)) as View;
+            if (view == null) throw new Exception($"找不到視圖 ID: {viewId}");
+
+            // 取得房間邊界線段（使用完成面位置）
+            var bOptions = new SpatialElementBoundaryOptions();
+            bOptions.SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Finish;
+            var segmentLoops = room.GetBoundarySegments(bOptions);
+
+            if (segmentLoops == null || segmentLoops.Count == 0)
+                throw new Exception("房間無邊界線段");
+
+            // 從第一個迴路提取直線段
+            var lines = new List<Line>();
+            foreach (var seg in segmentLoops[0])
+            {
+                var curve = seg.GetCurve();
+                if (curve is Line line && line.Length > 0.3) // > ~90mm
+                    lines.Add(line);
+            }
+
+            if (lines.Count < 2)
+                throw new Exception($"邊界線段不足（僅 {lines.Count} 條直線）");
+
+            // Segment-First 演算法：找平行牆對
+            var pairs = new List<int[]>();
+            var pairWidths = new List<double>();
+            var pairAvgLens = new List<double>();
+
+            for (int i = 0; i < lines.Count; i++)
+            {
+                XYZ dir1 = lines[i].Direction.Normalize();
+                double len1 = lines[i].Length;
+
+                for (int j = i + 1; j < lines.Count; j++)
+                {
+                    XYZ dir2 = lines[j].Direction.Normalize();
+                    double len2 = lines[j].Length;
+
+                    // 平行檢查（容差 5°）
+                    double dot = Math.Abs(dir1.DotProduct(dir2));
+                    if (dot < 0.996) continue;
+
+                    // 計算垂直距離
+                    XYZ perp = new XYZ(-dir1.Y, dir1.X, 0).Normalize();
+                    XYZ diff = lines[j].GetEndPoint(0).Subtract(lines[i].GetEndPoint(0));
+                    double dist = Math.Abs(diff.DotProduct(perp));
+
+                    // 排除共線（同一側牆壁 < 100mm）
+                    if (dist < 100.0 / 304.8) continue;
+
+                    // 長寬比過濾（走廊特徵：長 > 寬）
+                    double avgLen = (len1 + len2) / 2;
+                    if (avgLen < dist) continue;
+
+                    // 投影重疊檢查
+                    double s1a = lines[i].GetEndPoint(0).DotProduct(dir1);
+                    double s1b = lines[i].GetEndPoint(1).DotProduct(dir1);
+                    double s2a = lines[j].GetEndPoint(0).DotProduct(dir1);
+                    double s2b = lines[j].GetEndPoint(1).DotProduct(dir1);
+
+                    double min1 = Math.Min(s1a, s1b), max1 = Math.Max(s1a, s1b);
+                    double min2 = Math.Min(s2a, s2b), max2 = Math.Max(s2a, s2b);
+                    double oStart = Math.Max(min1, min2);
+                    double oEnd = Math.Min(max1, max2);
+                    if (oEnd <= oStart + 0.01) continue; // 無重疊
+
+                    pairs.Add(new[] { i, j });
+                    pairWidths.Add(dist);
+                    pairAvgLens.Add(avgLen);
+                }
+            }
+
+            if (pairs.Count == 0)
+                throw new Exception("找不到平行牆面對（可能不是走廊形狀）");
+
+            // 依平均長度降序排序（主要走廊壁優先）
+            var sorted = Enumerable.Range(0, pairs.Count)
+                .OrderByDescending(k => pairAvgLens[k])
+                .ToList();
+
+            // 建立標註
+            var measurements = new List<object>();
+            var widthValues = new List<double>();
+
+            using (Transaction trans = new Transaction(doc, "走廊寬度標註"))
+            {
+                trans.Start();
+
+                foreach (int k in sorted)
+                {
+                    var line1 = lines[pairs[k][0]];
+                    var line2 = lines[pairs[k][1]];
+                    XYZ dir = line1.Direction.Normalize();
+                    XYZ perp = new XYZ(-dir.Y, dir.X, 0).Normalize();
+
+                    // 投影重疊中點
+                    double s1a = line1.GetEndPoint(0).DotProduct(dir);
+                    double s1b = line1.GetEndPoint(1).DotProduct(dir);
+                    double s2a = line2.GetEndPoint(0).DotProduct(dir);
+                    double s2b = line2.GetEndPoint(1).DotProduct(dir);
+
+                    double min1 = Math.Min(s1a, s1b), max1 = Math.Max(s1a, s1b);
+                    double min2 = Math.Min(s2a, s2b), max2 = Math.Max(s2a, s2b);
+                    double oMid = (Math.Max(min1, min2) + Math.Min(max1, max2)) / 2;
+
+                    // 在重疊中點處取兩牆面上的點
+                    double t1 = (s1b != s1a) ? (oMid - s1a) / (s1b - s1a) : 0.5;
+                    double t2 = (s2b != s2a) ? (oMid - s2a) / (s2b - s2a) : 0.5;
+                    t1 = Math.Max(0.01, Math.Min(0.99, t1));
+                    t2 = Math.Max(0.01, Math.Min(0.99, t2));
+
+                    XYZ p1 = line1.Evaluate(t1, true);
+                    XYZ p2 = line2.Evaluate(t2, true);
+
+                    // 建立詳圖線作為標註參考（沿走廊方向的短線）
+                    double tickLen = 0.5; // ~150mm
+                    DetailCurve dc1 = doc.Create.NewDetailCurve(view,
+                        Line.CreateBound(p1.Subtract(dir.Multiply(tickLen)), p1.Add(dir.Multiply(tickLen))));
+                    DetailCurve dc2 = doc.Create.NewDetailCurve(view,
+                        Line.CreateBound(p2.Subtract(dir.Multiply(tickLen)), p2.Add(dir.Multiply(tickLen))));
+
+                    // 標註線（連接兩牆面，沿走廊方向偏移）
+                    double offsetFt = 1.5; // ~450mm 偏移
+                    Line dimLine = Line.CreateBound(
+                        p1.Add(dir.Multiply(offsetFt)),
+                        p2.Add(dir.Multiply(offsetFt)));
+
+                    ReferenceArray refArray = new ReferenceArray();
+                    refArray.Append(dc1.GeometryCurve.Reference);
+                    refArray.Append(dc2.GeometryCurve.Reference);
+
+                    Dimension dim = doc.Create.NewDimension(view, dimLine, refArray);
+
+                    double widthMm = dim.Value.HasValue ? dim.Value.Value * 304.8 : pairWidths[k] * 304.8;
+                    widthMm = Math.Round(widthMm, 0);
+                    widthValues.Add(widthMm);
+
+                    measurements.Add(new
+                    {
+                        SegmentIndex = measurements.Count + 1,
+                        Width = widthMm,
+                        Length = Math.Round(pairAvgLens[k] * 304.8, 0),
+                        DimensionId = dim.Id.GetIdValue(),
+                        Point1 = new { X = Math.Round(p1.X * 304.8, 0), Y = Math.Round(p1.Y * 304.8, 0) },
+                        Point2 = new { X = Math.Round(p2.X * 304.8, 0), Y = Math.Round(p2.Y * 304.8, 0) },
+                        Method = "boundary_accurate",
+                        Compliant_1600 = widthMm >= 1600,
+                        Compliant_1200 = widthMm >= 1200
+                    });
+                }
+
+                trans.Commit();
+            }
+
+            string roomName = room.get_Parameter(BuiltInParameter.ROOM_NAME)?.AsString() ?? "";
+            string roomNumber = room.get_Parameter(BuiltInParameter.ROOM_NUMBER)?.AsString() ?? "";
+            double minWidth = widthValues.Count > 0 ? widthValues.Min() : 0;
+
+            return new
+            {
+                RoomId = roomId,
+                RoomName = roomName,
+                RoomNumber = roomNumber,
+                Level = room.Level?.Name ?? "",
+                TotalSegments = measurements.Count,
+                MinWidth = minWidth,
+                AllPass_1600 = widthValues.All(w => w >= 1600),
+                AllPass_1200 = widthValues.All(w => w >= 1200),
+                Segments = measurements
+            };
+        }
+
+        /// <summary>
+        /// 走廊寬度分析 — 使用房間邊界線段找平行牆對，回傳寬度與各區段檢討結果
+        /// </summary>
+        private object AnalyzeCorridorWidth(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            IdType? roomId = parameters["roomId"]?.Value<IdType>();
+            string roomName = parameters["roomName"]?.Value<string>();
+            double minWidth = parameters["minWidth"]?.Value<double>() ?? 1200;
+
+            Room room = null;
+
+            if (roomId.HasValue && roomId.Value > 0)
+            {
+                room = doc.GetElement(new ElementId(roomId.Value)) as Room;
+            }
+            else if (!string.IsNullOrEmpty(roomName))
+            {
+                room = new FilteredElementCollector(doc)
+                    .OfCategory(BuiltInCategory.OST_Rooms)
+                    .WhereElementIsNotElementType()
+                    .Cast<Room>()
+                    .FirstOrDefault(r => r.Name.Contains(roomName) ||
+                                         r.get_Parameter(BuiltInParameter.ROOM_NAME)?.AsString()?.Contains(roomName) == true);
+            }
+
+            if (room == null)
+            {
+                throw new Exception(roomId.HasValue
+                    ? $"找不到房間 ID: {roomId}"
+                    : $"找不到房間名稱包含: {roomName}");
+            }
+
+            var bOptions = new SpatialElementBoundaryOptions();
+            bOptions.SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Finish;
+            var segmentLoops = room.GetBoundarySegments(bOptions);
+
+            if (segmentLoops == null || segmentLoops.Count == 0)
+                throw new Exception("房間無邊界線段");
+
+            var lines = new List<Line>();
+            foreach (var seg in segmentLoops[0])
+            {
+                var curve = seg.GetCurve();
+                if (curve is Line line && line.Length > 0.3)
+                    lines.Add(line);
+            }
+
+            if (lines.Count < 2)
+                throw new Exception($"邊界線段不足（僅 {lines.Count} 條直線）");
+
+            var pairs = new List<int[]>();
+            var pairWidths = new List<double>();
+            var pairAvgLens = new List<double>();
+
+            for (int i = 0; i < lines.Count; i++)
+            {
+                XYZ dir1 = lines[i].Direction.Normalize();
+                double len1 = lines[i].Length;
+
+                for (int j = i + 1; j < lines.Count; j++)
+                {
+                    XYZ dir2 = lines[j].Direction.Normalize();
+                    double len2 = lines[j].Length;
+
+                    double dot = Math.Abs(dir1.DotProduct(dir2));
+                    if (dot < 0.996) continue;
+
+                    XYZ perp = new XYZ(-dir1.Y, dir1.X, 0).Normalize();
+                    XYZ diff = lines[j].GetEndPoint(0).Subtract(lines[i].GetEndPoint(0));
+                    double dist = Math.Abs(diff.DotProduct(perp));
+
+                    if (dist < 100.0 / 304.8) continue;
+
+                    double avgLen = (len1 + len2) / 2;
+                    if (avgLen < dist) continue;
+
+                    double s1a = lines[i].GetEndPoint(0).DotProduct(dir1);
+                    double s1b = lines[i].GetEndPoint(1).DotProduct(dir1);
+                    double s2a = lines[j].GetEndPoint(0).DotProduct(dir1);
+                    double s2b = lines[j].GetEndPoint(1).DotProduct(dir1);
+
+                    double min1 = Math.Min(s1a, s1b), max1 = Math.Max(s1a, s1b);
+                    double min2 = Math.Min(s2a, s2b), max2 = Math.Max(s2a, s2b);
+                    double oStart = Math.Max(min1, min2);
+                    double oEnd = Math.Min(max1, max2);
+                    if (oEnd <= oStart + 0.01) continue;
+
+                    pairs.Add(new[] { i, j });
+                    pairWidths.Add(dist);
+                    pairAvgLens.Add(avgLen);
+                }
+            }
+
+            if (pairs.Count == 0)
+                throw new Exception("找不到平行牆面對（可能不是走廊形狀）");
+
+            var sorted = Enumerable.Range(0, pairs.Count)
+                .OrderByDescending(k => pairAvgLens[k])
+                .ToList();
+
+            var segments = new List<object>();
+            var widthValues = new List<double>();
+
+            foreach (int k in sorted)
+            {
+                var line1 = lines[pairs[k][0]];
+                var line2 = lines[pairs[k][1]];
+                XYZ dir = line1.Direction.Normalize();
+
+                double s1a = line1.GetEndPoint(0).DotProduct(dir);
+                double s1b = line1.GetEndPoint(1).DotProduct(dir);
+                double s2a = line2.GetEndPoint(0).DotProduct(dir);
+                double s2b = line2.GetEndPoint(1).DotProduct(dir);
+
+                double min1 = Math.Min(s1a, s1b), max1 = Math.Max(s1a, s1b);
+                double min2 = Math.Min(s2a, s2b), max2 = Math.Max(s2a, s2b);
+                double oMid = (Math.Max(min1, min2) + Math.Min(max1, max2)) / 2;
+
+                double t1 = (s1b != s1a) ? (oMid - s1a) / (s1b - s1a) : 0.5;
+                double t2 = (s2b != s2a) ? (oMid - s2a) / (s2b - s2a) : 0.5;
+                t1 = Math.Max(0.01, Math.Min(0.99, t1));
+                t2 = Math.Max(0.01, Math.Min(0.99, t2));
+
+                XYZ p1 = line1.Evaluate(t1, true);
+                XYZ p2 = line2.Evaluate(t2, true);
+
+                double widthMm = Math.Round(pairWidths[k] * 304.8, 1);
+                double lengthMm = Math.Round(pairAvgLens[k] * 304.8, 1);
+                widthValues.Add(widthMm);
+
+                segments.Add(new
+                {
+                    SegmentIndex = segments.Count + 1,
+                    Width = widthMm,
+                    Length = lengthMm,
+                    Method = "boundary_accurate",
+                    Status = widthMm >= minWidth ? "PASS" : "FAIL",
+                    CenterPoint = new
+                    {
+                        X = Math.Round((p1.X + p2.X) * 304.8 / 2, 1),
+                        Y = Math.Round((p1.Y + p2.Y) * 304.8 / 2, 1)
+                    },
+                    Point1 = new
+                    {
+                        X = Math.Round(p1.X * 304.8, 1),
+                        Y = Math.Round(p1.Y * 304.8, 1)
+                    },
+                    Point2 = new
+                    {
+                        X = Math.Round(p2.X * 304.8, 1),
+                        Y = Math.Round(p2.Y * 304.8, 1)
+                    }
+                });
+            }
+
+            string resolvedRoomName = room.get_Parameter(BuiltInParameter.ROOM_NAME)?.AsString() ?? room.Name;
+            string roomNumber = room.Number ?? "";
+
+            return new
+            {
+                Room = new
+                {
+                    ElementId = room.Id.GetIdValue(),
+                    Name = resolvedRoomName,
+                    Number = roomNumber,
+                    Level = doc.GetElement(room.LevelId)?.Name
+                },
+                Input = new
+                {
+                    MinWidth = minWidth,
+                    BoundarySegmentCount = lines.Count
+                },
+                Summary = new
+                {
+                    TotalSegments = segments.Count,
+                    MinWidth = widthValues.Count > 0 ? widthValues.Min() : 0,
+                    AllPass = widthValues.All(w => w >= minWidth)
+                },
+                Segments = segments
+            };
+        }
+
+        /// <summary>
+        /// 查詢指定位置附近的牆體
+        /// </summary>
+        private object QueryWallsByLocation(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            
+            double centerX = parameters["x"]?.Value<double>() ?? 0;
+            double centerY = parameters["y"]?.Value<double>() ?? 0;
+            double searchRadius = parameters["searchRadius"]?.Value<double>() ?? 5000;
+            string levelName = parameters["level"]?.Value<string>();
+
+            // 轉換為英尺
+            XYZ center = new XYZ(centerX / 304.8, centerY / 304.8, 0);
+            double radiusFeet = searchRadius / 304.8;
+
+            // 取得所有牆
+            var wallCollector = new FilteredElementCollector(doc)
+                .OfClass(typeof(Wall))
+                .WhereElementIsNotElementType()
+                .Cast<Wall>();
+
+            // 如果指定樓層，過濾樓層
+            if (!string.IsNullOrEmpty(levelName))
+            {
+                var level = new FilteredElementCollector(doc)
+                    .OfClass(typeof(Level))
+                    .Cast<Level>()
+                    .FirstOrDefault(l => l.Name.Contains(levelName));
+
+                if (level != null)
+                {
+                    // 牆的 LevelId 在部分情況為 Invalid，改用 WALL_BASE_CONSTRAINT 為主、LevelId 為輔
+                    wallCollector = wallCollector.Where(w =>
+                    {
+                        ElementId baseLevelId = w.get_Parameter(BuiltInParameter.WALL_BASE_CONSTRAINT)?.AsElementId();
+                        if (baseLevelId != null && baseLevelId != ElementId.InvalidElementId)
+                            return baseLevelId == level.Id;
+                        return w.LevelId == level.Id;
+                    });
+                }
+            }
+
+            var nearbyWalls = new List<object>();
+
+            foreach (var wall in wallCollector)
+            {
+                LocationCurve locCurve = wall.Location as LocationCurve;
+                if (locCurve == null) continue;
+
+                Curve curve = locCurve.Curve;
+                XYZ startPoint = curve.GetEndPoint(0);
+                XYZ endPoint = curve.GetEndPoint(1);
+
+                // 距離計算全部壓平 XY：牆位置線端點 z = 樓層標高，若不歸零，
+                // center.DistanceTo(closestPoint) 會變成 3D 距離，樓上/樓下的牆永遠超出半徑
+                // （搜尋中心 center 的 z 已為 0）
+                XYZ startFlat = new XYZ(startPoint.X, startPoint.Y, 0);
+                XYZ endFlat = new XYZ(endPoint.X, endPoint.Y, 0);
+
+                // 計算點到線段的最近距離（壓平後的點與投影參數）
+                XYZ wallDir = (endFlat - startFlat).Normalize();
+                XYZ toCenter = center - startFlat;
+                double proj = toCenter.DotProduct(wallDir);
+                double wallLength = startFlat.DistanceTo(endFlat);
+
+                XYZ closestPoint;
+                if (proj < 0)
+                    closestPoint = startFlat;
+                else if (proj > wallLength)
+                    closestPoint = endFlat;
+                else
+                    closestPoint = startFlat + wallDir * proj;
+
+                double distToWall = center.DistanceTo(closestPoint) * 304.8;
+
+                if (distToWall <= searchRadius)
+                {
+                    // 取得牆厚度
+                    double thickness = wall.Width * 304.8;
+                    
+                    // 計算牆的方向向量（垂直於位置線）
+                    XYZ perpendicular = new XYZ(-wallDir.Y, wallDir.X, 0);
+                    double halfThickness = wall.Width / 2;
+                    
+                    // 牆的兩個面
+                    XYZ face1Point = closestPoint + perpendicular * halfThickness;
+                    XYZ face2Point = closestPoint - perpendicular * halfThickness;
+
+                    nearbyWalls.Add(new
+                    {
+                        ElementId = wall.Id.GetIdValue(),
+                        Name = wall.Name,
+                        WallType = wall.WallType.Name,
+                        Thickness = Math.Round(thickness, 2),
+                        Length = Math.Round(curve.Length * 304.8, 2),
+                        DistanceToCenter = Math.Round(distToWall, 2),
+                        // 位置線座標
+                        LocationLine = new
+                        {
+                            StartX = Math.Round(startPoint.X * 304.8, 2),
+                            StartY = Math.Round(startPoint.Y * 304.8, 2),
+                            EndX = Math.Round(endPoint.X * 304.8, 2),
+                            EndY = Math.Round(endPoint.Y * 304.8, 2)
+                        },
+                        // 最近點位置
+                        ClosestPoint = new
+                        {
+                            X = Math.Round(closestPoint.X * 304.8, 2),
+                            Y = Math.Round(closestPoint.Y * 304.8, 2)
+                        },
+                        // 兩側面座標（在最近點處）
+                        Face1 = new
+                        {
+                            X = Math.Round(face1Point.X * 304.8, 2),
+                            Y = Math.Round(face1Point.Y * 304.8, 2)
+                        },
+                        Face2 = new
+                        {
+                            X = Math.Round(face2Point.X * 304.8, 2),
+                            Y = Math.Round(face2Point.Y * 304.8, 2)
+                        },
+                        // 判斷牆是水平還是垂直
+                        Orientation = Math.Abs(wallDir.X) > Math.Abs(wallDir.Y) ? "Horizontal" : "Vertical"
+                    });
+                }
+            }
+
+            // 直接返回列表（已在搜尋時過濾距離）
+
+            return new
+            {
+                Count = nearbyWalls.Count,
+                SearchCenter = new { X = centerX, Y = centerY },
+                SearchRadius = searchRadius,
+                Walls = nearbyWalls
+            };
+        }
+
+
+        /// <summary>
+        /// 查詢視圖中的元素 (增強版)
+        /// </summary>
+        private object QueryElements(JObject parameters)
+        {
+            try
+            {
+                string categoryName = parameters["category"]?.Value<string>();
+                IdType? viewId = parameters["viewId"]?.Value<IdType>();
+                int maxCount = parameters["maxCount"]?.Value<int>() ?? 100;
+                JArray filters = parameters["filters"] as JArray;
+                JArray returnFields = parameters["returnFields"] as JArray;
+
+                // 相容簡易版 query_elements 的 family / type / level 參數
+                string familyFilter = parameters["family"]?.Value<string>();
+                string typeFilter = parameters["type"]?.Value<string>();
+                string levelFilter = parameters["level"]?.Value<string>();
+
+                if (string.IsNullOrEmpty(categoryName))
+                {
+                    throw new Exception("必須提供 category 參數（例如：Walls, Rooms, Doors, Windows）");
+                }
+
+                Document doc = _uiApp.ActiveUIDocument.Document;
+                
+                // 使用全文件收集器（避免限定在不適當的 View 導致結果為空）
+                FilteredElementCollector collector;
+                if (viewId.HasValue)
+                {
+                    collector = new FilteredElementCollector(doc, new ElementId(viewId.Value));
+                }
+                else
+                {
+                    collector = new FilteredElementCollector(doc);
+                }
+
+                // 1. 品類過濾
+                ElementId catId = ResolveCategoryId(doc, categoryName);
+                if (catId != ElementId.InvalidElementId)
+                {
+                    collector.OfCategoryId(catId);
+                }
+                else
+                {
+                    // 備用方案: 根據常用名稱
+                    string catLower = categoryName.ToLowerInvariant();
+                    if (catLower == "walls" || catLower == "牆") collector.OfClass(typeof(Wall));
+                    else if (catLower == "rooms" || catLower == "房間") collector.OfCategory(BuiltInCategory.OST_Rooms);
+                    else if (catLower == "doors" || catLower == "門") collector.OfCategory(BuiltInCategory.OST_Doors);
+                    else if (catLower == "windows" || catLower == "窗") collector.OfCategory(BuiltInCategory.OST_Windows);
+                    else if (catLower == "floors" || catLower == "樓板") collector.OfCategory(BuiltInCategory.OST_Floors);
+                    else if (catLower == "columns" || catLower == "柱") collector.OfCategory(BuiltInCategory.OST_Columns);
+                    else throw new Exception($"無法辨識品類: {categoryName}。請使用英文名稱如 Walls, Rooms, Doors, Windows, Floors, Columns");
+                }
+
+                var elements = collector.WhereElementIsNotElementType().ToElements();
+                var filteredList = new List<Element>();
+
+                // 2. 執行過濾邏輯
+                foreach (var elem in elements)
+                {
+                    bool match = true;
+
+                    // 進階版 filters 過濾
+                    if (filters != null)
+                    {
+                        foreach (var filter in filters)
+                        {
+                            string field = filter["field"]?.Value<string>();
+                            string op = filter["operator"]?.Value<string>();
+                            string targetValue = filter["value"]?.Value<string>();
+                            
+                            if (!CheckFilterMatch(elem, field, op, targetValue))
+                            {
+                                match = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    // 簡易版 family 過濾
+                    if (match && !string.IsNullOrEmpty(familyFilter))
+                    {
+                        string elemFamily = elem.get_Parameter(BuiltInParameter.ELEM_FAMILY_PARAM)?.AsValueString() ?? "";
+                        if (!elemFamily.IndexOf(familyFilter, StringComparison.OrdinalIgnoreCase).Equals(0) 
+                            && !elemFamily.Contains(familyFilter))
+                            match = false;
+                    }
+
+                    // 簡易版 type 過濾
+                    if (match && !string.IsNullOrEmpty(typeFilter))
+                    {
+                        string elemType = elem.get_Parameter(BuiltInParameter.ELEM_TYPE_PARAM)?.AsValueString() ?? "";
+                        if (!elemType.IndexOf(typeFilter, StringComparison.OrdinalIgnoreCase).Equals(0)
+                            && !elemType.Contains(typeFilter))
+                            match = false;
+                    }
+
+                    // 簡易版 level 過濾
+                    if (match && !string.IsNullOrEmpty(levelFilter))
+                    {
+                        string elemLevel = ResolveElementLevelName(doc, elem);
+                        if (!elemLevel.Contains(levelFilter))
+                            match = false;
+                    }
+
+                    if (match) filteredList.Add(elem);
+                    if (filteredList.Count >= maxCount) break;
+                }
+
+                // 3. 準備回傳欄位
+                var resultList = filteredList.Select(elem =>
+                {
+                    var item = new Dictionary<string, object>
+                    {
+                        { "ElementId", elem.Id.GetIdValue() },
+                        { "Name", elem.Name ?? "" }
+                    };
+
+                    if (returnFields != null)
+                    {
+                        foreach (var f in returnFields)
+                        {
+                            string fieldName = f.Value<string>();
+                            if (string.IsNullOrEmpty(fieldName) || item.ContainsKey(fieldName)) continue;
+                            
+                            Parameter p = FindParameter(elem, fieldName);
+                            if (p != null) 
+                            {
+                                string val = p.AsValueString() ?? p.AsString() ?? "";
+                                item[fieldName] = val;
+                            }
+                            else
+                            {
+                                item[fieldName] = "N/A";
+                            }
+                        }
+                    }
+                    return item;
+                }).ToList();
+
+                return new { Success = true, Count = resultList.Count, Elements = resultList };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"QueryElements 錯誤: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 解析元素所屬樓層名稱。舊版僅讀 LEVEL_NAME / INSTANCE_SCHEDULE_ONLY_LEVEL_PARAM，
+        /// 這兩者對牆/多數元素為 null 導致全滅。改為：
+        /// (a) elem.LevelId 有效 → doc.GetElement(LevelId).Name；
+        /// (b) fallback 依序試常見樓層參數的 AsElementId() 轉 Level 名；
+        /// (c) 都沒有才回空字串。
+        /// </summary>
+        private string ResolveElementLevelName(Document doc, Element elem)
+        {
+            // (a) 直接的 LevelId
+            if (elem.LevelId != null && elem.LevelId != ElementId.InvalidElementId)
+            {
+                Element lvl = doc.GetElement(elem.LevelId);
+                if (lvl is Level) return lvl.Name;
+            }
+
+            // (b) 依序 fallback 常見的樓層參數
+            BuiltInParameter[] levelBips = new BuiltInParameter[]
+            {
+                BuiltInParameter.WALL_BASE_CONSTRAINT,
+                BuiltInParameter.FAMILY_LEVEL_PARAM,
+                BuiltInParameter.SCHEDULE_LEVEL_PARAM,
+                BuiltInParameter.INSTANCE_REFERENCE_LEVEL_PARAM
+            };
+            foreach (BuiltInParameter bip in levelBips)
+            {
+                Parameter p = elem.get_Parameter(bip);
+                if (p == null) continue;
+                ElementId lvlId = p.AsElementId();
+                if (lvlId == null || lvlId == ElementId.InvalidElementId) continue;
+                Element lvl = doc.GetElement(lvlId);
+                if (lvl is Level) return lvl.Name;
+            }
+
+            // (c) 找不到
+            return "";
+        }
+
+        private Parameter FindParameter(Element elem, string name)
+        {
+            // 1. 優先找實例參數
+            foreach (Parameter p in elem.Parameters)
+            {
+                if (p.Definition.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) return p;
+            }
+
+            // 2. 找類型參數
+            Element typeElem = elem.Document.GetElement(elem.GetTypeId());
+            if (typeElem != null)
+            {
+                foreach (Parameter p in typeElem.Parameters)
+                {
+                    if (p.Definition.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) return p;
+                }
+            }
+
+            return null;
+        }
+
+        private bool CheckFilterMatch(Element elem, string field, string op, string targetValue)
+        {
+            Parameter p = FindParameter(elem, field);
+            if (p == null) return false;
+
+            string val = p.AsValueString() ?? p.AsString() ?? "";
+            
+            switch (op)
+            {
+                case "equals": return val.Equals(targetValue, StringComparison.OrdinalIgnoreCase);
+                case "contains": return val.Contains(targetValue);
+                case "not_equals": return !val.Equals(targetValue, StringComparison.OrdinalIgnoreCase);
+                case "less_than":
+                case "greater_than":
+                    // 移除單位字串並嘗試解析
+                    string cleanVal = System.Text.RegularExpressions.Regex.Replace(val, @"[^\d.-]", "");
+                    if (double.TryParse(cleanVal, out double v1) && 
+                        double.TryParse(targetValue, out double v2))
+                    {
+                        return op == "less_than" ? v1 < v2 : v1 > v2;
+                    }
+                    return false;
+                default: return false;
+            }
+        }
+
+        private ElementId ResolveCategoryId(Document doc, string name)
+        {
+            if (string.IsNullOrEmpty(name)) return ElementId.InvalidElementId;
+
+            // 先用名稱比對
+            foreach (Category cat in doc.Settings.Categories)
+            {
+                if (cat.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    return cat.Id;
+            }
+            // 再嘗試用 BuiltInCategory enum 比對（相容 Revit 2022）
+            BuiltInCategory bic;
+            if (Enum.TryParse("OST_" + name, true, out bic) || Enum.TryParse(name, true, out bic))
+            {
+                return new ElementId(bic);
+            }
+            return ElementId.InvalidElementId;
+        }
+
+        /// <summary>
+        /// 取得視圖架構 (第一階段)
+        /// </summary>
+        private object GetActiveSchema(JObject parameters)
+        {
+            try
+            {
+                Document doc = _uiApp.ActiveUIDocument.Document;
+                IdType? viewId = parameters["viewId"]?.Value<IdType>();
+                ElementId targetViewId = viewId.HasValue ? new ElementId(viewId.Value) : doc.ActiveView.Id;
+
+                var collector = new FilteredElementCollector(doc, targetViewId);
+                var categories = collector.WhereElementIsNotElementType()
+                    .Where(e => e.Category != null)
+                    .GroupBy(e => e.Category.Id.GetIdValue())
+                    .Select(g => {
+                        ElementId catId = new ElementId(g.Key);
+                        Category cat = Category.GetCategory(doc, catId);
+                        string internalName = "Unknown";
+                        if (cat != null)
+                        {
+                            try
+                            {
+                                var bicVal = (BuiltInCategory)(int)(long)g.Key;
+                                if (Enum.IsDefined(typeof(BuiltInCategory), bicVal))
+                                    internalName = bicVal.ToString().Replace("OST_", "");
+                                else
+                                    internalName = cat.Name;
+                            }
+                            catch { internalName = cat.Name; }
+                        }
+                        return new {
+                            Name = cat?.Name ?? "未知品類",
+                            InternalName = internalName,
+                            Count = g.Count()
+                        };
+                    })
+                    .OrderByDescending(c => c.Count)
+                    .ToList();
+
+                return new { Success = true, ViewId = targetViewId.GetIdValue(), Categories = categories };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"GetActiveSchema 錯誤: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 取得品類參數欄位 (第二階段 - A)
+        /// </summary>
+        private object GetCategoryFields(JObject parameters)
+        {
+            try
+            {
+                string categoryName = parameters["category"]?.Value<string>();
+                Document doc = _uiApp.ActiveUIDocument.Document;
+                ElementId catId = ResolveCategoryId(doc, categoryName);
+                
+                if (catId == ElementId.InvalidElementId)
+                    throw new Exception($"找不到品類: {categoryName}");
+
+                Element sample = new FilteredElementCollector(doc)
+                    .OfCategoryId(catId)
+                    .WhereElementIsNotElementType()
+                    .FirstElement();
+                
+                if (sample == null) 
+                    return new { Success = false, Message = $"專案中沒有任何 {categoryName} 元素可供分析" };
+
+                var instanceFields = sample.GetOrderedParameters()
+                    .Where(p => {
+                        InternalDefinition def = p.Definition as InternalDefinition;
+                        return def == null || def.Visible;
+                    })
+                    .Select(p => p.Definition.Name)
+                    .Distinct()
+                    .ToList();
+
+                var typeFields = new List<string>();
+                ElementId typeId = sample.GetTypeId();
+                if (typeId != ElementId.InvalidElementId)
+                {
+                    Element typeElem = doc.GetElement(typeId);
+                    if (typeElem != null)
+                    {
+                        typeFields = typeElem.GetOrderedParameters()
+                            .Where(p => {
+                                InternalDefinition def = p.Definition as InternalDefinition;
+                                return def == null || def.Visible;
+                            })
+                            .Select(p => p.Definition.Name)
+                            .Distinct()
+                            .ToList();
+                    }
+                }
+
+                return new { Success = true, Category = categoryName, InstanceFields = instanceFields, TypeFields = typeFields };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"GetCategoryFields 錯誤: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 取得參數值分布 (第二階段 - B)
+        /// </summary>
+        private object GetFieldValues(JObject parameters)
+        {
+            string categoryName = parameters["category"]?.Value<string>();
+            string fieldName = parameters["fieldName"]?.Value<string>();
+            int maxSamples = parameters["maxSamples"]?.Value<int>() ?? 500;
+            
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            ElementId catId = ResolveCategoryId(doc, categoryName);
+            var elements = new FilteredElementCollector(doc).OfCategoryId(catId).WhereElementIsNotElementType().Take(maxSamples);
+
+            var values = new HashSet<string>();
+            bool isNumeric = false;
+            double min = double.MaxValue;
+            double max = double.MinValue;
+
+            foreach (var elem in elements)
+            {
+                Parameter p = elem.LookupParameter(fieldName);
+                if (p == null)
+                {
+                    Element typeElem = doc.GetElement(elem.GetTypeId());
+                    if (typeElem != null) p = typeElem.LookupParameter(fieldName);
+                }
+                
+                if (p != null && p.HasValue)
+                {
+                    string valString = p.AsValueString() ?? p.AsString();
+                    if (valString != null) values.Add(valString);
+
+                    if (p.StorageType == StorageType.Double || p.StorageType == StorageType.Integer)
+                    {
+                        isNumeric = true;
+                        double val = (p.StorageType == StorageType.Double) ? p.AsDouble() : p.AsInteger();
+                        
+                        // 轉換為 mm (如果適用，Revit 2024 寫法)
+                        if (p.Definition.GetDataType() == SpecTypeId.Length) val *= 304.8;
+                        
+                        if (val < min) min = val;
+                        if (val > max) max = val;
+                    }
+                }
+            }
+
+            return new { 
+                Success = true, 
+                Category = categoryName, 
+                Field = fieldName, 
+                UniqueValues = values.Take(20).ToList(),
+                IsNumeric = isNumeric,
+                Range = isNumeric ? new { Min = Math.Round(min, 2), Max = Math.Round(max, 2) } : null
+            };
+        }
+
+        /// <summary>
+        /// 覆寫元素圖形顯示
+        /// 支援平面圖（切割樣式）和立面圖/剖面圖（表面樣式）
+        /// </summary>
+        private object OverrideElementGraphics(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            IdType elementId = parameters["elementId"].Value<IdType>();
+            IdType? viewId = parameters["viewId"]?.Value<IdType>();
+
+            // 取得視圖
+            View view;
+            if (viewId.HasValue)
+            {
+                view = doc.GetElement(new ElementId(viewId.Value)) as View;
+                if (view == null)
+                    throw new Exception($"找不到視圖 ID: {viewId}");
+            }
+            else
+            {
+                view = _uiApp.ActiveUIDocument.ActiveView;
+            }
+
+            // 取得元素
+            Element element = doc.GetElement(new ElementId(elementId));
+            if (element == null)
+                throw new Exception($"找不到元素 ID: {elementId}");
+
+            // 判斷使用切割樣式或表面樣式
+            // patternMode: "auto" (自動根據視圖類型), "cut" (切割), "surface" (表面)
+            string patternMode = parameters["patternMode"]?.Value<string>() ?? "auto";
+            
+            bool useCutPattern = false;
+            if (patternMode == "cut")
+            {
+                useCutPattern = true;
+            }
+            else if (patternMode == "surface")
+            {
+                useCutPattern = false;
+            }
+            else // auto
+            {
+                // 平面圖、天花板平面圖預設使用切割樣式（牆/柱/門窗等被剖切面切到的元素）
+                // 立面圖、剖面圖、3D 視圖使用表面樣式
+                bool isPlanView = view.ViewType == ViewType.FloorPlan ||
+                                  view.ViewType == ViewType.CeilingPlan ||
+                                  view.ViewType == ViewType.AreaPlan ||
+                                  view.ViewType == ViewType.EngineeringPlan;
+                // 例外：樓板/屋頂在平面圖位於剖切面之下、以「表面投影」顯示，不被剖切。
+                // 對它們套切割樣式會看不到顏色（樓板坡度檢討上色課題），故改用表面樣式。
+                IdType? catId = element.Category?.Id.GetIdValue();
+                bool isProjectedFloorLike = catId == (IdType)BuiltInCategory.OST_Floors ||
+                                            catId == (IdType)BuiltInCategory.OST_Roofs;
+                useCutPattern = isPlanView && !isProjectedFloorLike;
+            }
+
+            using (Transaction trans = new Transaction(doc, "Override Element Graphics"))
+            {
+                trans.Start();
+
+                // 建立覆寫設定
+                OverrideGraphicSettings overrideSettings = new OverrideGraphicSettings();
+
+                // 取得實心填滿圖樣 ID
+                ElementId solidPatternId = GetSolidFillPatternId(doc);
+
+                // 設定填滿顏色
+                if (parameters["surfaceFillColor"] != null)
+                {
+                    var colorObj = parameters["surfaceFillColor"];
+                    byte r = (byte)colorObj["r"].Value<int>();
+                    byte g = (byte)colorObj["g"].Value<int>();
+                    byte b = (byte)colorObj["b"].Value<int>();
+                    Color fillColor = new Color(r, g, b);
+
+                    if (useCutPattern)
+                    {
+                        // 平面圖：使用切割樣式（前景）
+                        overrideSettings.SetCutForegroundPatternColor(fillColor);
+                        if (solidPatternId != null && solidPatternId != ElementId.InvalidElementId)
+                        {
+                            overrideSettings.SetCutForegroundPatternId(solidPatternId);
+                            overrideSettings.SetCutForegroundPatternVisible(true);
+                        }
+                    }
+                    else
+                    {
+                        // 立面圖/剖面圖：使用表面樣式
+                        overrideSettings.SetSurfaceForegroundPatternColor(fillColor);
+                        if (solidPatternId != null && solidPatternId != ElementId.InvalidElementId)
+                        {
+                            overrideSettings.SetSurfaceForegroundPatternId(solidPatternId);
+                            overrideSettings.SetSurfaceForegroundPatternVisible(true);
+                        }
+                    }
+                }
+
+                // 設定線條顏色（可選）
+                if (parameters["lineColor"] != null)
+                {
+                    var lineColorObj = parameters["lineColor"];
+                    byte r = (byte)lineColorObj["r"].Value<int>();
+                    byte g = (byte)lineColorObj["g"].Value<int>();
+                    byte b = (byte)lineColorObj["b"].Value<int>();
+                    Color lineColor = new Color(r, g, b);
+                    
+                    if (useCutPattern)
+                    {
+                        overrideSettings.SetCutLineColor(lineColor);
+                    }
+                    else
+                    {
+                        overrideSettings.SetProjectionLineColor(lineColor);
+                    }
+                }
+
+                // 設定透明度
+                int transparency = parameters["transparency"]?.Value<int>() ?? 0;
+                if (transparency > 0)
+                {
+                    overrideSettings.SetSurfaceTransparency(transparency);
+                }
+
+                // 應用覆寫
+                view.SetElementOverrides(new ElementId(elementId), overrideSettings);
+
+                trans.Commit();
+
+                return new
+                {
+                    Success = true,
+                    ElementId = elementId,
+                    ViewId = view.Id.GetIdValue(),
+                    ViewType = view.ViewType.ToString(),
+                    PatternMode = useCutPattern ? "Cut" : "Surface",
+                    ViewName = view.Name,
+                    Message = $"已成功覆寫元素 {elementId} 在視圖 '{view.Name}' 的圖形顯示"
+                };
+            }
+        }
+
+        /// <summary>
+        /// 清除元素圖形覆寫
+        /// </summary>
+        private object ClearElementOverride(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            IdType? singleElementId = parameters["elementId"]?.Value<IdType>();
+            var elementIdsArray = parameters["elementIds"] as JArray;
+            IdType? viewId = parameters["viewId"]?.Value<IdType>();
+
+            // 取得視圖
+            View view;
+            if (viewId.HasValue)
+            {
+                view = doc.GetElement(new ElementId(viewId.Value)) as View;
+                if (view == null)
+                    throw new Exception($"找不到視圖 ID: {viewId}");
+            }
+            else
+            {
+                view = _uiApp.ActiveUIDocument.ActiveView;
+            }
+
+            // 收集要清除的元素 ID
+            List<IdType> elementIds = new List<IdType>();
+            if (singleElementId.HasValue)
+            {
+                elementIds.Add(singleElementId.Value);
+            }
+            if (elementIdsArray != null)
+            {
+                elementIds.AddRange(elementIdsArray.Select(id => id.Value<IdType>()));
+            }
+
+            if (elementIds.Count == 0)
+            {
+                throw new Exception("請提供至少一個元素 ID");
+            }
+
+            using (Transaction trans = new Transaction(doc, "Clear Element Override"))
+            {
+                trans.Start();
+
+                int successCount = 0;
+                foreach (int elemId in elementIds)
+                {
+                    Element element = doc.GetElement(new ElementId(elemId));
+                    if (element != null)
+                    {
+                        // 設定空的覆寫設定 = 重置為預設
+                        view.SetElementOverrides(new ElementId(elemId), new OverrideGraphicSettings());
+                        successCount++;
+                    }
+                }
+
+                trans.Commit();
+
+                return new
+                {
+                    Success = true,
+                    ClearedCount = successCount,
+                    ViewId = view.Id.GetIdValue(),
+                    ViewName = view.Name,
+                    Message = $"已清除 {successCount} 個元素在視圖 '{view.Name}' 的圖形覆寫"
+                };
+            }
+        }
+
+        /// <summary>
+        /// 取得實心填滿圖樣 ID
+        /// </summary>
+        private ElementId GetSolidFillPatternId(Document doc)
+        {
+            // 嘗試找到實心填滿圖樣
+            FilteredElementCollector collector = new FilteredElementCollector(doc);
+            var fillPatterns = collector
+                .OfClass(typeof(FillPatternElement))
+                .Cast<FillPatternElement>()
+                .Where(fp => fp.GetFillPattern().IsSolidFill)
+                .ToList();
+
+            if (fillPatterns.Any())
+            {
+                return fillPatterns.First().Id;
+            }
+
+            return ElementId.InvalidElementId;
+        }
+
+        // 靜態變數：儲存取消接合的元素對
+        private static List<Tuple<ElementId, ElementId>> _unjoinedPairs = new List<Tuple<ElementId, ElementId>>();
+
+        /// <summary>
+        /// 取消牆體與其他元素（柱子等）的接合關係
+        /// </summary>
+        private object UnjoinWallJoins(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            
+            // 取得牆體 ID 列表
+            var wallIdsArray = parameters["wallIds"] as JArray;
+            IdType? viewId = parameters["viewId"]?.Value<IdType>();
+            
+            List<IdType> wallIds = new List<IdType>();
+            if (wallIdsArray != null)
+            {
+                wallIds.AddRange(wallIdsArray.Select(id => id.Value<IdType>()));
+            }
+            
+            // 如果沒有提供 wallIds，則查詢視圖中所有牆體
+            if (wallIds.Count == 0 && viewId.HasValue)
+            {
+                var collector = new FilteredElementCollector(doc, new ElementId(viewId.Value));
+                var walls = collector.OfClass(typeof(Wall)).ToElements();
+                wallIds = walls.Select(w => w.Id.GetIdValue()).ToList();
+            }
+            
+            if (wallIds.Count == 0)
+            {
+                throw new Exception("請提供 wallIds 或 viewId 參數");
+            }
+
+            int unjoinedCount = 0;
+            _unjoinedPairs.Clear();
+
+            using (Transaction trans = new Transaction(doc, "Unjoin Wall Geometry"))
+            {
+                trans.Start();
+
+                foreach (int wallId in wallIds)
+                {
+                    Wall wall = doc.GetElement(new ElementId(wallId)) as Wall;
+                    if (wall == null) continue;
+
+                    // 取得牆體的 BoundingBox 來找附近的柱子
+                    BoundingBoxXYZ bbox = wall.get_BoundingBox(null);
+                    if (bbox == null) continue;
+
+                    // 擴大搜尋範圍
+                    XYZ min = bbox.Min - new XYZ(1, 1, 1);
+                    XYZ max = bbox.Max + new XYZ(1, 1, 1);
+                    Outline outline = new Outline(min, max);
+
+                    // 查詢附近的柱子
+                    var columnCollector = new FilteredElementCollector(doc)
+                        .OfCategory(BuiltInCategory.OST_Columns)
+                        .WherePasses(new BoundingBoxIntersectsFilter(outline));
+                    
+                    var structColumnCollector = new FilteredElementCollector(doc)
+                        .OfCategory(BuiltInCategory.OST_StructuralColumns)
+                        .WherePasses(new BoundingBoxIntersectsFilter(outline));
+
+                    var columns = columnCollector.ToElements().Concat(structColumnCollector.ToElements());
+
+                    foreach (Element column in columns)
+                    {
+                        try
+                        {
+                            if (JoinGeometryUtils.AreElementsJoined(doc, wall, column))
+                            {
+                                JoinGeometryUtils.UnjoinGeometry(doc, wall, column);
+                                _unjoinedPairs.Add(new Tuple<ElementId, ElementId>(wall.Id, column.Id));
+                                unjoinedCount++;
+                            }
+                        }
+                        catch
+                        {
+                            // 忽略無法取消接合的元素
+                        }
+                    }
+                }
+
+                trans.Commit();
+            }
+
+            return new
+            {
+                Success = true,
+                UnjoinedCount = unjoinedCount,
+                WallCount = wallIds.Count,
+                StoredPairs = _unjoinedPairs.Count,
+                Message = $"已取消 {unjoinedCount} 個接合關係"
+            };
+        }
+
+        /// <summary>
+        /// 恢復之前取消的接合關係
+        /// </summary>
+        private object RejoinWallJoins(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            
+            if (_unjoinedPairs.Count == 0)
+            {
+                return new
+                {
+                    Success = true,
+                    RejoinedCount = 0,
+                    Message = "沒有需要恢復的接合關係"
+                };
+            }
+
+            int rejoinedCount = 0;
+
+            using (Transaction trans = new Transaction(doc, "Rejoin Wall Geometry"))
+            {
+                trans.Start();
+
+                foreach (var pair in _unjoinedPairs)
+                {
+                    try
+                    {
+                        Element elem1 = doc.GetElement(pair.Item1);
+                        Element elem2 = doc.GetElement(pair.Item2);
+                        
+                        if (elem1 != null && elem2 != null)
+                        {
+                            if (!JoinGeometryUtils.AreElementsJoined(doc, elem1, elem2))
+                            {
+                                JoinGeometryUtils.JoinGeometry(doc, elem1, elem2);
+                                rejoinedCount++;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // 忽略無法恢復接合的元素
+                    }
+                }
+
+                trans.Commit();
+            }
+
+            int storedCount = _unjoinedPairs.Count;
+            _unjoinedPairs.Clear();
+
+            return new
+            {
+                Success = true,
+                RejoinedCount = rejoinedCount,
+                TotalPairs = storedCount,
+                Message = $"已恢復 {rejoinedCount} 個接合關係"
+            };
+        }
+
+        /// <summary>
+        /// 取得房間邊界線段 (用於精確計算走廊寬度)
+        /// </summary>
+        private List<object> GetRoomBoundarySegments(Room room)
+        {
+            var segments = new List<object>();
+            var options = new SpatialElementBoundaryOptions();
+
+            try
+            {
+                var boundarySegments = room.GetBoundarySegments(options);
+                if (boundarySegments == null || boundarySegments.Count == 0)
+                    return segments;
+
+                foreach (var loop in boundarySegments)
+                {
+                    foreach (BoundarySegment seg in loop)
+                    {
+                        var curve = seg.GetCurve();
+                        var start = curve.GetEndPoint(0);
+                        var end = curve.GetEndPoint(1);
+
+                        segments.Add(new
+                        {
+                            StartX = Math.Round(start.X * 304.8, 2),
+                            StartY = Math.Round(start.Y * 304.8, 2),
+                            EndX = Math.Round(end.X * 304.8, 2),
+                            EndY = Math.Round(end.Y * 304.8, 2),
+                            Length = Math.Round(curve.Length * 304.8, 2)
+                        });
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // 某些房間可能無法取得邊界 (未封閉、未放置等)
+                // 回傳空陣列,讓 JS 端使用 BoundingBox fallback
+            }
+
+            return segments;
+        }
+
+        #endregion
+
+        #region 視圖樣版查詢
+
+        /// <summary>
+        /// 取得所有視圖樣版及其設定
+        /// </summary>
+        private object GetViewTemplates(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            bool includeDetails = parameters["includeDetails"]?.Value<bool>() ?? true;
+
+            // 取得所有視圖樣版 (IsTemplate = true)
+            var viewTemplates = new FilteredElementCollector(doc)
+                .OfClass(typeof(View))
+                .Cast<View>()
+                .Where(v => v.IsTemplate)
+                .OrderBy(v => v.ViewType.ToString())
+                .ThenBy(v => v.Name)
+                .ToList();
+
+            var templateList = new List<object>();
+
+            foreach (var template in viewTemplates)
+            {
+                var templateInfo = new Dictionary<string, object>
+                {
+                    ["ElementId"] = template.Id.GetIdValue(),
+                    ["Name"] = template.Name,
+                    ["ViewType"] = template.ViewType.ToString(),
+                    ["ViewFamily"] = template.ViewType.ToString()
+                };
+
+                if (includeDetails)
+                {
+                    // 取得詳細等級
+                    try
+                    {
+                        templateInfo["DetailLevel"] = template.DetailLevel.ToString();
+                    }
+                    catch { templateInfo["DetailLevel"] = "N/A"; }
+
+                    // 取得視覺樣式
+                    try
+                    {
+                        templateInfo["DisplayStyle"] = template.DisplayStyle.ToString();
+                    }
+                    catch { templateInfo["DisplayStyle"] = "N/A"; }
+
+                    // 取得比例尺
+                    try
+                    {
+                        templateInfo["Scale"] = template.Scale > 0 ? $"1:{template.Scale}" : "N/A";
+                    }
+                    catch { templateInfo["Scale"] = "N/A"; }
+
+                    // 取得視圖樣版控制的參數
+                    try
+                    {
+                        var nonControlledParams = template.GetNonControlledTemplateParameterIds();
+                        var allParams = template.GetTemplateParameterIds();
+                        templateInfo["ControlledParameterCount"] = allParams.Count - nonControlledParams.Count;
+                        templateInfo["TotalParameterCount"] = allParams.Count;
+                    }
+                    catch 
+                    { 
+                        templateInfo["ControlledParameterCount"] = "N/A";
+                        templateInfo["TotalParameterCount"] = "N/A";
+                    }
+
+                    // 取得類別可見性設定（僅列出主要隱藏的類別）
+                    try
+                    {
+                        var hiddenCategories = new List<string>();
+                        var categories = doc.Settings.Categories;
+                        foreach (Category cat in categories)
+                        {
+                            try
+                            {
+                                if (cat.CategoryType == CategoryType.Model || cat.CategoryType == CategoryType.Annotation)
+                                {
+                                    if (!template.GetCategoryHidden(cat.Id))
+                                        continue;
+                                    hiddenCategories.Add(cat.Name);
+                                }
+                            }
+                            catch { }
+                        }
+                        templateInfo["HiddenCategoryCount"] = hiddenCategories.Count;
+                        // 只列出前 10 個隱藏類別
+                        templateInfo["HiddenCategories"] = hiddenCategories.Take(10).ToList();
+                    }
+                    catch { templateInfo["HiddenCategories"] = new List<string>(); }
+
+                    // 取得視圖專屬覆寫（篩選器）
+                    try
+                    {
+                        var filterIds = template.GetFilters();
+                        var filterNames = filterIds
+                            .Select(id => doc.GetElement(id)?.Name ?? "Unknown")
+                            .ToList();
+                        templateInfo["FilterCount"] = filterIds.Count;
+                        templateInfo["Filters"] = filterNames;
+                    }
+                    catch 
+                    { 
+                        templateInfo["FilterCount"] = 0;
+                        templateInfo["Filters"] = new List<string>(); 
+                    }
+
+                    // 取得裁剪設定
+                    try
+                    {
+                        templateInfo["CropBoxActive"] = template.CropBoxActive;
+                        templateInfo["CropBoxVisible"] = template.CropBoxVisible;
+                    }
+                    catch 
+                    { 
+                        templateInfo["CropBoxActive"] = "N/A";
+                        templateInfo["CropBoxVisible"] = "N/A";
+                    }
+
+                    // 取得底層設定
+                    try
+                    {
+                        templateInfo["SupportsUnderlay"] = (template.ViewType == ViewType.FloorPlan || 
+                                                            template.ViewType == ViewType.CeilingPlan ||
+                                                            template.ViewType == ViewType.AreaPlan);
+                    }
+                    catch { templateInfo["SupportsUnderlay"] = false; }
+                }
+
+                templateList.Add(templateInfo);
+            }
+
+            return new
+            {
+                ProjectName = doc.Title,
+                Count = templateList.Count,
+                ViewTemplates = templateList
+            };
+        }
+
+        #endregion
+
+        #region 外牆開口檢討
+
+        /// <summary>
+        /// 執行外牆開口檢討（第45條 + 第110條）
+        /// </summary>
+        private object CheckExteriorWallOpenings(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            UIDocument uidoc = _uiApp.ActiveUIDocument;
+
+            bool checkArticle45 = parameters["checkArticle45"]?.Value<bool>() ?? true;
+            bool checkArticle110 = parameters["checkArticle110"]?.Value<bool>() ?? true;
+            bool colorizeViolations = parameters["colorizeViolations"]?.Value<bool>() ?? true;
+            bool checkBuildingDistance = parameters["checkBuildingDistance"]?.Value<bool>() ?? false;
+            bool exportReport = parameters["exportReport"]?.Value<bool>() ?? false;
+            string reportPath = parameters["reportPath"]?.Value<string>();
+
+            var checker = new ExteriorWallOpeningChecker(doc);
+            var allResults = new List<object>();
+
+            using (Transaction trans = new Transaction(doc, "外牆開口檢討"))
+            {
+                // 使用防禦性交易處理
+                bool isTransactionStarted = false;
+
+                // 2. 取得所有外牆
+                int totalWalls = 0;
+                int totalOpenings = 0;
+                int violations = 0;
+                int warnings = 0;
+                int passed = 0;
+                
+                // 1. 取得基地邊界線
+                // Note: GetPropertyLines doesn't require transaction status to run, assuming it just reads.
+                // However, to be safe and consistent with previous flow, we'll keep logic similar but ensure variables are scoped correctly.
+                List<Curve> propertyLines = null;
+
+                try
+                {
+                    if (trans.Start() == TransactionStatus.Started)
+                    {
+                        isTransactionStarted = true;
+
+                        // DEBUG VERSION LOG
+                        System.Diagnostics.Debug.WriteLine("DLL Version: 2026.01.14.02 - Transaction Started");
+
+                        propertyLines = checker.GetPropertyLines();
+                        if (propertyLines.Count == 0)
+                        {
+                            throw new InvalidOperationException("找不到基地邊界線（PropertyLine）。請確認專案中已建立地界線，且您已結束編輯模式（打勾）。");
+                        }
+
+                        var exteriorWalls = checker.GetExteriorWalls();
+
+                        // 3. 遍歷每面外牆
+                        foreach (var wall in exteriorWalls)
+                        {
+                            totalWalls++;
+                            var openings = checker.GetWallOpenings(wall);
+
+                            foreach (var opening in openings)
+                            {
+                                totalOpenings++;
+                                var openingInfo = checker.GetOpeningInfo(opening);
+                                if (openingInfo == null) continue;
+
+                                // 計算距離
+                                var boundaryResult = checker.CalculateDistanceToBoundary(openingInfo, propertyLines);
+                                var distanceToBoundary = boundaryResult.MinDistance;
+                                var distanceToBuilding = checkBuildingDistance
+                                    ? checker.CalculateDistanceToAdjacentBuildings(openingInfo, wall)
+                                    : double.MaxValue;
+
+                                // 執行檢查
+                                ExteriorWallOpeningChecker.Article45Result article45Result = null;
+                                ExteriorWallOpeningChecker.Article110Result article110Result = null;
+
+                                if (checkArticle45)
+                                {
+                                    article45Result = checker.CheckArticle45(openingInfo, distanceToBoundary, distanceToBuilding);
+                                }
+
+                                if (checkArticle110)
+                                {
+                                    article110Result = checker.CheckArticle110(openingInfo, distanceToBoundary, distanceToBuilding);
+                                }
+
+                                // 視覺化
+                                if (colorizeViolations)
+                                {
+                                    var overallStatus = DetermineOverallStatus(article45Result, article110Result);
+                                    ColorizeOpening(doc, uidoc.ActiveView, opening.Id, overallStatus);
+
+                                    if (overallStatus == ExteriorWallOpeningChecker.CheckStatus.Fail) violations++;
+                                    else if (overallStatus == ExteriorWallOpeningChecker.CheckStatus.Warning) warnings++;
+                                    else passed++;
+
+                                    // 如果違規或有警告，建立標註 (Dimension)
+                                    if ((overallStatus == ExteriorWallOpeningChecker.CheckStatus.Fail || overallStatus == ExteriorWallOpeningChecker.CheckStatus.Warning) && boundaryResult.ClosestPoint != null)
+                                    {
+                                        try
+                                        {
+                                            // 1. 定義標註線 (Opening Center -> Boundary Point)
+                                            // 確保 Z 軸一致 (在開口高度)
+                                            XYZ start = openingInfo.Location;
+                                            XYZ end = new XYZ(boundaryResult.ClosestPoint.X, boundaryResult.ClosestPoint.Y, start.Z);
+                                            
+                                            // 避免極短線段
+                                            if (start.DistanceTo(end) > 0.01)
+                                            {
+                                                Line line = Line.CreateBound(start, end);
+
+                                                // 2. 建立參考平面 (SketchPlane)
+                                                // 需要一個包含該線的平面。水平線通常位於 XY 平面。
+                                                XYZ norm = XYZ.BasisZ;
+                                                Plane plane = Plane.CreateByNormalAndOrigin(norm, start);
+                                                SketchPlane sketchPlane = SketchPlane.Create(doc, plane);
+
+                                                // 3. 建立模型線 (Model Line)
+                                                ModelCurve modelCurve = doc.Create.NewModelCurve(line, sketchPlane);
+                                                
+                                                // 嘗試設定線樣式為紅色 (若有)
+                                                // (省略樣式設定以保持簡單)
+
+                                                // 4. 建立尺寸標註 (Dimension)
+                                                // 尺寸標註必須依附於 View。如果 View 是 3D View，必須設定 WorkPoint。
+                                                // 簡單起見，嘗試建立基於模型線端點的尺寸。
+                                                
+                                                ReferenceArray refArray = new ReferenceArray();
+                                                refArray.Append(modelCurve.GeometryCurve.GetEndPointReference(0));
+                                                refArray.Append(modelCurve.GeometryCurve.GetEndPointReference(1));
+
+                                                Dimension dim = doc.Create.NewDimension(uidoc.ActiveView, line, refArray);
+
+                                                // 5. 將標註設為紅色
+                                                OverrideGraphicSettings redOverride = new OverrideGraphicSettings();
+                                                redOverride.SetProjectionLineColor(new Color(255, 0, 0)); // 紅色
+                                                uidoc.ActiveView.SetElementOverrides(dim.Id, redOverride);
+                                            }
+                                        }
+                                        catch (Exception dimEx)
+                                        {
+                                            // 標註建立失敗不應中斷檢討流程
+                                            System.Diagnostics.Debug.WriteLine($"無法建立標註: {dimEx.Message}");
+                                        }
+                                    }
+                                }
+
+                                // 記錄結果
+                                allResults.Add(new
+                                {
+                                    openingId = openingInfo.OpeningId.GetIdValue(),
+                                    wallId = openingInfo.WallId?.GetIdValue(),
+                                    openingType = openingInfo.OpeningType,
+                                    location = new
+                                    {
+                                        x = Math.Round(openingInfo.Location.X * 304.8, 2),
+                                        y = Math.Round(openingInfo.Location.Y * 304.8, 2),
+                                        z = Math.Round(openingInfo.Location.Z * 304.8, 2)
+                                    },
+                                    area = Math.Round(openingInfo.Area * 0.0929, 2), // 平方英尺 → 平方公尺
+                                    article45 = article45Result,
+                                    article110 = article110Result
+                                });
+                            }
+                        }
+
+                        trans.Commit();
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("無法啟動 Revit 交易，可能目前正處於其他命令或編輯模式中。");
+                    }
+
+                    var summary = new
+                    {
+                        totalWalls,
+                        totalOpenings,
+                        violations,
+                        warnings,
+                        passed,
+                        propertyLineCount = propertyLines.Count
+                    };
+
+                    var response = new
+                    {
+                        success = true,
+                        summary,
+                        details = allResults,
+                        message = $"檢討完成：共檢查 {totalWalls} 面外牆、{totalOpenings} 個開口"
+                    };
+
+                    // 匯出報表（可選）
+                    if (exportReport && !string.IsNullOrEmpty(reportPath))
+                    {
+                        System.IO.File.WriteAllText(reportPath,
+                            Newtonsoft.Json.JsonConvert.SerializeObject(response, Newtonsoft.Json.Formatting.Indented));
+                    }
+
+                    return response;
+                }
+                catch (Exception ex)
+                {
+                    if (isTransactionStarted && trans.GetStatus() == TransactionStatus.Started)
+                    {
+                        trans.RollBack();
+                    }
+                    throw new Exception($"外牆開口檢討失敗：{ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 判定總體狀態
+        /// </summary>
+        private ExteriorWallOpeningChecker.CheckStatus DetermineOverallStatus(
+            ExteriorWallOpeningChecker.Article45Result article45Result,
+            ExteriorWallOpeningChecker.Article110Result article110Result)
+        {
+            var statuses = new List<ExteriorWallOpeningChecker.CheckStatus>();
+
+            if (article45Result != null) statuses.Add(article45Result.OverallStatus);
+            if (article110Result != null) statuses.Add(article110Result.OverallStatus);
+
+            if (statuses.Contains(ExteriorWallOpeningChecker.CheckStatus.Fail)) 
+                return ExteriorWallOpeningChecker.CheckStatus.Fail;
+            if (statuses.Contains(ExteriorWallOpeningChecker.CheckStatus.Warning)) 
+                return ExteriorWallOpeningChecker.CheckStatus.Warning;
+            return ExteriorWallOpeningChecker.CheckStatus.Pass;
+        }
+
+        /// <summary>
+        /// 為開口元素設定顏色
+        /// 同時設定 Cut（平面圖）和 Surface（立面圖）樣式，確保所有視圖類型都能顯示
+        /// </summary>
+        private void ColorizeOpening(Document doc, View view, ElementId openingId, ExteriorWallOpeningChecker.CheckStatus status)
+        {
+            var overrideSettings = new OverrideGraphicSettings();
+            ElementId solidPatternId = GetSolidFillPatternId(doc);
+            Color color;
+
+            switch (status)
+            {
+                case ExteriorWallOpeningChecker.CheckStatus.Fail:
+                    color = new Color(255, 0, 0); // 紅色
+                    break;
+                case ExteriorWallOpeningChecker.CheckStatus.Warning:
+                    color = new Color(255, 165, 0); // 橘色
+                    break;
+                case ExteriorWallOpeningChecker.CheckStatus.Pass:
+                    color = new Color(0, 255, 0); // 綠色
+                    break;
+                default:
+                    return;
+            }
+
+            // 投影線顏色（所有視圖通用）
+            overrideSettings.SetProjectionLineColor(color);
+
+            // Surface pattern（立面/剖面/3D）
+            overrideSettings.SetSurfaceForegroundPatternColor(color);
+            if (solidPatternId != null && solidPatternId != ElementId.InvalidElementId)
+            {
+                overrideSettings.SetSurfaceForegroundPatternId(solidPatternId);
+                overrideSettings.SetSurfaceForegroundPatternVisible(true);
+            }
+
+            // Cut pattern（平面圖中門窗被牆切割時顯示）
+            overrideSettings.SetCutForegroundPatternColor(color);
+            if (solidPatternId != null && solidPatternId != ElementId.InvalidElementId)
+            {
+                overrideSettings.SetCutForegroundPatternId(solidPatternId);
+                overrideSettings.SetCutForegroundPatternVisible(true);
+            }
+
+            // Cut line 顏色
+            overrideSettings.SetCutLineColor(color);
+
+            view.SetElementOverrides(openingId, overrideSettings);
+        }
+
+        #endregion
+
+        #region 明細表建立
+
+        /// <summary>
+        /// 建立視圖明細表（ViewSchedule）
+        /// </summary>
+        private object CreateViewSchedule(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            string scheduleName = parameters["name"]?.Value<string>() ?? "MCP製作的明細表";
+            string categoryName = parameters["category"]?.Value<string>();
+            var fieldNames = parameters["fields"]?.ToObject<List<string>>() ?? new List<string>();
+
+            using (Transaction trans = new Transaction(doc, "建立明細表"))
+            {
+                trans.Start();
+
+                ElementId categoryId = ElementId.InvalidElementId;
+                if (!string.IsNullOrEmpty(categoryName))
+                {
+                    foreach (Category cat in doc.Settings.Categories)
+                    {
+                        if (cat.Name.Equals(categoryName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            categoryId = cat.Id;
+                            break;
+                        }
+                    }
+                }
+
+                ViewSchedule schedule = ViewSchedule.CreateSchedule(doc, categoryId);
+                schedule.Name = scheduleName;
+
+                var schedulableFields = schedule.Definition.GetSchedulableFields();
+                var addedFields = new List<string>();
+                var missingFields = new List<string>();
+
+                foreach (string fieldName in fieldNames)
+                {
+                    var sf = schedulableFields.FirstOrDefault(f =>
+                        f.GetName(doc).Equals(fieldName, StringComparison.OrdinalIgnoreCase));
+                    if (sf != null)
+                    {
+                        schedule.Definition.AddField(sf);
+                        addedFields.Add(fieldName);
+                    }
+                    else
+                    {
+                        missingFields.Add(fieldName);
+                    }
+                }
+
+                trans.Commit();
+
+                return new
+                {
+                    ElementId = schedule.Id.GetIdValue(),
+                    Name = schedule.Name,
+                    FieldCount = schedule.Definition.GetFieldCount(),
+                    AddedFields = addedFields,
+                    MissingFields = missingFields,
+                    Message = $"成功建立明細表: {schedule.Name}"
+                };
+            }
+        }
+
+        #endregion
+
+        #region MEP 工具
+
+        /// <summary>
+        /// 取得目前選取的元素
+        /// </summary>
+        private object GetSelectedElements()
+        {
+            UIDocument uiDoc = _uiApp.ActiveUIDocument;
+            Document doc = uiDoc.Document;
+            var selection = uiDoc.Selection.GetElementIds();
+
+            var elements = selection.Select(id =>
+            {
+                Element e = doc.GetElement(id);
+                var elemData = new JObject
+                {
+                    ["Id"] = e.Id.GetIdValue(),
+                    ["Name"] = e.Name,
+                    ["Category"] = e.Category?.Name ?? "Unknown"
+                };
+
+                // 如果是視圖或是剖面標記，嘗試取得它的 Origin
+                if (e is View v && v.Origin != null)
+                {
+                    elemData["Origin"] = new JObject
+                    {
+                        ["X"] = Math.Round(v.Origin.X * 304.8, 2),
+                        ["Y"] = Math.Round(v.Origin.Y * 304.8, 2),
+                        ["Z"] = Math.Round(v.Origin.Z * 304.8, 2)
+                    };
+                }
+                else if (e.Category?.Name == "Views" || e.Category?.Name == "視圖" || e.Category?.Name == "Sections" || e.Category?.Name == "剖面")
+                {
+                    // 若選取到標記元素，其 Element.Name 等同於視圖名稱。若該 Element 有 BoundingBox 也可取中心點作為 Origin
+                    BoundingBoxXYZ bbox = e.get_BoundingBox(doc.ActiveView);
+                    if (bbox != null)
+                    {
+                        XYZ center = (bbox.Min + bbox.Max) / 2.0;
+                        elemData["Origin"] = new JObject
+                        {
+                            ["X"] = Math.Round(center.X * 304.8, 2),
+                            ["Y"] = Math.Round(center.Y * 304.8, 2),
+                            ["Z"] = Math.Round(center.Z * 304.8, 2)
+                        };
+                    }
+                }
+
+                return elemData;
+            }).ToList();
+
+            return new
+            {
+                Count = elements.Count,
+                Elements = elements
+            };
+        }
+
+        /// <summary>
+        /// 取得元素的 Connector（接頭）資訊
+        /// </summary>
+        private object GetConnectorInfo(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            IdType elementIdValue = parameters["elementId"]?.Value<IdType>() ?? 0;
+            Element element = doc.GetElement(new ElementId(elementIdValue));
+
+            if (element == null) throw new Exception("找不到元素");
+
+            ConnectorSet connectors = null;
+            if (element is MEPCurve curve)
+                connectors = curve.ConnectorManager.Connectors;
+            else if (element is FamilyInstance fi)
+                connectors = fi.MEPModel?.ConnectorManager?.Connectors;
+
+            if (connectors == null)
+                return new { Message = "此元素沒有接頭資訊" };
+
+            var connectorList = new List<object>();
+            foreach (Connector conn in connectors)
+            {
+                connectorList.Add(new
+                {
+                    ConnectorId = conn.Id,
+                    Type = conn.ConnectorType.ToString(),
+                    Origin = new
+                    {
+                        X = Math.Round(conn.Origin.X * 304.8, 2),
+                        Y = Math.Round(conn.Origin.Y * 304.8, 2),
+                        Z = Math.Round(conn.Origin.Z * 304.8, 2)
+                    },
+                    IsConnected = conn.IsConnected,
+                    Shape = conn.Shape.ToString(),
+                    Description = conn.Description
+                });
+            }
+
+            return new
+            {
+                ElementId = element.Id.GetIdValue(),
+                ElementName = element.Name,
+                ConnectorCount = connectorList.Count,
+                Connectors = connectorList
+            };
+        }
+
+        /// <summary>
+        /// 在管端安裝管帽/法蘭
+        /// </summary>
+        private object AddPipeCap(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            IdType pipeIdValue = parameters["pipeId"]?.Value<IdType>() ?? 0;
+            string familyName = parameters["familyName"]?.Value<string>();
+
+            Element pipe = doc.GetElement(new ElementId(pipeIdValue));
+            if (pipe == null) throw new Exception("找不到管件");
+
+            using (Transaction trans = new Transaction(doc, "安裝管帽"))
+            {
+                trans.Start();
+
+                FamilySymbol symbol = new FilteredElementCollector(doc)
+                    .OfClass(typeof(FamilySymbol))
+                    .Cast<FamilySymbol>()
+                    .FirstOrDefault(s => s.Name == familyName || s.FamilyName == familyName);
+
+                if (symbol == null) throw new Exception($"找不到族群類型: {familyName}");
+                if (!symbol.IsActive) symbol.Activate();
+
+                Connector openConnector = null;
+                ConnectorManager cm = (pipe as MEPCurve)?.ConnectorManager;
+                if (cm != null)
+                {
+                    foreach (Connector conn in cm.Connectors)
+                    {
+                        if (!conn.IsConnected)
+                        {
+                            openConnector = conn;
+                            break;
+                        }
+                    }
+                }
+
+                if (openConnector == null) throw new Exception("管件沒有可用的未連線接頭");
+
+                FamilyInstance instance = doc.Create.NewFamilyInstance(
+                    openConnector.Origin, symbol,
+                    Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+
+                // 嘗試連接法蘭接頭與管件接頭
+                ConnectorManager fiCm = instance.MEPModel?.ConnectorManager;
+                if (fiCm != null)
+                {
+                    foreach (Connector conn in fiCm.Connectors)
+                    {
+                        if (!conn.IsConnected && conn.Origin.DistanceTo(openConnector.Origin) < 0.1)
+                        {
+                            conn.ConnectTo(openConnector);
+                            break;
+                        }
+                    }
+                }
+
+                // 自動對齊管徑
+                double diameter = openConnector.Radius * 2;
+                if (diameter > 0)
+                {
+                    Parameter sizeParam = instance.LookupParameter("Nominal Diameter")
+                                       ?? instance.LookupParameter("Size");
+                    if (sizeParam != null && !sizeParam.IsReadOnly)
+                    {
+                        sizeParam.Set(diameter);
+                    }
+                }
+
+                trans.Commit();
+
+                return new
+                {
+                    Success = true,
+                    ElementId = instance.Id.GetIdValue(),
+                    Message = $"成功在 {pipe.Name} 安裝 {symbol.Name}"
+                };
+            }
+        }
+
+        #endregion
+
+        #region Clash Detection (MEP vs CSA)
+
+        private object GetLinkedModels()
+        {
+            return new LinkedModelHelper(_uiApp).GetLinkedModels();
+        }
+
+        private object QueryLinkedElements(JObject parameters)
+        {
+            return new LinkedModelHelper(_uiApp).QueryLinkedElements(parameters);
+        }
+
+        private object GetElementGeometry(JObject parameters)
+        {
+            return new LinkedModelHelper(_uiApp).GetElementGeometry(parameters);
+        }
+
+        private object DetectClashes(JObject parameters)
+        {
+            var linkHelper = new LinkedModelHelper(_uiApp);
+            return new ClashDetector(_uiApp, linkHelper).DetectClashes(parameters);
+        }
+
+        private object ScanOpeningCandidates(JObject parameters)
+        {
+            var linkHelper = new LinkedModelHelper(_uiApp);
+            return new OpeningCandidateScanner(_uiApp, linkHelper).Scan(parameters);
+        }
+
+        private object ColorizeClashes(JObject parameters)
+        {
+            var linkHelper = new LinkedModelHelper(_uiApp);
+            return new ClashDetector(_uiApp, linkHelper).ColorizeClashes(parameters);
+        }
+
+        private object ExportClashReport(JObject parameters)
+        {
+            var linkHelper = new LinkedModelHelper(_uiApp);
+            return new ClashDetector(_uiApp, linkHelper).ExportClashReport(parameters);
+        }
+
+        #endregion
+    }
+}
+
+
+

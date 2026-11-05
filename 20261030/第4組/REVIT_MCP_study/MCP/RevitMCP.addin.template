@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>Revit MCP Plugin</Name>
+    <!-- 使用相對路徑：.addin 與 .dll 須放在同一個目錄 -->
+    <Assembly>RevitMCP.dll</Assembly>
+    <FullClassName>RevitMCP.Application</FullClassName>
+    <AddInId>8F3A4C8C-61DC-426D-87DF-E4BAE0F80EC1</AddInId>
+    <VendorId>RevitMCP</VendorId>
+    <VendorDescription>AI-Powered Revit Control via MCP Protocol</VendorDescription>
+  </AddIn>
+</RevitAddIns>
