@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>NCKU Green Passport</Name>
+    <Assembly>TemporalBimCurrent\TemporalBim.dll</Assembly>
+    <AddInId>6C2E1F3A-5B9D-4E7F-8A1C-2D3B4E5F6A7B</AddInId>
+    <FullClassName>TemporalBim.App</FullClassName>
+    <VendorId>NCKU-GROUP</VendorId>
+  </AddIn>
+</RevitAddIns>
