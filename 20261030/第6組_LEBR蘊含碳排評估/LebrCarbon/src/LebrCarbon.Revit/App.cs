@@ -3,10 +3,10 @@ using LebrCarbon.Revit.Commands;
 
 namespace LebrCarbon.Revit;
 
-/// <summary>外掛進入點：建立「低碳建築」功能區頁籤（計畫書 6.1 節）。</summary>
+/// <summary>外掛進入點：建立「LEBR」功能區頁籤（計畫書 6.1 節）。</summary>
 public sealed class App : IExternalApplication
 {
-    public const string TabName = "低碳建築";
+    public const string TabName = "LEBR";
 
     public Result OnStartup(UIControlledApplication app)
     {

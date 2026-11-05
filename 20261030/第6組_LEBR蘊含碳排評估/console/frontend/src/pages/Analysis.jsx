@@ -180,7 +180,7 @@ function ProposalsCard({ project, current }) {
         <div>
           <h2>減碳建議</h2>
           <p className="muted small">
-            由 AI 依上面的分析提出，數字用 lebr-snapshot scenario 試算（不是 AI 自己算的）。選定一份後，在 Revit 按「低碳建築 → 套用建議」寫回模型。
+            由 AI 依上面的分析提出，數字用 lebr-snapshot scenario 試算（不是 AI 自己算的）。選定一份後，在 Revit 按「LEBR → 套用建議」寫回模型。
           </p>
         </div>
         <button type="button" onClick={load}>重新整理</button>

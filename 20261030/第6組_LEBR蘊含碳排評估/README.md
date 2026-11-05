@@ -76,13 +76,13 @@ dotnet build LebrCarbon.sln
 dotnet test
 ```
 
-建置完成後會自動複製到 `%AppData%\Autodesk\Revit\Addins\2026\`。重新開啟 Revit，功能區會出現「低碳建築」頁籤。
+建置完成後會自動複製到 `%AppData%\Autodesk\Revit\Addins\2026\`。重新開啟 Revit，功能區會出現「LEBR」頁籤。
 
 Revit 若不是裝在 `C:\Program Files\Autodesk\Revit 2026`，請修改 `Directory.Build.props` 的 `RevitInstallDir`。
 
 ## 使用流程
 
-1. 「低碳建築」頁籤 →「綁定參數」，把 `LEBR_` 共用參數加入專案。
+1. 「LEBR」頁籤 →「綁定參數」，把 `LEBR_` 共用參數加入專案。
 2. 在外牆、窗、隔間、地坪類型填入 `LEBR_BlccId`，ID 清單見 `LebrCarbon/docs/README.md`。也可以請 AI agent 依 `MaterialMapping/AGENTS.md` 自動辨識，在控制台「材料對照」分頁確認後寫回模型。
 3. 按「LEBR 評估」：
    - **建築參數**：確認模型讀到的樓層與面積，補上結構計算書的 I、SaD、Fu、Rs、L、D0。

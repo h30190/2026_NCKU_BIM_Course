@@ -56,7 +56,7 @@ rvt-mcp 實測踩到的坑：
 | `install-addon.ps1` 報錯說版本不支援（`[ValidateSet(...)]`） | 腳本的版本白名單沒收錄這個 Revit 年份 | 不要等腳本更新，直接手動把 `MCP\bin\Release.R{XX}\*` 全部檔案 + `.addin` 複製到 `%AppData%\Autodesk\Revit\Addins\{完整年份}\`（對應資料夾放 DLL，上一層放 `.addin`） |
 | Revit MCP 工具（`mcp__revit-mcp__*`）完全不在這個 session 的工具清單裡 | `.mcp.json` 是在 session **啟動時**讀取的，中途改檔案或只關分頁不會重新讀 | 改完 `.mcp.json` 後，**整個 Claude Desktop app 關掉重開**，或是 Fork 現有對話成新 session（Fork 會帶著對話記錄、但走全新進程，會重新讀 `.mcp.json`） |
 | 呼叫 Revit MCP 工具回傳空的 `Error:`、或逾時 | Revit 可能正卡在某個操作中間（彈窗沒關、指令還沒結束），或是短時間內連續發太多次呼叫 | 先確認 Revit 視窗沒有卡住的對話框、沒有還在進行中的指令；多次呼叫改成一次一個、不要同時並行發送（並行很容易逾時） |
-| `modify_element_parameter` 回傳「找不到參數: LEBR_BlccId」 | 組員外掛的 `LEBR_BlccId` 等共用參數是**每個 Revit 文件各自要綁定一次**，換了新模型就要重按 | 請使用者在 Revit 裡：「低碳建築」頁籤 →「綁定參數」，按一次（每個 `.rvt` 檔都要各按一次，不是裝了外掛就自動有） |
+| `modify_element_parameter` 回傳「找不到參數: LEBR_BlccId」 | 組員外掛的 `LEBR_BlccId` 等共用參數是**每個 Revit 文件各自要綁定一次**，換了新模型就要重按 | 請使用者在 Revit 裡：「LEBR」頁籤 →「綁定參數」，按一次（每個 `.rvt` 檔都要各按一次，不是裝了外掛就自動有） |
 | 寫入 Revit 後，`get_element_info` 讀回來看不到剛寫的參數值 | 可能是查詢時機問題（文件還沒 regen），不代表寫入失敗 | 用 `modify_element_parameter` 的回傳訊息（有沒有「成功修改參數」）判斷是否成功，不要單靠 `get_element_info` 讀不到就認定失敗；必要時重新查一次 |
 
 ## 操作流程（處理一個新模型）
@@ -137,7 +137,7 @@ rvt-mcp 實測踩到的坑：
    - 一句話說明取捨（reason，例如「只動局部材質不改外牆系統，施工面影響小」vs「換整個外牆工法，效果大但牽涉結構介面」）
 7. 使用者在控制台「分析與建議」選定一組（或在對話裡要求調整、重新給）
 8. 寫回 Revit，兩種方式擇一：
-   a. 建議：使用者在 Revit 按「低碳建築 → 套用建議」。外掛取回選定的那組、列出要改的類型請使用者確認，
+   a. 建議：使用者在 Revit 按「LEBR → 套用建議」。外掛取回選定的那組、列出要改的類型請使用者確認，
       改類型參數 LEBR_BlccId、同步 {模型}.lebr.json 並重算，再回報控制台；後端會順便把 mapping.json
       對應項目的 bodyId/finishId 改好。AI 不必連 Revit
    b. 備案（外掛沒裝時）：AI 自己更新 mapping.json 的 bodyId/finishId（note 寫明是哪組建議、原本是什麼），
