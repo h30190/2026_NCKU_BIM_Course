@@ -1,0 +1,160 @@
+<Window x:Class="LebrCarbon.UI.ProjectSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LEBR 專案設定" Width="720" Height="760"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip"
+        FontFamily="Microsoft JhengHei UI" FontSize="13" Background="#F6F5F2">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="LlItem" TargetType="ComboBoxItem">
+                <Setter Property="IsEnabled" Value="{Binding Enabled}"/>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <DockPanel Margin="18">
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
+            <Button x:Name="ReloadButton" DockPanel.Dock="Left" Content="讀取目前專案值" Style="{StaticResource Secondary}" Click="OnReload"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Style="{StaticResource Secondary}" IsCancel="True" Margin="0,0,8,0"/>
+                <Button x:Name="SaveButton" Content="儲存" Style="{StaticResource Primary}" IsDefault="True" Click="OnSave"/>
+            </StackPanel>
+        </DockPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock x:Name="ProjectName" Style="{StaticResource Sub}" Margin="0,0,0,10"/>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="共用建築條件" Style="{StaticResource SectionTitle}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/><RowDefinition/><RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="耗損等級 *" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Row="0" Grid.Column="1" x:Name="WearClass" Margin="0,3"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="用途類型 *" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Row="1" Grid.Column="1" x:Name="UseType" Margin="0,3"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="構造 *" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Row="2" Grid.Column="1" x:Name="Structure" Margin="0,3" SelectionChanged="OnStructureChanged"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="A. 主結構（基準案同設計案）" Style="{StaticResource SectionTitle}"/>
+
+                        <CheckBox x:Name="EstimateCheck" Content="使用估算（A 區鎖定，估算結果儲存至專案）" Margin="0,0,0,2" Checked="OnInputChanged" Unchecked="OnInputChanged"/>
+                        <TextBlock Text="勾選後，A 區所有欄位鎖定；取消勾選會清除估算結果" Style="{StaticResource Sub}" Margin="22,0,0,6"/>
+                        <Border Background="#EEF5EA" CornerRadius="4" Padding="8" Margin="22,0,0,10">
+                            <StackPanel>
+                                <TextBlock x:Name="EstimateCfsText" FontWeight="SemiBold" Text="估算結果（CFs）：未估算"/>
+                                <TextBlock x:Name="EstimateSummaryText" Style="{StaticResource Sub}"/>
+                                <Button x:Name="OpenEstimateButton" Content="開啟估算" Style="{StaticResource Secondary}" HorizontalAlignment="Left" Margin="0,6,0,0" Click="OnOpenEstimate"/>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel x:Name="ASection">
+                            <TextBlock Text="A-1 設計案與基準案相同（依結構計算書之數值填寫）" FontWeight="SemiBold" Margin="0,4,0,6"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="230"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="用途係數 I *" VerticalAlignment="Center"/>
+                                <ComboBox Grid.Row="0" Grid.Column="1" x:Name="I" Margin="0,3" SelectionChanged="OnIChanged"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="SaD *" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="1" Grid.Column="1" x:Name="SaD" Margin="0,3" Padding="4,2" TextChanged="OnTextChanged"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Fu *" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="2" Grid.Column="1" x:Name="Fu" Margin="0,3" Padding="4,2" TextChanged="OnTextChanged"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="L（活載重，kgf/m²）*" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="3" Grid.Column="1" x:Name="L" Margin="0,3" Padding="4,2" TextChanged="OnTextChanged"/>
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="D0（額外靜載重）*" VerticalAlignment="Center"/>
+                                <TextBox Grid.Row="4" Grid.Column="1" x:Name="D0" Margin="0,3" Padding="4,2" TextChanged="OnTextChanged"/>
+                                <TextBlock Grid.Row="5" Grid.Column="0" Text="Rs（動力分析係數）*" VerticalAlignment="Center"/>
+                                <ComboBox Grid.Row="5" Grid.Column="1" x:Name="Rs" Margin="0,3"/>
+                            </Grid>
+
+                            <TextBlock Text="A-2 僅設計案（基準案不同）" FontWeight="SemiBold" Margin="0,12,0,6"/>
+                            <CheckBox x:Name="CserCheck" Content="低碳混凝土（CSER）" Checked="OnInputChanged" Unchecked="OnInputChanged"/>
+                            <StackPanel Orientation="Horizontal" Margin="22,4,0,0">
+                                <TextBlock Text="值：" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBox x:Name="CserValue" Width="120" Padding="4,2" TextChanged="OnTextChanged"/>
+                            </StackPanel>
+                            <TextBlock x:Name="CserHint" Style="{StaticResource Sub}" Margin="22,4,0,0"/>
+
+                            <CheckBox x:Name="StructOverrideCheck" Content="啟用覆寫欄位（進階）" Margin="0,12,0,4" Checked="OnStructOverrideChanged" Unchecked="OnStructOverrideChanged"/>
+                            <TextBlock Text="未勾選時隱藏；取消勾選會清空已填的值" Style="{StaticResource Sub}" Margin="22,0,0,4"/>
+                            <StackPanel x:Name="StructOverridePanel" Margin="22,4,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="300"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition/><RowDefinition/><RowDefinition/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="樓層數 S（覆寫後基準案同步套用）" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="OverrideS" Margin="0,3" Padding="4,2" TextChanged="OnTextChanged"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Sp（僅設計案，基準案依表 4-6 查表）" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="OverrideSp" Margin="0,3" Padding="4,2" TextChanged="OnTextChanged"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="F（僅設計案，基準案依表 4-6 查表）" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="OverrideF" Margin="0,3" Padding="4,2" TextChanged="OnTextChanged"/>
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <TextBlock x:Name="MissingText" Foreground="{StaticResource ErrorInk}" TextWrapping="Wrap" Margin="0,14,0,4"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="B. 非主結構" Style="{StaticResource SectionTitle}"/>
+                        <CheckBox x:Name="AreaOverrideCheck" Content="啟用覆寫欄位（進階）" Checked="OnAreaOverrideChanged" Unchecked="OnAreaOverrideChanged"/>
+                        <TextBlock Text="未勾選時隱藏；取消勾選會清空值" Style="{StaticResource Sub}" Margin="22,0,0,4"/>
+                        <StackPanel x:Name="AreaOverridePanel" Orientation="Horizontal" Margin="22,4,0,0">
+                            <TextBlock Text="地上樓地板面積 AFu" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox x:Name="OverrideAFu" Width="140" Padding="4,2" TextChanged="OnTextChanged"/>
+                            <TextBlock Text="m²　設計案與基準案相同" VerticalAlignment="Center" Margin="8,0,0,0" Style="{StaticResource Sub}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="C. 優惠係數（LL）" Style="{StaticResource SectionTitle}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/><RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="耐久設計（擇一）" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Row="0" Grid.Column="1" x:Name="DurableBox" Margin="0,3" ItemContainerStyle="{StaticResource LlItem}" SelectionChanged="OnLlSelectionChanged"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="高品質施工（擇一）" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Row="1" Grid.Column="1" x:Name="QualityBox" Margin="0,3" ItemContainerStyle="{StaticResource LlItem}" SelectionChanged="OnLlSelectionChanged"/>
+                        </Grid>
+                        <TextBlock x:Name="LlTotalText" FontWeight="SemiBold" Margin="0,10,0,2"/>
+                        <TextBlock x:Name="LlNote" Style="{StaticResource Sub}"/>
+                        <CheckBox x:Name="ProofCheck" Content="已備妥證明文件（未勾選則 LL = 0）" Margin="0,8,0,0" Checked="OnInputChanged" Unchecked="OnInputChanged"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard｜LEBR 碳排圖台</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/lebr.css">
+  <link rel="stylesheet" href="css/detail.css">
+  <link rel="stylesheet" href="css/visitor.css">
+</head>
+<body>
+<div class="app">
+  <!-- 左欄 -->
+  <aside class="sidebar glass">
+    <a class='logo' href='/'>
+      <span class="logo-mark">L</span>
+      <span><b>LEBR 碳排圖台</b><small>CARBON</small></span>
+    </a>
+    <nav class="nav" id="nav">
+      <a class="active" data-view="overview"><span class="i">▦</span>總覽</a>
+      <a data-view="desc"><span class="i">✎</span>模型說明</a>
+      <a data-view="qty"><span class="i">☰</span>數量報告</a>
+      <a data-view="carbon"><span class="i">▥</span>碳排報告</a>
+      <a data-view="detail"><span class="i">∑</span>計算詳情</a>
+      <a data-view="notes"><span class="i">✐</span>註記<em class="count" id="note-count" hidden></em></a>
+      <a data-view="notices"><span class="i">⚠</span>提醒與查核<em class="count" id="notice-count" hidden></em></a>
+      <a data-view="ext"><span class="i">◧</span>擴充紀錄</a>
+      <a data-view="settings"><span class="i">⚙</span>資料與設定</a>
+    </nav>
+    <div class="source-card" id="source-card"></div>
+    <button class="user" id="user-card" type="button" title="輸入或更換你的名字">
+      <div class="avatar" id="user-avatar">訪</div>
+      <div><b id="user-name">訪客</b><small id="user-sub">點此輸入名字</small></div>
+    </button>
+  </aside>
+
+  <!-- 中欄 -->
+  <main class="main glass">
+    <div class="topbar">
+      <div>
+        <h1>主結構碳排</h1>
+        <p class="muted" id="proj-sub">BIM 模型估算 · 依手冊附錄一計算</p>
+      </div>
+      <div class="toolbar">
+        <div class="tabs unit-tabs" id="unit-tabs">
+          <button class="tab active" data-unit="kg">kgCO₂e</button>
+          <button class="tab" data-unit="t">tCO₂e</button>
+        </div>
+        <label class="btn" for="file">載入 JSON</label>
+        <button class="btn" id="btn-share">複製分享連結</button>
+      </div>
+    </div>
+    <input type="file" id="file" accept=".json,application/json" hidden>
+
+    <div class="banner warn" id="draft-banner" hidden>
+      <b>資料庫為草稿（review_status = draft）</b>
+      <span>附錄一、二尚未完成人工核對。結果僅供設計階段參考，不等於標章認證。</span>
+    </div>
+
+    <!-- 總覽 -->
+    <section class="view active" id="view-overview">
+      <div class="dropzone" id="empty-hero">
+        <div class="slot-ico">⇪</div>
+        <h2>尚未載入結果</h2>
+        <p class="muted">在 Revit 結果視窗按「在圖台開啟」，或把「匯出結果 JSON」的檔案拖到這裡。</p>
+        <label class="btn primary" for="file">選擇 JSON 檔</label>
+        <p class="load-msg" id="load-msg" hidden></p>
+      </div>
+
+      <div id="ov" hidden>
+        <div class="kpis k4" id="kpis"></div>
+        <div id="grade"></div>
+        <div id="check"></div>
+
+        <div class="section-head">
+          <h2>資料範圍</h2>
+          <div class="tabs" id="zone-tabs">
+            <button class="tab active" data-zone="above">地上層</button>
+            <button class="tab" data-zone="below">地下層</button>
+          </div>
+        </div>
+
+        <div class="section-head"><h2>材料別碳排</h2><span class="muted small">依附錄一 A1～A4 分段</span></div>
+        <div class="chart-card">
+          <div class="legend stage-legend" id="stage-legend"></div>
+          <div id="mat-chart"></div>
+        </div>
+
+        <div class="section-head"><h2>構件類別</h2><span class="muted small">點選一項，右側看詳情</span></div>
+        <div class="chart-card"><div id="cat-chart"></div></div>
+
+        <div class="section-head"><h2>樓層分佈</h2></div>
+        <div class="chart-card"><div id="lvl-chart"></div></div>
+      </div>
+    </section>
+
+    <!-- 模型說明（手冊要求 1） -->
+    <section class="view" id="view-desc">
+      <div class="section-head"><h2>估算模型說明</h2></div>
+      <p class="muted small" style="margin-bottom:14px">手冊 p.24：採 BIM 模型估算須提出 ①估算模型說明、②鋼筋與混凝土數量估算報告書、③依附錄一計算的地上層與地下層主結構碳排報告。</p>
+      <div class="checklist" id="checklist"></div>
+      <div id="desc-body"></div>
+    </section>
+
+    <!-- 數量報告（手冊要求 2） -->
+    <section class="view" id="view-qty">
+      <div class="section-head">
+        <h2>鋼筋、混凝土數量估算報告</h2>
+        <div class="toolbar">
+          <label class="search small-search">🔍<input id="q" placeholder="搜尋材料或樓層…"></label>
+          <select class="pill" id="f-zone"><option value="all">地上＋地下</option><option value="above">地上層</option><option value="below">地下層</option></select>
+          <select class="pill" id="f-cat"></select>
+          <button class="btn" id="ex-qty">匯出 CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap" id="qty-sum"></div>
+      <div class="section-head"><h2>明細</h2></div>
+      <div class="table-wrap" id="qty-table"></div>
+    </section>
+
+    <!-- 碳排報告（手冊要求 3） -->
+    <section class="view" id="view-carbon">
+      <div class="section-head"><h2>主結構碳排計算報告</h2><button class="btn" id="ex-carbon">匯出 CSV</button></div>
+      <div id="carbon-body"></div>
+    </section>
+
+    <!-- 計算詳情：手冊公式、代入、係數，按 + 展開 -->
+    <section class="view" id="view-detail">
+      <div class="section-head"><h2>計算詳情</h2><span class="muted small">按 ＋ 展開公式與代入過程</span></div>
+      <div id="detail-body"></div>
+    </section>
+
+    <!-- 註記 -->
+    <section class="view" id="view-notes">
+      <div class="section-head"><h2>註記</h2></div>
+      <div id="notes-body"></div>
+    </section>
+
+    <!-- 提醒與查核 -->
+    <section class="view" id="view-notices">
+      <div class="section-head">
+        <h2>提醒與查核</h2>
+        <div class="tabs" id="level-tabs">
+          <button class="tab active" data-level="all">全部</button>
+          <button class="tab" data-level="error">錯誤</button>
+          <button class="tab" data-level="warning">警告</button>
+          <button class="tab" data-level="info">資訊</button>
+        </div>
+      </div>
+      <div class="chart-card" id="issue-list"></div>
+    </section>
+
+    <!-- 擴充紀錄 -->
+    <section class="view" id="view-ext">
+      <div class="section-head"><h2>擴充紀錄</h2></div>
+      <p class="muted small" style="margin-bottom:14px">本專案目前只啟用主結構。其餘項目在引擎與資料庫端已建置，因需要模型設定更多細節而暫不啟用，這裡記錄它們的現況。</p>
+      <div class="table-wrap">
+        <table class="table ext">
+          <thead><tr><th>項目</th><th>手冊式</th><th>資料庫</th><th>外掛擷取規則（交接版）</th><th>狀態</th></tr></thead>
+          <tbody>
+            <tr><td>一般外牆外裝 OW</td><td>式 11-1</td><td>附表 2-1</td><td>牆的已扣開口面積；類型填 LEBR_Code，本體另填 LEBR_Code_Body</td><td><span class="badge blue">已建置 · 未啟用</span></td></tr>
+            <tr><td>外窗與透光帷幕外窗 W / CWW</td><td>式 11-2</td><td>附表 2-2、2-3</td><td>窗用寬 × 高；帷幕嵌板用面積。窗族群參數名稱不同時要擴充</td><td><span class="badge blue">已建置 · 未啟用</span></td></tr>
+            <tr><td>不透光帷幕外牆及一般外牆 CW</td><td>式 11-3</td><td>附表 2-4</td><td>牆面積，基準案為 15 cm RC 外牆</td><td><span class="badge blue">已建置 · 未啟用</span></td></tr>
+            <tr><td>內隔間 IW</td><td>式 11-4</td><td>附表 2-5</td><td>牆類型代號；沒填代號的結構性內牆視為主結構</td><td><span class="badge blue">已建置 · 未啟用</span></td></tr>
+            <tr><td>室內地坪 F</td><td>式 11-5</td><td>附表 2-6</td><td>樓板類型代號；停車場、設備室等排除規則未做</td><td><span class="badge blue">已建置 · 未啟用</span></td></tr>
+            <tr><td>戶外地坪 P</td><td>式 11-6</td><td>附表 2-7</td><td>樓板類型代號（基層＋表層）</td><td><span class="badge blue">已建置 · 未啟用</span></td></tr>
+            <tr><td>施工、拆除廢棄、更新修繕</td><td>4-3、4-4、式 10</td><td>表 4-7 等</td><td>依整棟設計案資料計算</td><td><span class="badge blue">已建置 · 未啟用</span></td></tr>
+            <tr><td>LEBR 等級與減碳率</td><td>第五章</td><td>表 5-1、6-1</td><td>需要七項構件齊全才能判定</td><td><span class="badge blue">已建置 · 未啟用</span></td></tr>
+            <tr><td>主結構標準計算法（兩法對照）</td><td>式 1～7</td><td>表 4-1～4-6</td><td>已實作，曾以手冊附錄三驗證；Sp、F 的取值與手冊「標準層」規則有出入</td><td><span class="badge amber">有差異待對齊</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="section-head"><h2>進階分析（待串接）</h2></div>
+      <div class="adv-pair">
+        <div class="slot short"><div class="slot-ico">⇄</div><b>兩法對照視窗</b><p class="muted small">BIM 數量法 vs 標準法（式 1～7）的差距。</p></div>
+        <div class="slot short"><div class="slot-ico">⚙</div><b>情境模擬視窗</b><p class="muted small">替換材料或調整低碳混凝土 CSER，看 CFs 變化。</p></div>
+      </div>
+    </section>
+
+    <!-- 資料與設定 -->
+    <section class="view" id="view-settings">
+      <div class="section-head"><h2>資料與設定</h2></div>
+      <div class="form">
+        <label>載入結果 JSON（Revit「匯出結果 JSON…」產生）
+          <input type="file" id="file2" accept=".json,application/json">
+        </label>
+        <p class="load-msg" id="load-msg2" hidden></p>
+        <div class="row-btns" style="max-width:420px">
+          <button class="btn" id="btn-share2">複製分享連結</button>
+          <button class="btn" id="btn-clear">清除資料</button>
+        </div>
+        <p class="muted small">格式：lebr-structure-result v1；分享連結格式見 mockup/DATA_FORMAT.md。連結內含專案資料，轉傳前請確認。</p>
+        <div class="switch"><span>顯示草稿聲明橫幅</span><input type="checkbox" id="opt-banner" checked></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 右欄：詳情 -->
+  <aside class="panel glass" id="panel"></aside>
+</div>
+
+<div class="dropveil" id="dropveil" hidden>放開以載入 JSON</div>
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="js/visitor.js"></script>
+<script src="js/app.js"></script>
+<script src="js/detail.js"></script>
+<script src="js/report.js"></script>
+<script src="js/dropdown.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+/* ===== 計算詳情與註記（疊在 styles.css、lebr.css 之上） ===== */
+.method-card p { font-size: 14px; margin-top: 4px; }
+.method-card .chart-head { margin-bottom: 8px; }
+.method-card h2 { font-size: 18px; }
+details.calc { margin-top: 10px; border-radius: 18px; background: var(--glass); border: 1px solid var(--stroke); }
+details.calc > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 14px 16px; font-size: 15px;
+}
+details.calc > summary::-webkit-details-marker { display: none; }
+details.calc .plus {
+  width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: var(--glass-strong); font-weight: 600; font-size: 15px;
+}
+details.calc .plus::before { content: "+"; }
+details.calc[open] > summary .plus::before { content: "−"; }
+details.calc .t { flex: 1; min-width: 0; }
+details.calc .t small { margin-left: 8px; font-size: 12px; color: var(--muted); }
+details.calc .v { font-variant-numeric: tabular-nums; white-space: nowrap; }
+details.calc .note-count { font-size: 12px; color: var(--amber); white-space: nowrap; }
+details.calc .note-count:empty { display: none; }
+.calc-body { padding: 0 16px 16px 52px; display: grid; gap: 10px; }
+details.calc details.calc { background: rgba(255,255,255,.04); }
+details.calc.sub > summary, details.calc.small-step > summary { font-size: 14px; padding: 10px 14px; }
+details.calc.sub .table-wrap { margin: 0 14px 14px; padding: 4px 12px; }
+.formula {
+  padding: 12px 14px; border-radius: 14px; font-size: 14px; line-height: 1.75; font-variant-numeric: tabular-nums; overflow-x: auto;
+  background: rgba(26, 115, 255, .1); border: 1px solid rgba(26, 115, 255, .35);
+}
+.formula.sub { background: rgba(255,255,255,.05); border-color: var(--stroke); }
+.formula small { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.table.params td { white-space: normal; }
+.row-end { display: flex; justify-content: flex-end; }
+.note-form { display: grid; gap: 12px; }
+.note-form .form { max-width: none; }
+.note-form label { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+.note-form input, .note-form textarea {
+  font: inherit; color: inherit; padding: 12px 14px; border-radius: 12px; background: var(--glass); border: 1px solid var(--stroke); resize: vertical;
+}
+.note-form select.pill { width: 100%; }
+.note { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--stroke); }
+.note:first-child { border-top: 0; }
+.note .badge { flex: none; margin-top: 3px; }
+.note.done { opacity: .6; }
+.note-main { flex: 1; min-width: 0; }
+.note-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.note-main p { margin-top: 4px; font-size: 14px; }
+.note-act { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.note-act .btn.mini { margin-top: 0; }
+@media (max-width: 720px) {
+  .calc-body { padding-left: 16px; }
+  .note { flex-wrap: wrap; }
+}
+@media print { details.calc { break-inside: avoid; } }

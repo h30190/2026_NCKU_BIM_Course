@@ -1,0 +1,59 @@
+{
+  "format": "lebr-codes",
+  "version": 1,
+  "source_model": "LEBR_test",
+  "exported_at": "2026-10-25 23:10",
+  "project": {
+    "LEBR_WearClass": "M",
+    "LEBR_Structure": "RC",
+    "LEBR_UseType": "other",
+    "LEBR_I": 1.25,
+    "LEBR_SaD": 0.6,
+    "LEBR_Fu": 3.0,
+    "LEBR_L": 250.0,
+    "LEBR_D0": 300.0,
+    "LEBR_Rs": 1.0
+  },
+  "types": [
+    {
+      "category": "OST_CurtainWallPanels",
+      "family": "System Panel",
+      "type": "Glazed",
+      "LEBR_Code": "CWW-G14-ALPVC"
+    },
+    {
+      "category": "OST_Floors",
+      "family": "樓板",
+      "type": "Generic Floor - 150mm",
+      "LEBR_Code": "F-G02"
+    },
+    {
+      "category": "OST_Floors",
+      "family": "樓板",
+      "type": "Generic Floor - 400mm",
+      "LEBR_Code": "F-G01"
+    },
+    {
+      "category": "OST_Walls",
+      "family": "基本牆",
+      "type": "Generic - 150mm",
+      "LEBR_Code": "OW-03",
+      "LEBR_Code_Body": "CW-00"
+    },
+    {
+      "category": "OST_Walls",
+      "family": "基本牆",
+      "type": "Generic - 200mm",
+      "LEBR_Code": "OW-03",
+      "LEBR_Code_Body": "CW-00"
+    }
+  ],
+  "excluded": [
+    {
+      "id": 374262,
+      "category": "OST_Floors",
+      "type": "Generic Floor - 150mm",
+      "level": "RF"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "_說明": "手冊附錄三「高雄市 Z 社會住宅」的數量（p.65～83），依計畫書第十一章「數量格式」整理。組員 1 完成 Revit 數量擷取後，產出的檔案應與此格式相同。",
+  "source": "手冊附錄三範例：高雄市 Z 社會住宅（地上 14 層、地下 3 層、RC 住宅）",
+  "building": {
+    "AFu": 56259.8,
+    "AFb": 23120.49,
+    "S": 14,
+    "Sb": 3,
+    "BH": 4.2,
+    "Sp": 1.46,
+    "F": 1.08
+  },
+  "project": {
+    "wear_class": "L",
+    "structure": "RC",
+    "use_type": "residential",
+    "I": 1.0,
+    "SaD": 0.298,
+    "Fu": 3.0,
+    "L": 205,
+    "D0": 300,
+    "Rs": 1.0,
+    "CSER": 1.7,
+    "LL": 0.05
+  },
+  "components": [
+    { "code": "OW-04", "area_m2": 39381.7, "name": "金屬模板搗灌RC外牆（免砂漿粉刷）貼磁磚" },
+    { "code": "CW-00", "area_m2": 39381.7, "name": "傳統15cm RC外牆（外牆本體）" },
+    { "code": "W-G11-AL", "area_m2": 2685.07, "name": "鋁框 + 5+5mm 玻璃" },
+    { "code": "W-G12-AL", "area_m2": 1892.1, "name": "鋁框 + 6+6mm 玻璃" },
+    { "code": "W-G03-AL", "area_m2": 494.07, "name": "鋁框 + 清10mm" },
+    {
+      "code": "CUSTOM-W-5MM",
+      "area_m2": 682.56,
+      "name": "鋁框 + 清5mm（附表無 5mm，依註1以厚度比例推算）",
+      "custom": { "group": "W", "f_new": 35.09, "f_renew": 0, "baseline_f_new": 35.09, "baseline_f_renew": 0, "basis": "手冊附表2-2 註1；附錄三 p.81" }
+    },
+    { "code": "IW-02", "area_m2": 33266.42, "name": "輕質灌漿牆" },
+    { "code": "IW-04", "area_m2": 32.4, "name": "RC 隔間牆" },
+    { "code": "F-G06", "area_m2": 253.12, "name": "Epoxy 地坪" },
+    { "code": "F-G01", "area_m2": 21675.52, "name": "貼磁磚地坪" },
+    { "code": "F-S-G01", "area_m2": 30001.85, "name": "橡膠緩衝墊水泥砂漿 + 貼地磚（46-6 分戶樓板）" },
+    { "code": "P-RC05", "area_m2": 233.89, "name": "RC 底 + 抿石子" },
+    { "code": "P-RC02", "area_m2": 1066.32, "name": "RC 底 + 高壓磚" },
+    { "code": "P-RC01", "area_m2": 1964.17, "name": "RC 底 + 磁磚" },
+    { "code": "P-RC03", "area_m2": 51.66, "name": "RC 底 + 水泥粉刷" }
+  ],
+  "unmapped": []
+}
