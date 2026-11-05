@@ -1,0 +1,10 @@
+{
+  "use_group": "B-3",
+  "use_group_set_by": "（範例）",
+  "floor_number": 3,
+  "below_ground": false,
+  "fire_resistant": true,
+  "tv_studio_with_audience": null,
+  "corridor_serves_classroom": null,
+  "duplex_housing": false
+}

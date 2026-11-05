@@ -1,0 +1,604 @@
+{
+  "schema": "egress-snapshot@0.2",
+  "project": {
+    "model_name": "專案1",
+    "model_guid": "示意-0000",
+    "revit_version": "2024",
+    "phase": "新建構造",
+    "design_option": "主模型",
+    "level": {
+      "name": "3F",
+      "elevation_m": 8.4
+    },
+    "unit": "m",
+    "coordinate": "Revit 專案座標（Internal Origin）",
+    "extracted_at": "2026-10-19T20:00:00+08:00",
+    "note": "示意資料"
+  },
+  "rooms": [
+    {
+      "element_id": "523101",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000523101",
+      "category": "Rooms",
+      "number": "301",
+      "name": "居室 301",
+      "level": "3F",
+      "area_m2": 95,
+      "boundary": [
+        [
+          5,
+          22
+        ],
+        [
+          15,
+          22
+        ],
+        [
+          15,
+          12.5
+        ],
+        [
+          5,
+          12.5
+        ]
+      ],
+      "boundary_closed": true,
+      "door_ids": [
+        "700101"
+      ],
+      "is_habitable": true
+    },
+    {
+      "element_id": "523102",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000523102",
+      "category": "Rooms",
+      "number": "302",
+      "name": "居室 302",
+      "level": "3F",
+      "area_m2": 95,
+      "boundary": [
+        [
+          15,
+          22
+        ],
+        [
+          25,
+          22
+        ],
+        [
+          25,
+          12.5
+        ],
+        [
+          15,
+          12.5
+        ]
+      ],
+      "boundary_closed": true,
+      "door_ids": [
+        "700102"
+      ],
+      "is_habitable": true
+    },
+    {
+      "element_id": "523103",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000523103",
+      "category": "Rooms",
+      "number": "303",
+      "name": "儲藏 303",
+      "level": "3F",
+      "area_m2": 47.5,
+      "boundary": [
+        [
+          25,
+          22
+        ],
+        [
+          30,
+          22
+        ],
+        [
+          30,
+          12.5
+        ],
+        [
+          25,
+          12.5
+        ]
+      ],
+      "boundary_closed": true,
+      "door_ids": [
+        "700103"
+      ],
+      "is_habitable": null
+    },
+    {
+      "element_id": "523104",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000523104",
+      "category": "Rooms",
+      "number": "304",
+      "name": "居室 304",
+      "level": "3F",
+      "area_m2": 114,
+      "boundary": [
+        [
+          35,
+          22
+        ],
+        [
+          47,
+          22
+        ],
+        [
+          47,
+          12.5
+        ],
+        [
+          35,
+          12.5
+        ]
+      ],
+      "boundary_closed": true,
+      "door_ids": [
+        "700104"
+      ],
+      "is_habitable": true
+    },
+    {
+      "element_id": "523105",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000523105",
+      "category": "Rooms",
+      "number": "305",
+      "name": "居室 305",
+      "level": "3F",
+      "area_m2": 161.5,
+      "boundary": [
+        [
+          47,
+          22
+        ],
+        [
+          64,
+          22
+        ],
+        [
+          64,
+          12.5
+        ],
+        [
+          47,
+          12.5
+        ]
+      ],
+      "boundary_closed": true,
+      "door_ids": [
+        "700105"
+      ],
+      "is_habitable": true
+    },
+    {
+      "element_id": "523106",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000523106",
+      "category": "Rooms",
+      "number": "306",
+      "name": "居室 306",
+      "level": "3F",
+      "area_m2": 147,
+      "boundary": [
+        [
+          0,
+          10.5
+        ],
+        [
+          14,
+          10.5
+        ],
+        [
+          14,
+          0
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "boundary_closed": false,
+      "door_ids": [
+        "700106"
+      ],
+      "is_habitable": true
+    },
+    {
+      "element_id": "523107",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000523107",
+      "category": "Rooms",
+      "number": "307",
+      "name": "居室 307",
+      "level": "3F",
+      "area_m2": 147,
+      "boundary": [
+        [
+          14,
+          10.5
+        ],
+        [
+          28,
+          10.5
+        ],
+        [
+          28,
+          0
+        ],
+        [
+          14,
+          0
+        ]
+      ],
+      "boundary_closed": true,
+      "door_ids": [
+        "700107"
+      ],
+      "is_habitable": true
+    },
+    {
+      "element_id": "523108",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000523108",
+      "category": "Rooms",
+      "number": "308",
+      "name": "居室 308",
+      "level": "3F",
+      "area_m2": 147,
+      "boundary": [
+        [
+          28,
+          10.5
+        ],
+        [
+          42,
+          10.5
+        ],
+        [
+          42,
+          0
+        ],
+        [
+          28,
+          0
+        ]
+      ],
+      "boundary_closed": true,
+      "door_ids": [
+        "700108"
+      ],
+      "is_habitable": true
+    },
+    {
+      "element_id": "523109",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000523109",
+      "category": "Rooms",
+      "number": "309",
+      "name": "居室 309",
+      "level": "3F",
+      "area_m2": 115.5,
+      "boundary": [
+        [
+          42,
+          10.5
+        ],
+        [
+          53,
+          10.5
+        ],
+        [
+          53,
+          0
+        ],
+        [
+          42,
+          0
+        ]
+      ],
+      "boundary_closed": true,
+      "door_ids": [
+        "700109"
+      ],
+      "is_habitable": true
+    },
+    {
+      "element_id": "523110",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000523110",
+      "category": "Rooms",
+      "number": "310",
+      "name": "居室 310",
+      "level": "3F",
+      "area_m2": 115.5,
+      "boundary": [
+        [
+          53,
+          10.5
+        ],
+        [
+          64,
+          10.5
+        ],
+        [
+          64,
+          0
+        ],
+        [
+          53,
+          0
+        ]
+      ],
+      "boundary_closed": true,
+      "door_ids": [
+        "700110"
+      ],
+      "is_habitable": true
+    }
+  ],
+  "doors": [
+    {
+      "element_id": "700101",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000700101",
+      "category": "Doors",
+      "room_ids": [
+        "523101",
+        "corridor"
+      ],
+      "position": [
+        10,
+        12.5
+      ],
+      "clear_width_m": 0.9,
+      "clear_width_source": "類型參數「有效淨寬」"
+    },
+    {
+      "element_id": "700102",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000700102",
+      "category": "Doors",
+      "room_ids": [
+        "523102",
+        "corridor"
+      ],
+      "position": [
+        20,
+        12.5
+      ],
+      "clear_width_m": 0.9,
+      "clear_width_source": "類型參數「有效淨寬」"
+    },
+    {
+      "element_id": "700103",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000700103",
+      "category": "Doors",
+      "room_ids": [
+        "523103",
+        "corridor"
+      ],
+      "position": [
+        27.5,
+        12.5
+      ],
+      "clear_width_m": 0.9,
+      "clear_width_source": "類型參數「有效淨寬」"
+    },
+    {
+      "element_id": "700104",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000700104",
+      "category": "Doors",
+      "room_ids": [
+        "523104",
+        "corridor"
+      ],
+      "position": [
+        41,
+        12.5
+      ],
+      "clear_width_m": 0.9,
+      "clear_width_source": "類型參數「有效淨寬」"
+    },
+    {
+      "element_id": "700105",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000700105",
+      "category": "Doors",
+      "room_ids": [
+        "523105",
+        "corridor"
+      ],
+      "position": [
+        54,
+        12.5
+      ],
+      "clear_width_m": 0.9,
+      "clear_width_source": "類型參數「有效淨寬」"
+    },
+    {
+      "element_id": "700106",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000700106",
+      "category": "Doors",
+      "room_ids": [
+        "523106",
+        "corridor"
+      ],
+      "position": [
+        7,
+        10.5
+      ],
+      "clear_width_m": 0.9,
+      "clear_width_source": "類型參數「有效淨寬」"
+    },
+    {
+      "element_id": "700107",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000700107",
+      "category": "Doors",
+      "room_ids": [
+        "523107",
+        "corridor"
+      ],
+      "position": [
+        21,
+        10.5
+      ],
+      "clear_width_m": 0.9,
+      "clear_width_source": "類型參數「有效淨寬」"
+    },
+    {
+      "element_id": "700108",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000700108",
+      "category": "Doors",
+      "room_ids": [
+        "523108",
+        "corridor"
+      ],
+      "position": [
+        35,
+        10.5
+      ],
+      "clear_width_m": null,
+      "clear_width_source": null
+    },
+    {
+      "element_id": "700109",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000700109",
+      "category": "Doors",
+      "room_ids": [
+        "523109",
+        "corridor"
+      ],
+      "position": [
+        47,
+        10.5
+      ],
+      "clear_width_m": 0.9,
+      "clear_width_source": "類型參數「有效淨寬」"
+    },
+    {
+      "element_id": "700110",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000700110",
+      "category": "Doors",
+      "room_ids": [
+        "523110",
+        "corridor"
+      ],
+      "position": [
+        56,
+        10.5
+      ],
+      "clear_width_m": 0.9,
+      "clear_width_source": "類型參數「有效淨寬」"
+    }
+  ],
+  "stairs": [
+    {
+      "element_id": "412207",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000412207",
+      "category": "Stairs",
+      "name": "直通樓梯 S1",
+      "entry_point": [
+        2.5,
+        12.5
+      ],
+      "endpoint_type": "first_step",
+      "is_direct_stair": true,
+      "footprint": [
+        [
+          0,
+          22
+        ],
+        [
+          5,
+          22
+        ],
+        [
+          5,
+          12.5
+        ],
+        [
+          0,
+          12.5
+        ]
+      ]
+    },
+    {
+      "element_id": "412318",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000412318",
+      "category": "Stairs",
+      "name": "直通樓梯 S2",
+      "entry_point": [
+        32.5,
+        12.5
+      ],
+      "endpoint_type": "fire_door",
+      "is_direct_stair": true,
+      "footprint": [
+        [
+          30,
+          22
+        ],
+        [
+          35,
+          22
+        ],
+        [
+          35,
+          12.5
+        ],
+        [
+          30,
+          12.5
+        ]
+      ]
+    }
+  ],
+  "corridors": [
+    {
+      "element_id": "610021",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000610021",
+      "name": "走廊 C1",
+      "centerline": [
+        [
+          0,
+          11.5
+        ],
+        [
+          42,
+          11.5
+        ]
+      ],
+      "clear_width_m": 2,
+      "clear_width_source": "量測：牆面至牆面",
+      "rooms_both_sides": true
+    },
+    {
+      "element_id": "610022",
+      "unique_id": "5f2c1a7e-0b44-4c1d-9a3e-000000610022",
+      "name": "走廊 C2",
+      "centerline": [
+        [
+          42,
+          11.5
+        ],
+        [
+          64,
+          11.5
+        ]
+      ],
+      "clear_width_m": 1.4,
+      "clear_width_source": "量測：牆面至設備櫃",
+      "rooms_both_sides": true
+    }
+  ],
+  "warnings": [
+    {
+      "element_id": "523106",
+      "code": "ROOM_NOT_ENCLOSED",
+      "message": "居室 306：房間邊界未封閉（西側牆未設為房間邊界）"
+    },
+    {
+      "element_id": "700108",
+      "code": "DOOR_NO_CLEAR_WIDTH",
+      "message": "居室 308 的門：未標示有效淨寬"
+    }
+  ]
+}

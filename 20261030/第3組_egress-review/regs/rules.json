@@ -1,0 +1,124 @@
+{
+  "pack_id": "egress-tw-d0070115",
+  "version": "0.1.0-draft",
+  "status": "草案（未經建築師／法規顧問核定，結果僅供開發測試）",
+  "reviewer": null,
+  "approved_at": null,
+  "law": {
+    "name": "建築技術規則建築設計施工編",
+    "pcode": "D0070115",
+    "last_amended": "民國 115 年 2 月 23 日（第 140～142、144 條；第 92、93 條未修正）",
+    "retrieved": "2026-10-19"
+  },
+  "use_group_note": "使用類組一律由使用者在專案設定選擇，程式不從房間名稱推測。",
+  "rules": [
+    {
+      "id": "R93-2-1A",
+      "article": "第 93 條第 1 項第 2 款第 1 目前段",
+      "source": "regs/D0070115_第93條.md",
+      "applies_when": { "use_group_in": ["A-1", "A-2", "B-1", "B-2", "B-3", "D-1"] },
+      "inputs": ["居室任一點至直通樓梯口之步行距離"],
+      "check": "distance_m <= 30",
+      "limit_m": 30,
+      "message": "居室任一點至樓梯口之步行距離不得超過 30 m。",
+      "tests": ["29.99 → 符合", "30.00 → 符合", "30.01 → 不符合"]
+    },
+    {
+      "id": "R93-2-1C",
+      "article": "第 93 條第 1 項第 2 款第 1 目後段",
+      "source": "regs/D0070115_第93條.md",
+      "applies_when": { "use_group_in": ["C-1", "C-2"] },
+      "inputs": ["步行距離", "是否為有現場觀眾之電視攝影場（使用者確認）"],
+      "check": "distance_m <= (tv_studio_with_audience ? 30 : 70)",
+      "limit_m": 70,
+      "limit_m_if_tv_studio": 30,
+      "message": "C 類不得超過 70 m；有現場觀眾之電視攝影場不得超過 30 m。",
+      "tests": ["C 類 69 → 符合", "C 類＋電視攝影場 31 → 不符合"]
+    },
+    {
+      "id": "R93-2-2",
+      "article": "第 93 條第 1 項第 2 款第 2 目",
+      "source": "regs/D0070115_第93條.md",
+      "applies_when": { "use_group_not_in_above": true },
+      "inputs": ["步行距離"],
+      "check": "distance_m <= 50",
+      "limit_m": 50,
+      "message": "前目以外用途之建築物不得超過 50 m。",
+      "tests": ["50.00 → 符合", "50.01 → 不符合"]
+    },
+    {
+      "id": "R93-2-3",
+      "article": "第 93 條第 1 項第 2 款第 3 目",
+      "source": "regs/D0070115_第93條.md",
+      "applies_when": { "floor_number_gte": 15 },
+      "inputs": ["樓層數（使用者確認）"],
+      "check": "上限 30 → 20；50 → 40；條文未提 70 m，不調整並列需人工確認",
+      "message": "第 15 層以上之樓層，30 m 減為 20 m，50 m 減為 40 m。",
+      "tests": ["A 類 15F 21 → 不符合", "G-2 15F 39 → 符合"]
+    },
+    {
+      "id": "R93-2-4",
+      "article": "第 93 條第 1 項第 2 款第 4 目",
+      "source": "regs/D0070115_第93條.md",
+      "applies_when": { "duplex_housing": true },
+      "check": "未實作",
+      "message": "複層式集合住宅自無出入口樓層之居室至直通樓梯不得超過 40 m。第一階段未實作，遇到時列需人工確認。",
+      "tests": []
+    },
+    {
+      "id": "R93-2-5",
+      "article": "第 93 條第 1 項第 2 款第 5 目",
+      "source": "regs/D0070115_第93條.md",
+      "applies_when": { "fire_resistant": false },
+      "inputs": ["是否為防火構造或使用不燃材料（使用者確認）"],
+      "check": "limit = min(limit, 30)",
+      "message": "非防火構造或非使用不燃材料所建造者，步行距離減為 30 m 以下。",
+      "tests": ["G-2 非防火構造 31 → 不符合"]
+    },
+    {
+      "id": "R93-2-END",
+      "article": "第 93 條第 2 項",
+      "source": "regs/D0070115_第93條.md",
+      "applies_when": { "always": true },
+      "check": "終點：直通樓梯第一階；安全梯得計算至進入樓梯間之防火門",
+      "message": "步行距離計算終點的定義，由擷取資料的 stairs[].endpoint_type 決定。",
+      "tests": []
+    },
+    {
+      "id": "R92-1-1",
+      "article": "第 92 條第 1 款表列一",
+      "source": "regs/D0070115_第92條.md",
+      "applies_when": { "use_group_in": ["D-3", "D-4", "D-5"], "corridor_serves_classroom": true },
+      "check": "二側有居室 >= 2.40；其他 >= 1.80",
+      "message": "D-3、D-4、D-5 組供教室使用部分：走廊二側有居室 2.40 m 以上，其他 1.80 m 以上。走廊是否供教室使用需人工確認。",
+      "tests": ["二側 2.39 → 不符合"]
+    },
+    {
+      "id": "R92-1-2",
+      "article": "第 92 條第 1 款表列二",
+      "source": "regs/D0070115_第92條.md",
+      "applies_when": { "use_group_in": ["F-1"] },
+      "check": "二側有居室 >= 1.60；其他 >= 1.20",
+      "message": "F-1 組：走廊二側有居室 1.60 m 以上，其他 1.20 m 以上。",
+      "tests": []
+    },
+    {
+      "id": "R92-1-3",
+      "article": "第 92 條第 1 款表列三",
+      "source": "regs/D0070115_第92條.md",
+      "applies_when": { "otherwise": true },
+      "inputs": ["同一樓層居室樓地板面積合計", "是否為地下層"],
+      "check": "面積 >= 200 m²（地下層 100 m²）：二側有居室 >= 1.60、其他 >= 1.20；未滿：>= 1.20",
+      "message": "其他建築物依同層居室樓地板面積決定走廊寬度。",
+      "tests": ["面積 199、二側 1.30 → 符合", "面積 200、二側 1.59 → 不符合"]
+    }
+  ],
+  "project_checks": {
+    "note": "以下為專案保守檢核，不是法定門檻；結果一律標「設計提示」。數值由組內與法規顧問決定。",
+    "items": [
+      { "id": "P-NEAR", "name": "接近上限", "value": 0.9, "unit": "倍法定上限", "set_by": "（待填）", "set_at": "2026-10-19", "reason": "示意值：保留 10% 餘裕給後續設計變更" },
+      { "id": "P-TURN", "name": "急轉彎", "value": 90, "unit": "度（轉向角，0＝直行）", "set_by": "（待填）", "set_at": "2026-10-19", "reason": "示意值：轉向 90 度以上視為急轉彎" },
+      { "id": "P-CLEAR", "name": "急轉彎處淨寬", "value": 1.5, "unit": "m", "set_by": "（待填）", "set_at": "2026-10-19", "reason": "示意值：急轉彎處淨寬低於此值時提示" }
+    ]
+  }
+}

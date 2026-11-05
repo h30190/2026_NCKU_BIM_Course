@@ -1,0 +1,11 @@
+# 自動產生的檔案，每個人自己跑 node build.js 產生，不要 commit（否則合併時一定衝突）
+egress-review.html
+egress-review-standalone.html
+data/sample-3-檢討批次.json
+
+# Revit 模型不進 repo
+*.rvt
+*.rfa
+*.rvt.bak
+*.0*.rvt
+node_modules/

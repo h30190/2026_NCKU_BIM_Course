@@ -1,0 +1,32 @@
+{
+  "_說明": "盡量少限制。只有法規原文和檢查工具不能改；共用接口改之前在群組說一聲；其他都自由。各角色的檔案只是「主要負責」，改到別人的只會提醒，不會擋。",
+  "roles": {
+    "A": { "name": "Revit 外掛", "main": ["plugin/", "data/real-"] },
+    "B": { "name": "路線與距離", "main": ["engine/geometry", "engine/手算"] },
+    "C": { "name": "法規判斷", "main": ["regs/rules.json", "engine/rules"] },
+    "D": { "name": "畫面與發表", "main": ["src/", "README.md", "slides/"] }
+  },
+  "shared": {
+    "_說明": "接口檔案：可以改，但要先在群組說，改完執行 node check.js --relock",
+    "files": [
+      "docs/data-contract.md",
+      "engine/review.js",
+      "build.js",
+      "data/sample-1-模型快照.json",
+      "data/sample-2-專案設定.json"
+    ]
+  },
+  "locked": {
+    "_說明": "不能改：法規原文（有理有據的基礎）和檢查工具本身",
+    "files": [
+      "regs/D0070115_第92條.md",
+      "regs/D0070115_第93條.md",
+      "check.js",
+      "ownership.json"
+    ]
+  },
+  "generated": {
+    "_說明": "自動產生，不要手改、不要 commit",
+    "files": ["egress-review.html", "egress-review-standalone.html", "data/sample-3-檢討批次.json"]
+  }
+}

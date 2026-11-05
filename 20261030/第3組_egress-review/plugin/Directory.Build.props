@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'EgressExporter'">
+    <RevitVersion Condition="'$(RevitVersion)' == ''">2027</RevitVersion>
+    <BaseIntermediateOutputPath>obj/$(RevitVersion)/</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>

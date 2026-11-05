@@ -1,0 +1,6 @@
+# 所有文字檔一律用 LF 換行，避免 Windows／Mac 混用時整個檔案都顯示被修改
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary
+*.pptx binary
