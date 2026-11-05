@@ -152,7 +152,7 @@ function Offline() {
   return (
     <div className="notice">
       <h2>控制台後端沒有運行</h2>
-      <p>請在 <code>20261030/第6組/console</code> 資料夾執行：</p>
+      <p>請在 <code>20261030/第6組_LEBR蘊含碳排評估/console</code> 資料夾執行：</p>
       <pre>.\start.ps1</pre>
       <p className="muted">會開兩個視窗（後端 :8080、前端 :5173）。後端視窗出現 listening 後按右上角「重新整理」。</p>
     </div>
