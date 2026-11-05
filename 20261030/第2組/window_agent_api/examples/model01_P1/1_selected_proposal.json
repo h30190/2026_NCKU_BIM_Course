@@ -1,0 +1,426 @@
+{
+ "generated_for_model": "model_01",
+ "weather": {
+  "location": {
+   "city": "Tainan",
+   "country": "TWN",
+   "station": "593580",
+   "lat": 23,
+   "lon": 120.217,
+   "tz": 8,
+   "elevation_m": 14
+  },
+  "period": "annual",
+  "comfort": {
+   "t_min_c": 18,
+   "t_max_c": 30,
+   "hour_from": 8,
+   "hour_to": 22
+  },
+  "usable_fraction": 0.441,
+  "monthly_usable_hours": {
+   "1": 265,
+   "2": 268,
+   "3": 363,
+   "4": 430,
+   "5": 365,
+   "6": 220,
+   "7": 189,
+   "8": 245,
+   "9": 280,
+   "10": 398,
+   "11": 444,
+   "12": 392
+  },
+  "hours": 3859,
+  "mean_speed_m_s": 3.205,
+  "prevailing": [
+   "N"
+  ],
+  "epw_file": "TWN_SOR_Tainan.593580_TMYx.2004-2018.epw"
+ },
+ "assumptions": {
+  "sill_height_m": 0.9,
+  "double_hung_opening_ratio": 0.5,
+  "frame_clearance_per_side_m": 0.05,
+  "min_gap_between_windows_m": 0.3,
+  "head_margin_m": 0.4,
+  "max_wwr_per_wall": 0.4,
+  "vp_target": 0.1,
+  "legal_ratio": 0.05,
+  "opposing_dot": -0.7,
+  "weights": {
+   "orientation": 0.5,
+   "cross_flow_vp": 0.4,
+   "away_from_core": 0.1
+  },
+  "office_room": {
+   "room_id": "office_derived",
+   "use_type": "office",
+   "floor_area_m2": 357.861,
+   "gross_inner_area_m2": 396.921,
+   "core_footprint_m2": 39.06,
+   "basis": "外牆中心線封閉環內縮半個牆厚的淨面積 − 各服務核外輪廓面積(牆幾何推算,非 Revit Room);服務核面積取 Revit Core Room + 內牆面積",
+   "core_room_check": {
+    "revit_room_area_m2": 34.22,
+    "derived_inner_area_m2": 34.22
+   },
+   "assumption_flag": true
+  },
+  "service_cores": [
+   {
+    "core_id": "core_1",
+    "wall_ids": [
+     "1665279",
+     "1665375",
+     "1665435",
+     "1665514"
+    ],
+    "box_m": {
+     "minX": -4.18356,
+     "maxX": 2.0164400000000002,
+     "minY": 2.06315,
+     "maxY": 8.36315
+    },
+    "footprint_m2": 39.06
+   }
+  ],
+  "notes": [
+   "辦公區面積:有 Revit 辦公 Room 就用 Room,否則由牆幾何推算",
+   "法定有效通風面積為 PoC 暫算(寬×高×開啟比例),須由建築師或門窗廠覆核",
+   "MCP create_window 無法指定寬高/窗台,須用完整 family:type 名稱建窗,建窗後回讀並修正 Sill Height"
+  ]
+ },
+ "proposal": {
+  "proposal_id": "P1",
+  "rank": 1,
+  "scheme": "N-S",
+  "wall_ids": [
+   "1664649",
+   "1664841"
+  ],
+  "score": 0.9975,
+  "score_components": {
+   "orientation_score_area_weighted": 0.9951,
+   "vp_saturated": 1,
+   "away_from_core": 1,
+   "weights": {
+    "orientation": 0.5,
+    "cross_flow_vp": 0.4,
+    "away_from_core": 0.1
+   }
+  },
+  "window_count": 10,
+  "family_type": "M_Window-Casement-Double: 1400 x 1800mm",
+  "windows": [
+   {
+    "wall_id": "1664649",
+    "orientation": "N",
+    "facing_orientation_deg": 0,
+    "window_type": "side_hung_casement",
+    "family_name": "M_Window-Casement-Double",
+    "type_name": "1400 x 1800mm",
+    "mcp_windowType": "M_Window-Casement-Double: 1400 x 1800mm",
+    "width_m": 1.4,
+    "height_m": 1.8,
+    "occupied_width_m": 1.5,
+    "s_center_m": 1.75,
+    "sill_height_m": 0.9,
+    "position_mm": {
+     "x": -9434,
+     "y": 15263
+    },
+    "facing_core": false,
+    "opening_ratio": 0.866,
+    "cd": 0.6,
+    "gross_area_m2": 2.52,
+    "legal_effective_open_area_m2": 2.1824,
+    "airflow_effective_area_m2": 2.1824,
+    "cross_flow": true
+   },
+   {
+    "wall_id": "1664649",
+    "orientation": "N",
+    "facing_orientation_deg": 0,
+    "window_type": "side_hung_casement",
+    "family_name": "M_Window-Casement-Double",
+    "type_name": "1400 x 1800mm",
+    "mcp_windowType": "M_Window-Casement-Double: 1400 x 1800mm",
+    "width_m": 1.4,
+    "height_m": 1.8,
+    "occupied_width_m": 1.5,
+    "s_center_m": 3.65,
+    "sill_height_m": 0.9,
+    "position_mm": {
+     "x": -7534,
+     "y": 15263
+    },
+    "facing_core": false,
+    "opening_ratio": 0.866,
+    "cd": 0.6,
+    "gross_area_m2": 2.52,
+    "legal_effective_open_area_m2": 2.1824,
+    "airflow_effective_area_m2": 2.1824,
+    "cross_flow": true
+   },
+   {
+    "wall_id": "1664649",
+    "orientation": "N",
+    "facing_orientation_deg": 0,
+    "window_type": "side_hung_casement",
+    "family_name": "M_Window-Casement-Double",
+    "type_name": "1400 x 1800mm",
+    "mcp_windowType": "M_Window-Casement-Double: 1400 x 1800mm",
+    "width_m": 1.4,
+    "height_m": 1.8,
+    "occupied_width_m": 1.5,
+    "s_center_m": 5.55,
+    "sill_height_m": 0.9,
+    "position_mm": {
+     "x": -5634,
+     "y": 15263
+    },
+    "facing_core": false,
+    "opening_ratio": 0.866,
+    "cd": 0.6,
+    "gross_area_m2": 2.52,
+    "legal_effective_open_area_m2": 2.1824,
+    "airflow_effective_area_m2": 2.1824,
+    "cross_flow": true
+   },
+   {
+    "wall_id": "1664649",
+    "orientation": "N",
+    "facing_orientation_deg": 0,
+    "window_type": "side_hung_casement",
+    "family_name": "M_Window-Casement-Double",
+    "type_name": "1400 x 1800mm",
+    "mcp_windowType": "M_Window-Casement-Double: 1400 x 1800mm",
+    "width_m": 1.4,
+    "height_m": 1.8,
+    "occupied_width_m": 1.5,
+    "s_center_m": 15.209,
+    "sill_height_m": 0.9,
+    "position_mm": {
+     "x": 4026,
+     "y": 15263
+    },
+    "facing_core": false,
+    "opening_ratio": 0.866,
+    "cd": 0.6,
+    "gross_area_m2": 2.52,
+    "legal_effective_open_area_m2": 2.1824,
+    "airflow_effective_area_m2": 2.1824,
+    "cross_flow": true
+   },
+   {
+    "wall_id": "1664649",
+    "orientation": "N",
+    "facing_orientation_deg": 0,
+    "window_type": "side_hung_casement",
+    "family_name": "M_Window-Casement-Double",
+    "type_name": "1400 x 1800mm",
+    "mcp_windowType": "M_Window-Casement-Double: 1400 x 1800mm",
+    "width_m": 1.4,
+    "height_m": 1.8,
+    "occupied_width_m": 1.5,
+    "s_center_m": 17.669,
+    "sill_height_m": 0.9,
+    "position_mm": {
+     "x": 6485,
+     "y": 15263
+    },
+    "facing_core": false,
+    "opening_ratio": 0.866,
+    "cd": 0.6,
+    "gross_area_m2": 2.52,
+    "legal_effective_open_area_m2": 2.1824,
+    "airflow_effective_area_m2": 2.1824,
+    "cross_flow": true
+   },
+   {
+    "wall_id": "1664841",
+    "orientation": "S",
+    "facing_orientation_deg": 180,
+    "window_type": "side_hung_casement",
+    "family_name": "M_Window-Casement-Double",
+    "type_name": "1400 x 1800mm",
+    "mcp_windowType": "M_Window-Casement-Double: 1400 x 1800mm",
+    "width_m": 1.4,
+    "height_m": 1.8,
+    "occupied_width_m": 1.5,
+    "s_center_m": 2.315,
+    "sill_height_m": 0.9,
+    "position_mm": {
+     "x": 6485,
+     "y": -5000
+    },
+    "facing_core": false,
+    "opening_ratio": 0.866,
+    "cd": 0.6,
+    "gross_area_m2": 2.52,
+    "legal_effective_open_area_m2": 2.1824,
+    "airflow_effective_area_m2": 2.1824,
+    "cross_flow": true
+   },
+   {
+    "wall_id": "1664841",
+    "orientation": "S",
+    "facing_orientation_deg": 180,
+    "window_type": "side_hung_casement",
+    "family_name": "M_Window-Casement-Double",
+    "type_name": "1400 x 1800mm",
+    "mcp_windowType": "M_Window-Casement-Double: 1400 x 1800mm",
+    "width_m": 1.4,
+    "height_m": 1.8,
+    "occupied_width_m": 1.5,
+    "s_center_m": 4.774,
+    "sill_height_m": 0.9,
+    "position_mm": {
+     "x": 4026,
+     "y": -5000
+    },
+    "facing_core": false,
+    "opening_ratio": 0.866,
+    "cd": 0.6,
+    "gross_area_m2": 2.52,
+    "legal_effective_open_area_m2": 2.1824,
+    "airflow_effective_area_m2": 2.1824,
+    "cross_flow": true
+   },
+   {
+    "wall_id": "1664841",
+    "orientation": "S",
+    "facing_orientation_deg": 180,
+    "window_type": "side_hung_casement",
+    "family_name": "M_Window-Casement-Double",
+    "type_name": "1400 x 1800mm",
+    "mcp_windowType": "M_Window-Casement-Double: 1400 x 1800mm",
+    "width_m": 1.4,
+    "height_m": 1.8,
+    "occupied_width_m": 1.5,
+    "s_center_m": 14.434,
+    "sill_height_m": 0.9,
+    "position_mm": {
+     "x": -5634,
+     "y": -5000
+    },
+    "facing_core": false,
+    "opening_ratio": 0.866,
+    "cd": 0.6,
+    "gross_area_m2": 2.52,
+    "legal_effective_open_area_m2": 2.1824,
+    "airflow_effective_area_m2": 2.1824,
+    "cross_flow": true
+   },
+   {
+    "wall_id": "1664841",
+    "orientation": "S",
+    "facing_orientation_deg": 180,
+    "window_type": "side_hung_casement",
+    "family_name": "M_Window-Casement-Double",
+    "type_name": "1400 x 1800mm",
+    "mcp_windowType": "M_Window-Casement-Double: 1400 x 1800mm",
+    "width_m": 1.4,
+    "height_m": 1.8,
+    "occupied_width_m": 1.5,
+    "s_center_m": 16.334,
+    "sill_height_m": 0.9,
+    "position_mm": {
+     "x": -7534,
+     "y": -5000
+    },
+    "facing_core": false,
+    "opening_ratio": 0.866,
+    "cd": 0.6,
+    "gross_area_m2": 2.52,
+    "legal_effective_open_area_m2": 2.1824,
+    "airflow_effective_area_m2": 2.1824,
+    "cross_flow": true
+   },
+   {
+    "wall_id": "1664841",
+    "orientation": "S",
+    "facing_orientation_deg": 180,
+    "window_type": "side_hung_casement",
+    "family_name": "M_Window-Casement-Double",
+    "type_name": "1400 x 1800mm",
+    "mcp_windowType": "M_Window-Casement-Double: 1400 x 1800mm",
+    "width_m": 1.4,
+    "height_m": 1.8,
+    "occupied_width_m": 1.5,
+    "s_center_m": 18.234,
+    "sill_height_m": 0.9,
+    "position_mm": {
+     "x": -9434,
+     "y": -5000
+    },
+    "facing_core": false,
+    "opening_ratio": 0.866,
+    "cd": 0.6,
+    "gross_area_m2": 2.52,
+    "legal_effective_open_area_m2": 2.1824,
+    "airflow_effective_area_m2": 2.1824,
+    "cross_flow": true
+   }
+  ],
+  "checks": {
+   "VC-001": {
+    "status": "provisional_assumption",
+    "result": "辦公居室、可開啟、直接對外(以 family 類型假設)"
+   },
+   "VC-002": {
+    "status": "provisional_assumption",
+    "assumption_flag": true,
+    "result": "Σ寬×高×開啟比例 = 21.824 m²"
+   },
+   "VC-003": {
+    "status": "pass",
+    "result": {
+     "legal_effective_open_area_m2": 21.824,
+     "required_m2": 17.893,
+     "room_area_m2": 357.861
+    }
+   },
+   "VC-004": {
+    "status": "provisional_assumption",
+    "result": {
+     "VP": 0.183,
+     "score": 100,
+     "Acj_m2": 21.824,
+     "Avi_m2": 0
+    }
+   },
+   "VC-005": {
+    "status": "provisional_assumption",
+    "result": {
+     "Q_m3_h": 53160,
+     "note": "PoC 相對比較,非法規值"
+    }
+   },
+   "VC-006": {
+    "status": "requires_verification",
+    "result": "水平位置已避開柱與轉角;垂直範圍、碰撞、3D 宿主切割尚未驗證,建窗後須回讀 type 與 Sill Height"
+   }
+  },
+  "per_wall": {
+   "1664649": {
+    "orientation": "N",
+    "count": 5,
+    "gross_area_m2": 12.6,
+    "wwr": 0.1576,
+    "wind_score": 0.9951
+   },
+   "1664841": {
+    "orientation": "S",
+    "count": 5,
+    "gross_area_m2": 12.6,
+    "wwr": 0.1576,
+    "wind_score": 0.7348
+   }
+  },
+  "reason": "N-S 相對外牆開窗形成穿堂風,連線避開服務核;Tainan annual(僅統計 18–30°C、8–22 時的可開窗時數)風資料,常見風向 N。採 M_Window-Casement-Double 1400 x 1800mm 共 10 扇:N向牆(1664649)5 扇(方向分數 1.00,窗牆比 15.8%)、S向牆(1664841)5 扇(方向分數 0.73,窗牆比 15.8%)。所有窗皆避開正對服務核的牆段;法定有效通風面積(PoC 暫算)21.82 m² ≥ 辦公區 5% = 17.89 m²;EEWH VP=0.183(100 分);達標即止,不追求最大窗。",
+  "assumption_flag": true,
+  "requires_user_confirmation": true
+ }
+}

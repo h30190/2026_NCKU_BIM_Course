@@ -1,0 +1,14 @@
+{
+  "name": "window-agent-api",
+  "version": "1.1.0",
+  "description": "Revit AI 通風開窗:模型 → 窗型 → 氣象選方案 → MCP 建窗 → 最終檔案",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "commands": "node cli/build_mcp_commands.mjs"
+  }
+}

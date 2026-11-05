@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Window Agent</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --fg:#1d2330; --muted:#667085; --line:#e3e6ea; --accent:#2563eb; --ok:#15803d; --warn:#b45309; --bad:#b91c1c; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14161a; --card:#1d2026; --fg:#e7e9ee; --muted:#9aa3b2; --line:#2e333b; --accent:#6ea0ff; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171; } }
+  * { box-sizing: border-box; }
+  [hidden] { display:none !important; } /* .row 的 display:flex 會蓋掉 hidden */
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.6 system-ui, "Microsoft JhengHei", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 80px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin-bottom:14px; }
+  section h2 { font-size:16px; margin:0 0 10px; display:flex; gap:8px; align-items:center; }
+  .n { display:inline-grid; place-items:center; width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff; font-size:13px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0; }
+  label { color:var(--muted); font-size:13px; }
+  select { max-width:100%; }
+  select, input { font:inherit; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); }
+  input.s { width:70px; }
+  button { font:inherit; padding:6px 14px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--accent); }
+  button.danger { border-color:var(--bad); color:var(--bad); }
+  button:disabled { opacity:.5; cursor:wait; }
+  .msg { margin-top:8px; font-size:14px; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .ok { color:var(--ok); } .warn { color:var(--warn); } .bad { color:var(--bad); }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin-top:8px; }
+  th, td { text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap:10px; margin-top:8px; }
+  .prop { border:1px solid var(--line); border-radius:8px; padding:10px 12px; cursor:pointer; }
+  .prop.sel { border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
+  .prop h3 { margin:0 0 4px; font-size:15px; }
+  .prop p { margin:4px 0; font-size:13px; color:var(--muted); }
+  .tag { display:inline-block; font-size:12px; padding:0 6px; border-radius:4px; border:1px solid var(--line); margin:2px 2px 0 0; }
+  code { font-size:12px; }
+  .wrap { overflow-x:auto; }
+  details { margin-top:10px; border-top:1px solid var(--line); padding-top:8px; }
+  summary { cursor:pointer; font-weight:600; font-size:14px; }
+  .charts { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap:14px; margin-top:8px; }
+  .chart h4 { margin:0 0 4px; font-size:14px; }
+  .chart p { margin:2px 0; font-size:12px; color:var(--muted); }
+  svg { display:block; max-width:100%; height:auto; }
+  svg text { fill:var(--fg); font-family:inherit; }
+  svg .grid { stroke:var(--line); fill:none; }
+  svg .mut { fill:var(--muted); }
+  .legend { display:flex; flex-wrap:wrap; gap:10px; font-size:12px; color:var(--muted); margin-top:4px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align:-1px; }
+  tr.dim td { color:var(--muted); }
+  .formula { font-size:13px; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:6px 10px; margin:6px 0; }
+  .prop svg { margin:6px 0; }
+  .prop { position:relative; }
+  .score { position:absolute; top:10px; right:12px; text-align:center; line-height:1.1; }
+  .score b { display:block; font-size:30px; }
+  .score small { font-size:11px; color:var(--muted); }
+  .score.hi b { color:var(--ok); } .score.mid b { color:var(--accent); } .score.lo b { color:var(--warn); } .score.fail b, .score.fail small { color:var(--bad); }
+  .rank { display:inline-block; font-size:12px; padding:1px 8px; border-radius:10px; background:var(--accent); color:#fff; margin-right:4px; vertical-align:2px; }
+  .rank.manual { background:var(--warn); }
+  .prop h3, .prop h3 + p { padding-right:76px; } /* 讓出右上角分數 */
+  .bar { display:flex; height:10px; border-radius:5px; overflow:hidden; background:var(--line); margin:6px 0 2px; }
+  .bar span { display:block; height:100%; }
+  .metrics { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; font-size:12px; margin:6px 0; }
+  .metrics div { background:var(--bg); border-radius:6px; padding:4px 6px; }
+  .metrics b { display:block; font-size:14px; }
+  .prop details { font-size:13px; }
+  .prop table { font-size:12px; }
+  td.mut { color:var(--muted); }
+  dialog#flowDlg { width:min(1000px, 96vw); max-height:94vh; border:1px solid var(--line); border-radius:12px; padding:16px 18px; background:var(--card); color:var(--fg); }
+  dialog#flowDlg::backdrop { background:rgba(0,0,0,.45); }
+  .flowGrid { display:grid; grid-template-columns:minmax(0, 3fr) minmax(220px, 2fr); gap:16px; }
+  @media (max-width:700px) { .flowGrid { grid-template-columns:1fr; } }
+  #flowCanvas { width:100%; height:auto; display:block; border-radius:8px; background:var(--bg); }
+  .big { font-size:34px; font-weight:700; line-height:1.1; }
+  .flowStats div { margin-bottom:10px; }
+  .flowStats ul { margin:4px 0 0; padding-left:18px; font-size:12px; color:var(--muted); }
+  tr.chosen td { font-weight:600; background:color-mix(in srgb, var(--accent) 10%, transparent); }
+  .editor table input { width:64px; }
+  .editor table select { max-width:100%; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Revit AI 通風開窗</h1>
+  <p class="sub">選模型 → 檢查窗型 → 依氣象選方案 → 確認後建窗 → 匯出最終檔案</p>
+
+  <section id="s1">
+    <h2><span class="n">1</span>模型</h2>
+    <div class="row">
+      <label>模型</label><select id="model"></select>
+      <button class="ghost" onclick="step1()">檢查 Revit 連線與模型</button>
+    </div>
+    <div class="msg" id="m1"></div>
+  </section>
+
+  <section id="s2">
+    <h2><span class="n">2</span>載入窗型</h2>
+    <div class="row"><button class="ghost" onclick="step2()">檢查模型內的窗型</button></div>
+    <div class="msg" id="m2"></div>
+  </section>
+
+  <section id="s3">
+    <h2><span class="n">3</span>依氣象選擇方案</h2>
+    <div class="row">
+      <label>氣象檔</label><select id="epw"></select>
+      <label>月份</label><input id="months" placeholder="全年,或 6,7,8">
+    </div>
+    <div class="row">
+      <label>可開窗氣溫</label><input class="s" id="tmin" value="18">–<input class="s" id="tmax" value="30"><label>°C</label>
+      <label>時段</label><input class="s" id="hfrom" value="8">–<input class="s" id="hto" value="22"><label>時</label>
+      <button class="ghost" onclick="analyzeWeather()">分析氣象</button>
+      <button onclick="step3()">產生方案</button>
+    </div>
+    <details id="wxBox" open>
+      <summary>氣象分析:風花圖與逐月風速</summary>
+      <div class="msg" id="mwx"></div>
+      <div class="charts">
+        <div class="chart">
+          <h4>風花圖</h4>
+          <div class="row"><label><input type="radio" name="roseMode" value="usable" checked onchange="drawRose()"> 只看可開窗時數</label><label><input type="radio" name="roseMode" value="all" onchange="drawRose()"> 所選月份全部時數</label></div>
+          <div id="rose"></div>
+          <div class="legend" id="roseLegend"></div>
+        </div>
+        <div class="chart">
+          <h4>各方位迎風分數</h4>
+          <p>曲線是牆面朝向各方位時的分數,圓點是這個模型的外牆</p>
+          <div id="expo"></div>
+        </div>
+      </div>
+      <div class="wrap" id="monthly"></div>
+    </details>
+    <details id="expoBox">
+      <summary>方案步驟 1:迎風分數計算過程</summary>
+      <div id="expoDetail"></div>
+    </details>
+    <div class="msg" id="m3"></div>
+    <div class="cards" id="props"></div>
+    <div class="editor" id="editor" hidden>
+      <details open>
+        <summary id="edTitle">手動調整</summary>
+        <p class="msg">每面外牆可以改窗數(0 = 不開窗)和窗型,窗會自動在牆上等距排列、優先避開服務核。按「試算」後會另存成新方案,原方案不變。</p>
+        <div class="wrap" id="edTable"></div>
+        <div class="row"><button id="bEd" onclick="submitManual()">試算並另存新方案</button><button class="ghost" onclick="$('editor').hidden=true">關閉</button></div>
+        <div class="msg" id="mEd"></div>
+      </details>
+    </div>
+  </section>
+
+  <dialog id="flowDlg">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0;font-size:17px">室內風流試算</h2>
+      <div class="row"><label>方案</label><select id="flowSel" onchange="loadFlow(this.value)"></select><button class="ghost" onclick="$('flowDlg').close()">關閉</button></div>
+    </div>
+    <div class="flowGrid">
+      <div><canvas id="flowCanvas"></canvas><div class="legend" id="flowLegend"></div></div>
+      <div class="flowStats" id="flowStats"></div>
+    </div>
+  </dialog>
+
+  <section id="s4">
+    <h2><span class="n">4</span>在模型中建立窗扇</h2>
+    <div class="row">
+      <label>確認方案編號</label><input class="s" id="confirm" placeholder="P1">
+      <button id="b4" onclick="step4()">確認方案</button>
+      <button class="ghost" onclick="rollbackRun()">還原這次建窗</button>
+    </div>
+    <div id="pre" hidden>
+      <div class="msg" id="preMsg"></div>
+      <div class="wrap" id="preOther"></div>
+      <div class="row"><button id="b4go" onclick="doBuild()">刪除舊窗並建窗</button><button class="ghost" onclick="$('pre').hidden=true">取消</button></div>
+    </div>
+    <div class="msg" id="m4"></div>
+    <div class="wrap" id="t4"></div>
+    <div class="row" id="rv" hidden>
+      <label>人工檢查</label>
+      <select id="cut"><option value="pass">牆體切割正確</option><option value="fail">牆體切割有問題</option></select>
+      <select id="col"><option value="pass">干涉檢查通過</option><option value="fail">有碰撞</option></select>
+      <input id="reviewer" placeholder="檢查人">
+      <button class="ghost" onclick="reviewRun()">寫入 VC-006</button>
+    </div>
+  </section>
+
+  <section id="s5">
+    <h2><span class="n">5</span>建出最終檔案</h2>
+    <div class="row"><button onclick="step5()">匯出最終檔案</button></div>
+    <div class="msg" id="m5"></div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const S = { proposalsFile: null, proposalId: null, commandsFile: null, reportFile: null };
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+async function api(method, url, body) {
+  const r = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json();
+  if (!r.ok) throw Object.assign(new Error(j.error || r.statusText), { detail: j.detail });
+  return j;
+}
+function say(id, text, cls = '') { $(id).className = 'msg ' + cls; $(id).textContent = text; }
+async function busy(btn, fn) { const b = btn || document.activeElement; if (b?.tagName === 'BUTTON') b.disabled = true; try { await fn(); } finally { if (b?.tagName === 'BUTTON') b.disabled = false; } }
+const model = () => $('model').value;
+
+async function init() {
+  const models = await api('GET', '/api/models');
+  $('model').innerHTML = models.map((m) => `<option value="${m.model_id}">${esc(m.model_id)} — ${esc(m.name)}(${esc(m.description)})</option>`).join('');
+  const wx = await api('GET', '/api/weather');
+  $('epw').innerHTML = wx.map((w) => `<option value="${esc(w.file)}">${esc(w.name)}</option>`).join('');
+  $('model').onchange = async () => { S.proposalsFile = S.proposalId = S.commandsFile = S.reportFile = null; $('props').innerHTML = ''; await loadPlan(); loadDefault(); analyzeExposure(); };
+  await loadPlan();
+  loadDefault();
+  analyzeWeather();
+}
+
+// ---- 氣象分析:風花圖、逐月風速、迎風分數 ----
+function wxParams() {
+  const months = $('months').value.trim() ? $('months').value.split(/[,\s]+/).map(Number).filter(Boolean) : null;
+  return { epw: $('epw').value, months, t_min_c: +$('tmin').value, t_max_c: +$('tmax').value, hour_from: +$('hfrom').value, hour_to: +$('hto').value };
+}
+const DEG = Math.PI / 180;
+const polar = (cx, cy, r, az) => [cx + r * Math.sin(az * DEG), cy - r * Math.cos(az * DEG)]; // 方位:北=0、順時針
+const binColor = (i, n) => `color-mix(in srgb, var(--accent) ${Math.round(((i + 1) / n) * 85 + 15)}%, transparent)`;
+const pct = (x, d = 1) => `${(x * 100).toFixed(d)}%`;
+
+function analyzeWeather() {
+  const p = wxParams();
+  say('mwx', '分析中…');
+  return Promise.all([api('POST', '/api/weather/analysis', p), analyzeExposure(p)]).then(([w]) => {
+    S.wx = w;
+    const f = w.open_window_filter;
+    say('mwx', `${w.location.city}(北緯 ${w.location.lat}°、東經 ${w.location.lon}°)· ${w.period === 'annual' ? '全年' : w.period.replace('months', '月份')}${f ? ` · 可開窗:${f.t_min_c}–${f.t_max_c}°C、${f.hour_from}–${f.hour_to} 時` : ''} · 可開窗 ${w.usable_hours} 小時 · 平均風速 ${w.mean_speed_m_s} m/s`);
+    drawRose();
+    drawMonthly(w);
+  }).catch((e) => say('mwx', e.message, 'bad'));
+}
+
+function drawRose() {
+  if (!S.wx) return;
+  const all = document.querySelector('input[name=roseMode]:checked').value === 'all';
+  const R = all ? S.wx.windrose_all_hours : S.wx.windrose;
+  const size = 320, cx = size / 2, cy = size / 2, rMax = 120;
+  const top = Math.max(...R.sectors.map((s) => s.fraction));
+  const step = top > 0.2 ? 0.1 : top > 0.1 ? 0.05 : 0.025;
+  const scale = rMax / (Math.ceil(top / step) * step);
+  let g = '';
+  for (let v = step; v * scale <= rMax + 0.1; v += step) { const [tx, ty] = polar(cx, cy, v * scale, 135); g += `<circle class="grid" cx="${cx}" cy="${cy}" r="${v * scale}"/><text class="mut" x="${tx + 2}" y="${ty + 10}" font-size="10">${pct(v, 0)}</text>`; }
+  for (let a = 0; a < 360; a += 45) { const [x, y] = polar(cx, cy, rMax, a); g += `<line class="grid" x1="${cx}" y1="${cy}" x2="${x}" y2="${y}"/>`; }
+  ['N', 'E', 'S', 'W'].forEach((d, i) => { const [x, y] = polar(cx, cy, rMax + 16, i * 90); g += `<text x="${x}" y="${y + 4}" text-anchor="middle" font-size="13" font-weight="600">${d}</text>`; });
+  const half = 22.5 / 2 - 1;
+  for (const s of R.sectors) {
+    let r0 = 0;
+    s.fractions.forEach((f, i) => {
+      const r1 = r0 + f * scale;
+      if (f > 0) {
+        const [ax, ay] = polar(cx, cy, r0, s.azimuth_deg - half), [bx, by] = polar(cx, cy, r1, s.azimuth_deg - half);
+        const [cx2, cy2] = polar(cx, cy, r1, s.azimuth_deg + half), [dx, dy] = polar(cx, cy, r0, s.azimuth_deg + half);
+        g += `<path d="M${ax},${ay} L${bx},${by} A${r1},${r1} 0 0 1 ${cx2},${cy2} L${dx},${dy} A${r0},${r0} 0 0 0 ${ax},${ay}Z" fill="${binColor(i, s.fractions.length)}"><title>${s.dir} ${R.speed_bins_m_s[i]} m/s:${pct(f)}</title></path>`;
+      }
+      r0 = r1;
+    });
+  }
+  $('rose').innerHTML = `<svg viewBox="0 0 ${size} ${size}" width="${size}" role="img" aria-label="風花圖">${g}</svg>`;
+  $('roseLegend').innerHTML = R.speed_bins_m_s.map((b, i) => `<span><i style="background:${binColor(i, R.speed_bins_m_s.length)}"></i>${b} m/s</span>`).join('')
+    + `<span>靜風 ${pct(R.calm_fraction)} · ${R.hours} 小時</span>`;
+}
+
+function drawMonthly(w) {
+  $('monthly').innerHTML = `<table><tr><th>月</th><th>可開窗時數</th><th>佔該月</th><th>平均風速 m/s</th><th>最大風速 m/s</th><th>靜風</th><th>主風向</th><th>平均氣溫 °C</th></tr>`
+    + w.monthly.map((m) => `<tr class="${m.selected ? '' : 'dim'}"><td>${m.month}</td><td>${m.usable_hours}</td><td>${pct(m.usable_fraction, 0)}</td><td>${m.mean_speed_m_s ?? '-'}</td><td>${m.max_speed_m_s ?? '-'}</td><td>${m.calm_fraction == null ? '-' : pct(m.calm_fraction)}</td><td>${m.prevailing.join('/') || '-'}</td><td>${m.mean_temp_c ?? '-'}</td></tr>`).join('')
+    + `</table><p class="sub" style="margin:4px 0 0;font-size:12px">只統計可開窗條件內的時數;灰色是沒選到的月份。</p>`;
+}
+
+function analyzeExposure(p = wxParams()) {
+  return api('POST', `/api/models/${model()}/exposure`, p).then((e) => {
+    S.expo = e;
+    const size = 320, cx = size / 2, cy = size / 2, rMax = 120;
+    let g = '';
+    for (const v of [0.25, 0.5, 0.75, 1]) { const [tx, ty] = polar(cx, cy, v * rMax, 135); g += `<circle class="grid" cx="${cx}" cy="${cy}" r="${v * rMax}"/><text class="mut" x="${tx + 2}" y="${ty + 10}" font-size="10">${v}</text>`; }
+    ['N', 'E', 'S', 'W'].forEach((d, i) => { const [x, y] = polar(cx, cy, rMax + 16, i * 90); g += `<text x="${x}" y="${y + 4}" text-anchor="middle" font-size="13" font-weight="600">${d}</text>`; });
+    const pts = e.curve.map((c) => polar(cx, cy, c.score * rMax, c.azimuth_deg).map((n) => n.toFixed(1)).join(',')).join(' ');
+    g += `<polygon points="${pts}" fill="color-mix(in srgb, var(--accent) 15%, transparent)" stroke="var(--accent)" stroke-width="1.5"/>`;
+    for (const w of e.walls) {
+      const [x, y] = polar(cx, cy, w.score * rMax, w.azimuth_deg);
+      const [lx, ly] = polar(cx, cy, w.score * rMax - 22, w.azimuth_deg); // 標在曲線內側,避開外圈的 N/E/S/W
+      g += `<circle cx="${x}" cy="${y}" r="5" fill="var(--warn)"><title>${w.orientation} 牆 ${w.wall_id}:${w.score}</title></circle><text x="${lx}" y="${ly + 4}" text-anchor="middle" font-size="11" font-weight="600">${w.orientation} ${w.score.toFixed(2)}</text>`;
+    }
+    $('expo').innerHTML = `<svg viewBox="0 0 ${size} ${size}" width="${size}" role="img" aria-label="迎風分數">${g}</svg>`;
+    const best = [...e.walls].sort((a, b) => b.score - a.score)[0];
+    $('expoDetail').innerHTML = `
+      <p class="msg">每面外牆依「朝向」算一個迎風值,代表可開窗時段內,平均每小時有多少風速正面吹向這面牆。</p>
+      <div class="formula">① 每小時:風速 × max(0, cos(風來向 − 牆外法線方位))<br>　風從正面吹來 cos = 1,斜吹打折,從背面吹來算 0;靜風(&lt; 0.5 m/s)算 0<br>
+        ② 迎風值 E = ① 的總和 ÷ 可開窗時數(${e.usable_hours} 小時)<br>
+        ③ 把牆面轉一圈(0–359°),最大的是朝 ${e.max_azimuth_deg}° 的 ${e.max_exposure_m_s.toFixed(3)} m/s<br>
+        ④ 迎風分數 = 這面牆的 E ÷ ${e.max_exposure_m_s.toFixed(3)}(最好的朝向 = 1.00)</div>
+      <div class="wrap"><table><tr><th>牆</th><th>朝向</th><th>長度 m</th><th>② 迎風值 m/s</th><th>④ 分數</th><th>貢獻最多的風向(佔迎風值)</th></tr>
+      ${e.walls.map((w) => `<tr><td>${w.wall_id}</td><td>${w.orientation}(${w.azimuth_deg}°)</td><td>${w.length_m.toFixed(2)}</td><td>${w.raw_exposure_m_s.toFixed(3)}</td><td><b>${w.score.toFixed(2)}</b></td><td>${w.contributions.slice(0, 4).map((c) => `${c.dir} ${pct(c.share, 0)}`).join('、')}</td></tr>`).join('')}</table></div>
+      <p class="msg">${best.orientation} 牆的分數最高(${best.score.toFixed(2)}),主要來自 ${best.contributions.slice(0, 2).map((c) => c.dir).join('、')} 風。方案排名時,穿堂風的出風側沿用對面進風側的分數。</p>`;
+  });
+}
+
+// ---- 方案平面示意圖 ----
+async function loadPlan() { S.plan = await api('GET', `/api/models/${model()}/plan`); }
+function planSvg(p) {
+  const P = S.plan;
+  if (!P) return '';
+  const xs = P.walls.flatMap((w) => [w.start[0], w.end[0]]), ys = P.walls.flatMap((w) => [w.start[1], w.end[1]]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const W = 260, pad = 30, s = (W - 2 * pad) / Math.max(maxX - minX, maxY - minY);
+  const H = (maxY - minY) * s + 2 * pad;
+  const X = (x) => (pad + (x - minX) * s).toFixed(1), Y = (y) => (pad + (maxY - y) * s).toFixed(1);
+  let g = '';
+  for (const c of P.cores) g += `<rect x="${X(c.minX)}" y="${Y(c.maxY)}" width="${((c.maxX - c.minX) * s).toFixed(1)}" height="${((c.maxY - c.minY) * s).toFixed(1)}" fill="color-mix(in srgb, var(--muted) 18%, transparent)"/><text class="mut" x="${X((c.minX + c.maxX) / 2)}" y="${(+Y((c.minY + c.maxY) / 2) + 4).toFixed(1)}" text-anchor="middle" font-size="10">服務核</text>`;
+  for (const w of P.walls) g += `<line x1="${X(w.start[0])}" y1="${Y(w.start[1])}" x2="${X(w.end[0])}" y2="${Y(w.end[1])}" stroke="var(--fg)" stroke-opacity="${w.is_exterior ? 0.85 : 0.4}" stroke-width="${Math.max(1.5, w.thickness_m * s)}"/>`;
+  for (const c of P.columns) g += `<rect x="${X(c.minX)}" y="${Y(c.maxY)}" width="${((c.maxX - c.minX) * s).toFixed(1)}" height="${((c.maxY - c.minY) * s).toFixed(1)}" fill="var(--muted)"/>`;
+  const wallById = Object.fromEntries(P.walls.map((w) => [w.wall_id, w]));
+  for (const win of p.windows || []) {
+    const w = wallById[win.wall_id];
+    if (!w) continue;
+    const dx = w.end[0] - w.start[0], dy = w.end[1] - w.start[1], L = Math.hypot(dx, dy), h = win.width_m / 2;
+    g += `<line x1="${X(win.x_m - (dx / L) * h)}" y1="${Y(win.y_m - (dy / L) * h)}" x2="${X(win.x_m + (dx / L) * h)}" y2="${Y(win.y_m + (dy / L) * h)}" stroke="${win.facing_core ? 'var(--warn)' : 'var(--accent)'}" stroke-width="5"><title>${win.orientation} 牆 ${win.wall_id}${win.facing_core ? '(正對服務核)' : ''}</title></line>`;
+  }
+  // 主風向:箭頭從風來的方向吹向建築
+  const prev = S.lastWeather?.prevailing?.[0];
+  const AZ = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 }[prev];
+  if (AZ != null) {
+    const cx = W / 2, cy = H / 2, R0 = Math.min(W, H) / 2;
+    const [x1, y1] = polar(cx, cy, R0 - 2, AZ), [x2, y2] = polar(cx, cy, R0 - 20, AZ), [tx, ty] = polar(cx, cy, R0 - 10, AZ + 12);
+    g += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--ok)" stroke-width="2.5" marker-end="url(#ah)"/><text x="${tx}" y="${ty + 4}" text-anchor="start" font-size="10" style="fill:var(--ok)">${prev} 風</text>`;
+  }
+  g += `<text x="${W - 12}" y="14" text-anchor="middle" font-size="11" font-weight="600">N↑</text>`;
+  return `<svg viewBox="0 0 ${W} ${H.toFixed(0)}" width="${W}" role="img" aria-label="${p.proposal_id} 平面示意圖"><defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10z" fill="var(--ok)"/></marker></defs>${g}</svg>`
+    + `<div class="legend"><span><i style="background:var(--accent)"></i>窗</span><span><i style="background:var(--warn)"></i>正對服務核的窗</span><span><i style="background:var(--muted)"></i>柱</span><span><i style="background:var(--ok)"></i>主風向</span></div>`;
+}
+
+function step1() { return busy(null, async () => {
+  say('m1', '連線中…');
+  const st = await api('GET', '/api/revit/status');
+  if (!st.connected) return say('m1', st.error, 'bad');
+  if (st.matched_model_id !== model()) return say('m1', `Revit 作用中專案是「${st.active_project}」,不是模型 ${model()}。請在 Revit 切換到對應的專案。`, 'warn');
+  say('m1', `已連線:${st.active_project}。比對 building_data.json 中…`);
+  const v = await api('GET', `/api/models/${model()}/verify`);
+  const bad = [...v.walls, ...v.columns, ...v.rooms].filter((x) => !x.ok);
+  say('m1', v.ok ? `✓ ${v.revit_project}:${v.walls.length} 道牆、${v.columns.length} 根柱、${v.rooms.length} 個房間都和資料一致` : `✗ 有 ${bad.length} 項不一致:${bad.map((b) => b.wall_id || b.id || b.room_id).join(', ')}`, v.ok ? 'ok' : 'bad');
+}).catch((e) => say('m1', e.message, 'bad')); }
+
+function step2() { return busy(null, async () => {
+  say('m2', '查詢中…');
+  const t = await api('GET', `/api/models/${model()}/window-types`);
+  say('m2', t.missing.length ? `✗ 缺 ${t.missing.length} 個窗型:\n${t.missing.join('\n')}\n${t.how_to_load}` : `✓ ${t.required.length} 個窗型都已載入`, t.missing.length ? 'bad' : 'ok');
+}).catch((e) => say('m2', e.message, 'bad')); }
+
+function renderProposals(s) {
+  S.proposalsFile = s.file;
+  const w = s.weather;
+  S.lastWeather = w;
+  S.props = s.proposals;
+  say('m3', `${w.city}(${w.epw_file})${w.period}${w.filter ? `,${w.filter.t_min_c}–${w.filter.t_max_c}°C、${w.filter.hour_from}–${w.filter.hour_to} 時` : ''};常見風向 ${(w.prevailing || []).join('/')};辦公區 ${s.office_area_m2} m²\n方案檔:${s.file}`);
+  $('props').innerHTML = s.proposals.map((p) => `
+    <div class="prop" data-id="${p.proposal_id}" onclick="pickProp('${p.proposal_id}')">
+      ${scoreBadge(p)}
+      <h3>${p.manual ? '<span class="rank manual">手動</span>' : `<span class="rank">第 ${p.rank} 名</span>`}${p.proposal_id} · ${esc(p.scheme)} · ${p.window_count} 扇</h3>
+      <p>${Object.values(p.per_wall).map((x) => `${x.orientation} ${x.count} 扇`).join('、')} · ${esc(p.family_type)}</p>
+      ${scoreBar(p)}
+      ${metricsOf(p)}
+      ${p.warnings?.length ? `<p class="warn">⚠ ${p.warnings.map(esc).join(';')}</p>` : ''}
+      ${planSvg(p)}
+      <p>${esc(p.reason)}</p>
+      ${selectionOf(p)}
+      <div class="row"><button class="ghost" onclick="event.stopPropagation(); openFlow('${p.proposal_id}')">室內風流</button><button class="ghost" onclick="event.stopPropagation(); openManual('${p.proposal_id}')">手動調整窗數/窗型</button>${p.manual ? `<button class="ghost danger" onclick="event.stopPropagation(); deleteManual('${p.proposal_id}')">刪除</button>` : ''}</div>
+    </div>`).join('');
+}
+
+// ---- 方案評分 ----
+function scoreBadge(p) {
+  const v = p.score * 100;
+  // 分數只比較通風好壞,不含法規門檻;未達法規 5% 時直接標示不合格
+  if (p.checks['VC-003'] === 'fail') return `<div class="score fail"><b>✗</b><small>未達法規<br>(${v.toFixed(1)} 分)</small></div>`;
+  return `<div class="score ${v >= 95 ? 'hi' : v >= 85 ? 'mid' : 'lo'}"><b>${v.toFixed(1)}</b><small>分 / 100</small></div>`;
+}
+const PARTS = [['orientation_score_area_weighted', 'orientation', '迎風方向', 'var(--accent)'], ['vp_saturated', 'cross_flow_vp', '對流通風', 'var(--ok)'], ['away_from_core', 'away_from_core', '避開服務核', 'var(--muted)']];
+function scoreBar(p) {
+  const c = p.score_components;
+  if (!c) return '';
+  const parts = PARTS.map(([k, w, name, color]) => ({ name, color, got: c[k] * c.weights[w], max: c.weights[w] }));
+  return `<div class="bar" title="總分 = 0.5×迎風方向 + 0.4×對流通風 + 0.1×避開服務核">${parts.map((x) => `<span style="width:${x.got * 100}%;background:${x.color}" title="${x.name} ${(x.got * 100).toFixed(1)} / ${x.max * 100}"></span>`).join('')}</div>`
+    + `<div class="legend">${parts.map((x) => `<span><i style="background:${x.color}"></i>${x.name} ${(x.got * 100).toFixed(1)}/${x.max * 100}</span>`).join('')}</div>`;
+}
+function metricsOf(p) {
+  const m = p.metrics || {};
+  if (m.legal_m2 == null) return '';
+  return `<div class="metrics"><div>通風面積<b class="${m.legal_m2 >= m.required_m2 ? 'ok' : 'bad'}">${m.legal_m2.toFixed(1)} m²</b>法規需 ${m.required_m2.toFixed(1)}</div><div>EEWH VP<b class="${m.vp >= 0.1 ? 'ok' : 'warn'}">${m.vp.toFixed(3)}</b>目標 ≥ 0.10</div><div>估算風量<b>${Math.round(m.q_m3_h).toLocaleString()}</b>m³/h(相對值)</div></div>`;
+}
+
+// ---- 方案步驟 4:選窗型與窗數的原因 ----
+const STOP = { target_met: '通風面積與 VP 都達標,停止加窗', capacity: '牆面放滿了仍達不到 5% 法定通風面積', wwr: '窗牆比超過上限', no_space: '牆面放不下', too_tall: '窗太高:窗台 + 窗高超過牆高扣掉樑板', k_limit: '加到上限仍未達標' };
+function selectionOf(p) {
+  const s = p.selection;
+  if (!s) return p.manual ? '' : `<details onclick="event.stopPropagation()"><summary>為什麼是這個窗型 / 窗數</summary><p class="msg">這份是舊的預設方案檔,沒有記錄選型過程。請按上方「產生方案」重新計算。</p></details>`;
+  const last = s.steps[s.steps.length - 1];
+  return `<details onclick="event.stopPropagation()"><summary>為什麼是這個窗型 / 窗數</summary>
+    <p class="msg"><b>窗數:</b>同一窗型從少到多加窗,每輪各牆依牆長比例各加一扇,直到通風面積 ≥ 法規 5% 且 VP ≥ 0.10 就停(達標即止)。</p>
+    <div class="wrap"><table><tr><th>窗數</th><th>各牆</th><th>通風面積 m²</th><th>VP</th><th>最大窗牆比</th><th></th></tr>
+    ${s.steps.map((x) => `<tr class="${x === last ? 'chosen' : ''}"><td>${x.total}</td><td>${x.per_wall.map((w) => `${w.orientation}${w.n}`).join(' ')}</td><td class="${x.legal_pass ? 'ok' : 'bad'}">${x.legal_m2} ${x.legal_pass ? '≥' : '<'} ${x.required_m2}</td><td class="${x.vp_pass ? 'ok' : 'bad'}">${x.vp}</td><td>${pct(x.wwr_max)}</td><td>${x === last ? '✓ 採用' : '不夠,再加'}</td></tr>`).join('')}</table></div>
+    <p class="msg"><b>窗型:</b>每種窗型都用上面的方式試算。分數和最高分(${(s.best_score_in_scheme * 100).toFixed(1)})差距在 ${(s.score_tolerance * 100).toFixed(0)} 分內的視為同等,取<b>窗數最少</b>的,避免用一堆小窗堆分數。</p>
+    <div class="wrap"><table><tr><th>窗型</th><th>結果</th><th>窗數</th><th>分數</th></tr>
+    ${s.candidates.map((c) => `<tr class="${c.chosen ? 'chosen' : ''}"><td>${esc(c.type.replace('M_Window-', ''))}</td><td class="${c.chosen ? 'ok' : c.outcome === 'rejected' ? 'mut' : ''}">${c.chosen ? '✓ 採用:同分中窗數最少' : c.outcome === 'rejected' ? `淘汰:${STOP[c.stop]}` : c.within_tolerance ? '同分,但窗數較多' : '分數較低'}</td><td>${c.window_count ?? '-'}</td><td>${c.score != null ? (c.score * 100).toFixed(1) : '-'}</td></tr>`).join('')}</table></div>
+  </details>`;
+}
+
+// ---- 手動調整窗數 / 窗型 ----
+async function openManual(id) {
+  try {
+    const o = await api('GET', `/api/models/${model()}/manual-options?file=${encodeURIComponent(S.proposalsFile)}&proposal=${encodeURIComponent(id)}`);
+    S.manual = { base: id, opts: o };
+    const def = o.current[Object.keys(o.current)[0]]?.type || o.types[0].type;
+    $('edTitle').textContent = `手動調整:以 ${id} 為底`;
+    $('edTable').innerHTML = `<table><tr><th>外牆</th><th>窗型</th><th>窗數</th><th>上限</th></tr>${o.walls.map((w) => {
+      const cur = o.current[w.wall_id] || { count: 0, type: def };
+      return `<tr data-wall="${w.wall_id}"><td>${w.orientation}(${w.wall_id}，${w.length_m.toFixed(1)} m)</td>
+        <td><select onchange="capOf(this)">${o.types.map((t) => `<option value="${esc(t.type)}" ${t.type === cur.type ? 'selected' : ''}>${esc(t.type.replace('M_Window-', ''))}</option>`).join('')}</select></td>
+        <td><input type="number" min="0" value="${cur.count}"></td><td class="cap"></td></tr>`;
+    }).join('')}</table>`;
+    document.querySelectorAll('#edTable select').forEach(capOf);
+    say('mEd', '');
+    $('editor').hidden = false;
+    $('editor').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (e) { say('m3', e.message, 'bad'); }
+}
+function capOf(sel) {
+  const tr = sel.closest('tr');
+  const cap = S.manual.opts.walls.find((w) => w.wall_id === tr.dataset.wall).capacity[sel.value];
+  tr.querySelector('.cap').textContent = cap ? `最多 ${cap} 扇` : '放不下';
+  tr.querySelector('input').max = cap;
+}
+// ---- 室內風流試算(大圖)----
+function openFlow(id) {
+  $('flowSel').innerHTML = S.props.map((p) => `<option value="${p.proposal_id}" ${p.proposal_id === id ? 'selected' : ''}>${p.proposal_id} · ${esc(p.scheme)} · ${p.window_count} 扇</option>`).join('');
+  $('flowDlg').showModal();
+  return loadFlow(id);
+}
+async function loadFlow(id) {
+  $('flowStats').innerHTML = '<p class="msg">計算中…</p>';
+  try {
+    S.flow = await api('POST', `/api/models/${model()}/airflow`, { proposals_file: S.proposalsFile, proposal_id: id });
+    drawFlow(S.flow);
+  } catch (e) { $('flowStats').innerHTML = `<p class="msg bad">${esc(e.message)}</p>`; }
+}
+const FLOW_BINS = [[0.05, 0, '< 0.05 死角'], [0.2, 0.22, '0.05–0.2'], [0.5, 0.5, '0.2–0.5'], [Infinity, 0.82, '≥ 0.5']]; // [上限 m/s, 透明度, 標籤]
+function drawFlow(f) {
+  const cv = $('flowCanvas'), ctx = cv.getContext('2d');
+  const css = getComputedStyle(document.documentElement), col = (v) => css.getPropertyValue(v).trim();
+  const C = { accent: col('--accent'), fg: col('--fg'), muted: col('--muted'), bg: col('--bg'), ok: col('--ok'), warn: col('--warn'), line: col('--line') };
+  const { nx, ny, minX, minY, dx, dy } = f.grid;
+  const Lx = nx * dx, Ly = ny * dy, pad = 46;
+  const Wcss = cv.clientWidth || 560, s = (Wcss - 2 * pad) / Lx, Hcss = Ly * s + 2 * pad;
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = Wcss * dpr; cv.height = Hcss * dpr; cv.style.height = Hcss + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, Wcss, Hcss);
+  const X = (x) => pad + (x - minX) * s, Y = (y) => pad + (minY + Ly - y) * s;
+
+  // 風速色塊
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const c = j * nx + i, vx = f.vx[c], vy = f.vy[c];
+    const x0 = X(minX + i * dx), y0 = Y(minY + (j + 1) * dy);
+    if (vx == null) { ctx.fillStyle = C.muted; ctx.globalAlpha = 0.55; ctx.fillRect(x0, y0, dx * s + 0.5, dy * s + 0.5); continue; }
+    const a = FLOW_BINS.find(([max]) => Math.hypot(vx, vy) < max)[1];
+    if (!a) continue;
+    ctx.fillStyle = C.accent; ctx.globalAlpha = a; ctx.fillRect(x0, y0, dx * s + 0.5, dy * s + 0.5);
+  }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = C.fg; ctx.lineWidth = 3; ctx.strokeRect(X(minX), Y(minY + Ly), Lx * s, Ly * s);
+
+  // 流線:從每個進風窗口等距放種子,沿速度方向積分(RK2)
+  const vel = (x, y) => {
+    const gi = (x - minX) / dx - 0.5, gj = (y - minY) / dy - 0.5;
+    const i0 = Math.max(0, Math.min(nx - 2, Math.floor(gi))), j0 = Math.max(0, Math.min(ny - 2, Math.floor(gj)));
+    const tx = Math.max(0, Math.min(1, gi - i0)), ty = Math.max(0, Math.min(1, gj - j0));
+    let u = 0, v = 0, wsum = 0;
+    for (const [di, dj, w] of [[0, 0, (1 - tx) * (1 - ty)], [1, 0, tx * (1 - ty)], [0, 1, (1 - tx) * ty], [1, 1, tx * ty]]) {
+      const c = (j0 + dj) * nx + i0 + di;
+      if (f.vx[c] == null) continue;
+      u += f.vx[c] * w; v += f.vy[c] * w; wsum += w;
+    }
+    return wsum > 0.3 ? [u / wsum, v / wsum] : null;
+  };
+  const inside = (x, y) => x > minX && x < minX + Lx && y > minY && y < minY + Ly && f.vx[Math.floor((y - minY) / dy) * nx + Math.floor((x - minX) / dx)] != null;
+  const h = Math.min(dx, dy) * 0.4;
+  ctx.strokeStyle = C.fg; ctx.fillStyle = C.fg; ctx.lineWidth = 1.1; ctx.globalAlpha = 0.75;
+  for (const w of f.windows.filter((w) => w.role === 'inlet')) {
+    const horiz = w.side === 'top' || w.side === 'bottom';
+    const inward = { top: [0, -1], bottom: [0, 1], left: [1, 0], right: [-1, 0] }[w.side];
+    const n = Math.max(2, Math.round(w.width_m / 0.35));
+    for (let q = 0; q < n; q++) {
+      const off = -w.width_m / 2 + (q + 0.5) * (w.width_m / n);
+      let x = (horiz ? w.x_m + off : w.side === 'left' ? minX : minX + Lx) + inward[0] * dx * 0.6;
+      let y = (horiz ? (w.side === 'bottom' ? minY : minY + Ly) : w.y_m + off) + inward[1] * dy * 0.6;
+      ctx.beginPath(); ctx.moveTo(X(x), Y(y));
+      for (let step = 0; step < 4000; step++) {
+        const v1 = vel(x, y); if (!v1) break;
+        const m1 = Math.hypot(...v1); if (m1 < 0.01) break;
+        const xm = x + (v1[0] / m1) * h / 2, ym = y + (v1[1] / m1) * h / 2;
+        const v2 = vel(xm, ym) || v1; const m2 = Math.hypot(...v2) || m1;
+        const nx2 = x + (v2[0] / m2) * h, ny2 = y + (v2[1] / m2) * h;
+        if (!inside(nx2, ny2)) { ctx.lineTo(X(nx2), Y(ny2)); break; }
+        x = nx2; y = ny2; ctx.lineTo(X(x), Y(y));
+        if (step % 45 === 22) { // 箭頭
+          ctx.stroke(); const a = Math.atan2(-(v2[1]), v2[0]);
+          ctx.beginPath(); ctx.moveTo(X(x), Y(y)); ctx.lineTo(X(x) - 6 * Math.cos(a - 0.45), Y(y) - 6 * Math.sin(a - 0.45)); ctx.lineTo(X(x) - 6 * Math.cos(a + 0.45), Y(y) - 6 * Math.sin(a + 0.45)); ctx.closePath(); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(X(x), Y(y));
+        }
+      }
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // 窗:綠 = 進風、橘 = 出風、灰 = 幾乎沒有氣流
+  for (const w of f.windows) {
+    const horiz = w.side === 'top' || w.side === 'bottom';
+    const ex = w.side === 'left' ? minX : minX + Lx, ey = w.side === 'bottom' ? minY : minY + Ly;
+    ctx.strokeStyle = w.role === 'inlet' ? C.ok : w.role === 'outlet' ? C.warn : C.muted; ctx.lineWidth = 7;
+    ctx.beginPath();
+    if (horiz) { ctx.moveTo(X(w.x_m - w.width_m / 2), Y(ey)); ctx.lineTo(X(w.x_m + w.width_m / 2), Y(ey)); }
+    else { ctx.moveTo(X(ex), Y(w.y_m - w.width_m / 2)); ctx.lineTo(X(ex), Y(w.y_m + w.width_m / 2)); }
+    ctx.stroke();
+  }
+
+  // 室外風向箭頭(從風來的方向指向建築)
+  const az = f.wind.from_deg * Math.PI / 180, cxp = Wcss / 2, cyp = Hcss / 2, R = Math.min(Wcss, Hcss) / 2;
+  const ax = cxp + (R - 6) * Math.sin(az), ay = cyp - (R - 6) * Math.cos(az), bx = cxp + (R - 36) * Math.sin(az), by = cyp - (R - 36) * Math.cos(az);
+  ctx.strokeStyle = C.ok; ctx.fillStyle = C.ok; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+  const ang = Math.atan2(by - ay, bx - ax);
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx - 10 * Math.cos(ang - 0.5), by - 10 * Math.sin(ang - 0.5)); ctx.lineTo(bx - 10 * Math.cos(ang + 0.5), by - 10 * Math.sin(ang + 0.5)); ctx.closePath(); ctx.fill();
+  ctx.font = '12px system-ui, "Microsoft JhengHei", sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(`${f.wind.from ?? f.wind.from_deg + '°'} 風 ${f.wind.mean_speed_m_s.toFixed(1)} m/s`, Math.min(ax + 8, Wcss - 90), Math.max(ay + 4, 14));
+  ctx.fillStyle = C.fg; ctx.font = '600 13px system-ui, sans-serif'; ctx.fillText('N↑', Wcss - 28, 16);
+  ctx.fillStyle = C.muted; ctx.font = '11px system-ui, "Microsoft JhengHei", sans-serif';
+  for (const c of f.cores) ctx.fillText('服務核', X((c.minX + c.maxX) / 2) - 16, Y((c.minY + c.maxY) / 2) + 4);
+
+  $('flowLegend').innerHTML = FLOW_BINS.map(([, a, label]) => `<span><i style="background:color-mix(in srgb, var(--accent) ${a * 100}%, var(--bg));border:1px solid var(--line)"></i>${label} m/s</span>`).join('')
+    + '<span><i style="background:var(--ok)"></i>進風窗</span><span><i style="background:var(--warn)"></i>出風窗</span><span><i style="background:var(--muted)"></i>服務核/柱、無氣流的窗</span>';
+
+  const st = f.stats, still = !f.windows.some((w) => w.role !== 'neutral');
+  $('flowStats').innerHTML = `
+    <div><label>通風覆蓋率(≥ ${st.coverage_threshold_m_s} m/s)</label><div class="big ${st.coverage >= 0.8 ? 'ok' : st.coverage >= 0.5 ? '' : 'warn'}">${pct(st.coverage)}</div></div>
+    <div class="metrics" style="grid-template-columns:1fr 1fr"><div>死角(< ${st.dead_zone_threshold_m_s} m/s)<b>${pct(st.dead_zone)}</b></div><div>室內平均風速<b>${st.mean_speed_m_s} m/s</b></div></div>
+    <div><label>風速分布</label><div class="bar">${st.bins.map((b, i) => `<span style="width:${b.share * 100}%;background:color-mix(in srgb, var(--accent) ${FLOW_BINS[i][1] * 100}%, var(--bg))" title="${b.range} m/s:${pct(b.share)}"></span>`).join('')}</div>
+      <div class="legend">${st.bins.map((b) => `<span>${b.range}:${pct(b.share, 0)}</span>`).join('')}</div></div>
+    ${still ? `<p class="msg warn">⚠ 這個風向下,所有窗的風壓都一樣(例如北風時東西兩面牆都是側風),穩定風場下室內幾乎沒有穿堂風。實際上會靠風向擺動與陣風換氣,但效果遠不如迎風/背風成對的開窗。</p>` : ''}
+    <div><label>各窗氣流</label><div class="wrap"><table><tr><th>牆</th><th>Cp</th><th>角色</th><th>窗口風速</th></tr>${f.windows.map((w) => `<tr><td>${w.orientation}</td><td>${w.cp.toFixed(2)}</td><td class="${w.role === 'inlet' ? 'ok' : w.role === 'outlet' ? 'warn' : 'mut'}">${{ inlet: '進風', outlet: '出風', neutral: '幾乎無' }[w.role]}</td><td>${w.speed_m_s} m/s</td></tr>`).join('')}</table></div></div>
+    <div><label>試算假設</label><ul>${f.assumptions.map((a) => `<li>${esc(a)}</li>`).join('')}</ul></div>`;
+}
+
+function deleteManual(id) { return busy(null, async () => {
+  if (!confirm(`刪除手動方案 ${id}?`)) return;
+  const r = await api('POST', `/api/models/${model()}/proposals/custom/delete`, { proposals_file: S.proposalsFile, proposal_id: id });
+  renderProposals(r);
+  if (S.proposalId === id) { S.proposalId = null; $('confirm').placeholder = 'P1'; say('m4', ''); }
+  if (S.manual?.base === id) $('editor').hidden = true;
+  say('m3', `已刪除 ${id}\n方案檔:${r.file}`, 'ok');
+}).catch((e) => say('m3', e.message, 'bad')); }
+
+function submitManual() { return busy($('bEd'), async () => {
+  const per_wall = {};
+  for (const tr of document.querySelectorAll('#edTable tr[data-wall]')) {
+    const count = +tr.querySelector('input').value;
+    if (count > 0) per_wall[tr.dataset.wall] = { count, type: tr.querySelector('select').value };
+  }
+  say('mEd', '試算中…');
+  const r = await api('POST', `/api/models/${model()}/proposals/custom`, { proposals_file: S.proposalsFile, proposal_id: S.manual.base, per_wall });
+  renderProposals(r);
+  pickProp(r.new_proposal_id);
+  const p = r.proposals.find((x) => x.proposal_id === r.new_proposal_id);
+  say('mEd', `✓ 已另存為 ${p.proposal_id}:${(p.score * 100).toFixed(1)} 分${p.warnings.length ? `(⚠ ${p.warnings.join(';')})` : ''}`, p.warnings.length ? 'warn' : 'ok');
+}).catch((e) => say('mEd', e.message, 'bad')); }
+async function loadDefault() { try { renderProposals(await api('GET', `/api/models/${model()}/proposals`)); } catch (e) { say('m3', e.message, 'bad'); } }
+function pickProp(id) {
+  S.proposalId = id; $('confirm').placeholder = id;
+  document.querySelectorAll('.prop').forEach((el) => el.classList.toggle('sel', el.dataset.id === id));
+  say('m4', `已選 ${id}。在上方輸入 ${id} 確認後才會建窗。`);
+}
+
+function step3() { return busy(null, async () => {
+  say('m3', '計算中…');
+  const p = wxParams();
+  analyzeWeather(); // 方案和氣象分析用同一組條件
+  renderProposals(await api('POST', `/api/models/${model()}/proposals`, p));
+}).catch((e) => say('m3', e.message, 'bad')); }
+
+function step4() { return busy($('b4'), async () => {
+  if (!S.proposalId) return say('m4', '請先在步驟 3 點選一個方案', 'warn');
+  if ($('confirm').value.trim() !== S.proposalId) return say('m4', `請輸入 ${S.proposalId} 確認`, 'warn');
+  say('m4', '檢查模型內既有的窗…');
+  const ex = await api('GET', `/api/models/${model()}/existing-windows`);
+  const prev = ex.previous_proposal_windows, other = ex.other_windows;
+  $('preMsg').className = 'msg';
+  $('preMsg').textContent = `模型內共有 ${ex.total} 扇窗。
+`
+    + (prev.length ? `前一組方案(${ex.previous_proposals.join('、')})的 ${prev.length} 扇會先刪除,再建立 ${S.proposalId}。` : '沒有前一組方案的窗。')
+    + (other.length ? `
+另有 ${other.length} 扇不是本工具建立的窗,預設保留;勾選的會一併刪除(和新方案重疊的窗必須刪除,否則 Revit 會跳出錯誤對話框)。` : '');
+  $('preOther').innerHTML = other.length ? `<table><tr><th></th><th>窗 ID</th><th>宿主牆</th><th>沿牆範圍 mm</th><th>類型</th></tr>${other.map((w) => `<tr><td><input type="checkbox" class="delw" value="${w.element_id}"></td><td>${w.element_id}</td><td>${w.host_wall_id}</td><td>${w.s_range_mm ? w.s_range_mm.join('–') : '-'}</td><td>${esc(w.family_and_type)}</td></tr>`).join('')}</table>` : '';
+  $('pre').hidden = false;
+  say('m4', '');
+}).catch((e) => say('m4', e.message, 'bad')); }
+
+function doBuild() { return busy($('b4go'), async () => {
+  const del = [...document.querySelectorAll('.delw:checked')].map((x) => Number(x.value));
+  say('m4', '產生 MCP 指令…');
+  const c = await api('POST', '/api/commands', { proposals_file: S.proposalsFile, proposal_id: S.proposalId });
+  S.commandsFile = c.file;
+  say('m4', `指令:${c.file}
+刪除舊窗、建窗中(${c.commands.windows.length} 扇)…`);
+  let res;
+  try { res = await api('POST', '/api/build', { commands_file: c.file, confirm: $('confirm').value.trim(), replace_previous: true, delete_window_ids: del }); }
+  catch (e) {
+    const ids = (e.detail?.conflicts || []).map((x) => x.element_id);
+    document.querySelectorAll('.delw').forEach((x) => { if (ids.includes(Number(x.value))) x.checked = true; });
+    throw e;
+  }
+  const { file, report } = res;
+  $('pre').hidden = true;
+  S.reportFile = file;
+  const s = report.summary, cl = report.cleanup_before_build;
+  say('m4', `先刪除舊窗 ${cl.deleted.length} 扇;建立 ${s.created}/${s.requested} 扇(pass ${s.pass}、warning ${s.warning}、fail ${s.fail})
+報告:${file}
+請在 Revit 檢查 3D 牆體切割與干涉,再於下方記錄結果。`, s.fail ? 'bad' : s.warning ? 'warn' : 'ok');
+  $('t4').innerHTML = `<table><tr><th>#</th><th>方位</th><th>牆</th><th>窗 ID</th><th>狀態</th><th>窗扇</th><th>問題</th></tr>${report.windows.map((w) => `<tr><td>${w.window_no}</td><td>${w.orientation}</td><td>${w.wall_id}</td><td>${w.element_id ?? '-'}</td><td class="${w.status === 'pass' ? 'ok' : w.status === 'fail' ? 'bad' : 'warn'}">${w.status}</td><td>${w.measured?.facing ?? '-'}</td><td>${esc(w.issues.join(';'))}</td></tr>`).join('')}</table>`;
+  $('rv').hidden = false;
+}).catch((e) => say('m4', e.message, 'bad')); }
+
+function reviewRun() { return busy(null, async () => {
+  const v = await api('POST', '/api/review', { report_file: S.reportFile, wall_cut: $('cut').value, collision: $('col').value, reviewer: $('reviewer').value.trim() || null });
+  say('m4', `VC-006 → ${v.status}(碰撞 ${v.result.collision_status}、牆體切割 ${v.result.wall_cut_status}、檢查人 ${v.reviewer ?? '未填'})`, v.status === 'pass' ? 'ok' : 'bad');
+}).catch((e) => say('m4', e.message, 'bad')); }
+
+function rollbackRun() { return busy(null, async () => {
+  if (!S.reportFile) return say('m4', '這個畫面還沒有建窗紀錄', 'warn');
+  if (!confirm('刪除這次建立的所有窗?')) return;
+  const r = await api('POST', '/api/rollback', { report_file: S.reportFile });
+  say('m4', `已刪除 ${r.deleted} 扇${r.failed.length ? `,失敗 ${r.failed.length}` : ''}`, r.failed.length ? 'bad' : 'ok');
+  $('t4').innerHTML = ''; $('rv').hidden = true; S.reportFile = null;
+}).catch((e) => say('m4', e.message, 'bad')); }
+
+function step5() { return busy(null, async () => {
+  if (!S.reportFile) return say('m5', '請先完成步驟 4', 'warn');
+  const f = await api('POST', '/api/final', { report_file: S.reportFile });
+  say('m5', `✓ ${f.dir}\n${f.files.join('\n')}${f.reviewed ? '' : '\n⚠ 尚未記錄人工碰撞檢查'}\n\nMCP 無法存檔:請在 Revit 另存 rvt 放進這個資料夾。`, f.reviewed ? 'ok' : 'warn');
+}).catch((e) => say('m5', e.message, 'bad')); }
+
+init();
+</script>
+</body>
+</html>

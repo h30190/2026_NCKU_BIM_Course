@@ -1,0 +1,915 @@
+{
+  "schema_version": "1.0",
+  "data_status": "model_02_actual_geometry_with_explicit_design_clearances",
+  "models": [
+    {
+      "model_id": "model_02",
+      "name": "BIM_商辦標準層02.rvt",
+      "status": "extracted_live_via_RevitMCP"
+    }
+  ],
+  "units": {
+    "length": "m",
+    "area": "m2",
+    "angle": "degree",
+    "MCP_length": "mm",
+    "revit_internal_length": "ft",
+    "metres_to_MCP_mm": 1000
+  },
+  "coordinate_system": {
+    "name": "Revit_internal_model_coordinates",
+    "origin": "Revit internal origin",
+    "axes": "right-handed; X east, Y north at reported zero true-north angle, Z up",
+    "angle_to_true_north_display": "0.00°",
+    "true_north_precision": "rounded parameter display; sub-0.01 degree precision not verified",
+    "wall_s": "distance along location line from start_xyz_m toward end_xyz_m; not world X",
+    "location_line_reference": "wall LocationCurve; not assumed exterior finish face"
+  },
+  "clearance_policy": {
+    "corner_clearance_m": 0.3,
+    "column_clearance_m": 0.1,
+    "status": "user-adjustable screening assumptions, not code or structural approval",
+    "column_method": "project overlapping axis-aligned column bounding boxes onto wall s, expand each side by 0.1 m, merge and subtract",
+    "opening_placement_rule": "Opening rough extents must lie inside ONE free interval. For centered rough width w, center_s in [s_start+w/2,s_end-w/2]. Width must include required family cutout/frame clearance.",
+    "vertical_rule": "No verified vertical band exported. Check sill + rough height against host profile, slab and other solids before placement.",
+    "tee_junction_clearance_m": 0.3,
+    "tee_junction_method": "Interior wall endpoint projected onto exterior wall; block 0.30 m each side (includes 0.10 m half-thickness plus 0.20 m assumed clearance)."
+  },
+  "rooms": [
+    {
+      "room_id": "1670243",
+      "name": "Core",
+      "number": "",
+      "area_m2": 74.34,
+      "level": "L1",
+      "boundary_segments_mm": [
+        {
+          "StartX": -5283.56,
+          "StartY": 15163.15,
+          "EndX": -10683.56,
+          "EndY": 15163.15,
+          "Length": 5400
+        },
+        {
+          "StartX": -10683.56,
+          "StartY": 15163.15,
+          "EndX": -10683.56,
+          "EndY": 14763.15,
+          "Length": 400
+        },
+        {
+          "StartX": -10683.56,
+          "StartY": 14763.15,
+          "EndX": -11083.56,
+          "EndY": 14763.15,
+          "Length": 400
+        },
+        {
+          "StartX": -11083.56,
+          "StartY": 14763.15,
+          "EndX": -11083.56,
+          "EndY": 8563.15,
+          "Length": 6200
+        },
+        {
+          "StartX": -11083.56,
+          "StartY": 8563.15,
+          "EndX": -10683.56,
+          "EndY": 8563.15,
+          "Length": 400
+        },
+        {
+          "StartX": -10683.56,
+          "StartY": 8563.15,
+          "EndX": -10683.56,
+          "EndY": 7963.15,
+          "Length": 600
+        },
+        {
+          "StartX": -10683.56,
+          "StartY": 7963.15,
+          "EndX": -11083.56,
+          "EndY": 7963.15,
+          "Length": 400
+        },
+        {
+          "StartX": -11083.56,
+          "StartY": 7963.15,
+          "EndX": -11083.56,
+          "EndY": 2463.15,
+          "Length": 5500
+        },
+        {
+          "StartX": -11083.56,
+          "StartY": 2463.15,
+          "EndX": -10683.56,
+          "EndY": 2463.15,
+          "Length": 400
+        },
+        {
+          "StartX": -10683.56,
+          "StartY": 2463.15,
+          "EndX": -10683.56,
+          "EndY": 2263.15,
+          "Length": 200
+        },
+        {
+          "StartX": -10683.56,
+          "StartY": 2263.15,
+          "EndX": -5283.56,
+          "EndY": 2263.15,
+          "Length": 5400
+        },
+        {
+          "StartX": -5283.56,
+          "StartY": 2263.15,
+          "EndX": -5283.56,
+          "EndY": 15163.15,
+          "Length": 12900
+        }
+      ]
+    }
+  ],
+  "columns": [
+    {
+      "ElementId": 1668091,
+      "Category": "Structural Columns",
+      "TypeName": "600 x 600mm",
+      "BoundingBox": {
+        "HasBoundingBox": true,
+        "MinX": -11283.56,
+        "MinY": 14763.15,
+        "MinZ": 0,
+        "MaxX": -10683.56,
+        "MaxY": 15363.15,
+        "MaxZ": 4000
+      }
+    },
+    {
+      "ElementId": 1668290,
+      "Category": "Structural Columns",
+      "TypeName": "600 x 600mm",
+      "BoundingBox": {
+        "HasBoundingBox": true,
+        "MinX": -11283.56,
+        "MinY": -5100,
+        "MinZ": 0,
+        "MaxX": -10683.56,
+        "MaxY": -4500,
+        "MaxZ": 4000
+      }
+    },
+    {
+      "ElementId": 1668323,
+      "Category": "Structural Columns",
+      "TypeName": "600 x 600mm",
+      "BoundingBox": {
+        "HasBoundingBox": true,
+        "MinX": -11283.56,
+        "MinY": 7963.15,
+        "MinZ": 0,
+        "MaxX": -10683.56,
+        "MaxY": 8563.15,
+        "MaxZ": 4000
+      }
+    },
+    {
+      "ElementId": 1668387,
+      "Category": "Structural Columns",
+      "TypeName": "600 x 600mm",
+      "BoundingBox": {
+        "HasBoundingBox": true,
+        "MinX": -11283.56,
+        "MinY": 1863.15,
+        "MinZ": 0,
+        "MaxX": -10683.56,
+        "MaxY": 2463.15,
+        "MaxZ": 4000
+      }
+    },
+    {
+      "ElementId": 1668454,
+      "Category": "Structural Columns",
+      "TypeName": "600 x 600mm",
+      "BoundingBox": {
+        "HasBoundingBox": true,
+        "MinX": 13294.62,
+        "MinY": 14763.15,
+        "MinZ": 0,
+        "MaxX": 13894.62,
+        "MaxY": 15363.15,
+        "MaxZ": 4000
+      }
+    },
+    {
+      "ElementId": 1668455,
+      "Category": "Structural Columns",
+      "TypeName": "600 x 600mm",
+      "BoundingBox": {
+        "HasBoundingBox": true,
+        "MinX": 13294.62,
+        "MinY": -5100,
+        "MinZ": 0,
+        "MaxX": 13894.62,
+        "MaxY": -4500,
+        "MaxZ": 4000
+      }
+    },
+    {
+      "ElementId": 1668456,
+      "Category": "Structural Columns",
+      "TypeName": "600 x 600mm",
+      "BoundingBox": {
+        "HasBoundingBox": true,
+        "MinX": 13294.62,
+        "MinY": 7963.15,
+        "MinZ": 0,
+        "MaxX": 13894.62,
+        "MaxY": 8563.15,
+        "MaxZ": 4000
+      }
+    },
+    {
+      "ElementId": 1668457,
+      "Category": "Structural Columns",
+      "TypeName": "600 x 600mm",
+      "BoundingBox": {
+        "HasBoundingBox": true,
+        "MinX": 13294.62,
+        "MinY": 1863.15,
+        "MinZ": 0,
+        "MaxX": 13894.62,
+        "MaxY": 2463.15,
+        "MaxZ": 4000
+      }
+    },
+    {
+      "ElementId": 1669750,
+      "Category": "Structural Columns",
+      "TypeName": "600 x 600mm",
+      "BoundingBox": {
+        "HasBoundingBox": true,
+        "MinX": 1008.22,
+        "MinY": 14763.15,
+        "MinZ": 0,
+        "MaxX": 1608.22,
+        "MaxY": 15363.15,
+        "MaxZ": 4000
+      }
+    },
+    {
+      "ElementId": 1669986,
+      "Category": "Structural Columns",
+      "TypeName": "600 x 600mm",
+      "BoundingBox": {
+        "HasBoundingBox": true,
+        "MinX": 1008.22,
+        "MinY": -5100,
+        "MinZ": 0,
+        "MaxX": 1608.22,
+        "MaxY": -4500,
+        "MaxZ": 4000
+      }
+    },
+    {
+      "ElementId": 1670187,
+      "Category": "Structural Columns",
+      "TypeName": "600 x 600mm",
+      "BoundingBox": {
+        "HasBoundingBox": true,
+        "MinX": 1008.22,
+        "MinY": 7963.15,
+        "MinZ": 0,
+        "MaxX": 1608.22,
+        "MaxY": 8563.15,
+        "MaxZ": 4000
+      }
+    },
+    {
+      "ElementId": 1670196,
+      "Category": "Structural Columns",
+      "TypeName": "600 x 600mm",
+      "BoundingBox": {
+        "HasBoundingBox": true,
+        "MinX": 1008.22,
+        "MinY": 1863.15,
+        "MinZ": 0,
+        "MaxX": 1608.22,
+        "MaxY": 2463.15,
+        "MaxZ": 4000
+      }
+    }
+  ],
+  "walls": [
+    {
+      "wall_id": "1664649",
+      "model_id": "model_02",
+      "wall_type": "Generic - 200mm",
+      "is_exterior": true,
+      "exterior_classification_basis": "outer rectangular envelope; two partition walls form northwest core with portions of north/west envelope",
+      "orientation": {
+        "cardinal": "N",
+        "azimuth_deg": 0.0,
+        "reference": "true_north_at_displayed_0_degree_rotation",
+        "outward_normal_xyz": [
+          0,
+          1,
+          0
+        ]
+      },
+      "length_m": 24.98356,
+      "height_m": 4.0,
+      "thickness_m": 0.2,
+      "level": "L1",
+      "location_line": {
+        "start_xyz_m": [
+          -11.18356,
+          15.26315,
+          0
+        ],
+        "end_xyz_m": [
+          13.8,
+          15.26315,
+          0
+        ],
+        "s_axis_unit_xyz": [
+          1.0,
+          0.0,
+          0
+        ],
+        "z_source": "L1 elevation 0; base offset not independently read"
+      },
+      "room_id": null,
+      "room_area_m2": null,
+      "room_assignment_status": "partial_core_adjacency_see_intervals",
+      "existing_openings": [],
+      "existing_openings_scope": "model-wide Windows, Doors and OST_SWallRectOpening queries returned zero; edited profiles and generic voids not inspected",
+      "blocked_intervals": [
+        {
+          "reason": "corner_clearance_design_assumption",
+          "s_start_m": 0,
+          "s_end_m": 0.3
+        },
+        {
+          "reason": "corner_clearance_design_assumption",
+          "s_start_m": 24.68356,
+          "s_end_m": 24.98356
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668091",
+          "s_start_m": 0,
+          "s_end_m": 0.6
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668454",
+          "s_start_m": 24.37818,
+          "s_end_m": 24.98356
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1669750",
+          "s_start_m": 12.09178,
+          "s_end_m": 12.891779999999999
+        },
+        {
+          "reason": "interior_wall_tee_junction_plus_clearance",
+          "element_id": "1670073",
+          "s_start_m": 5.699999999999999,
+          "s_end_m": 6.299999999999999
+        }
+      ],
+      "available_window_intervals": [
+        {
+          "s_start_m": 0.6,
+          "s_end_m": 5.7,
+          "length_m": 5.1,
+          "room_id": "1670243",
+          "room_area_m2": 74.34,
+          "room_use": "Core",
+          "office_candidate": false,
+          "office_candidate_note": "Geometry-based screening; unassigned area needs a Room before room-area scoring."
+        },
+        {
+          "s_start_m": 6.3,
+          "s_end_m": 12.09178,
+          "length_m": 5.79178,
+          "room_id": null,
+          "room_area_m2": null,
+          "room_use": "unassigned",
+          "office_candidate": true,
+          "office_candidate_note": "Geometry-based screening; unassigned area needs a Room before room-area scoring."
+        },
+        {
+          "s_start_m": 12.89178,
+          "s_end_m": 24.37818,
+          "length_m": 11.4864,
+          "room_id": null,
+          "room_area_m2": null,
+          "room_use": "unassigned",
+          "office_candidate": true,
+          "office_candidate_note": "Geometry-based screening; unassigned area needs a Room before room-area scoring."
+        }
+      ],
+      "window_space_status": "preliminary_horizontal_clearance_from_model_geometry",
+      "vertical_window_band_m": null,
+      "requires_3d_host_and_family_validation": true,
+      "room_boundary_intervals": [
+        {
+          "s_start_m": 0.5,
+          "s_end_m": 5.9,
+          "room_id": "1670243",
+          "room_area_m2": 74.34,
+          "basis": "parallel Room boundary at wall inner face"
+        }
+      ]
+    },
+    {
+      "wall_id": "1664784",
+      "model_id": "model_02",
+      "wall_type": "Generic - 200mm",
+      "is_exterior": true,
+      "exterior_classification_basis": "outer rectangular envelope; two partition walls form northwest core with portions of north/west envelope",
+      "orientation": {
+        "cardinal": "E",
+        "azimuth_deg": 90.0,
+        "reference": "true_north_at_displayed_0_degree_rotation",
+        "outward_normal_xyz": [
+          1,
+          0,
+          0
+        ]
+      },
+      "length_m": 20.263150000000003,
+      "height_m": 4.0,
+      "thickness_m": 0.2,
+      "level": "L1",
+      "location_line": {
+        "start_xyz_m": [
+          13.8,
+          15.26315,
+          0
+        ],
+        "end_xyz_m": [
+          13.8,
+          -5.0,
+          0
+        ],
+        "s_axis_unit_xyz": [
+          0.0,
+          -0.9999999999999998,
+          0
+        ],
+        "z_source": "L1 elevation 0; base offset not independently read"
+      },
+      "room_id": null,
+      "room_area_m2": null,
+      "room_assignment_status": "no_adjacent_office_Room_element",
+      "existing_openings": [],
+      "existing_openings_scope": "model-wide Windows, Doors and OST_SWallRectOpening queries returned zero; edited profiles and generic voids not inspected",
+      "blocked_intervals": [
+        {
+          "reason": "corner_clearance_design_assumption",
+          "s_start_m": 0,
+          "s_end_m": 0.3
+        },
+        {
+          "reason": "corner_clearance_design_assumption",
+          "s_start_m": 19.963150000000002,
+          "s_end_m": 20.263150000000003
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668454",
+          "s_start_m": 0,
+          "s_end_m": 0.5999999999999999
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668455",
+          "s_start_m": 19.663149999999995,
+          "s_end_m": 20.263150000000003
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668456",
+          "s_start_m": 6.599999999999998,
+          "s_end_m": 7.399999999999998
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668457",
+          "s_start_m": 12.699999999999996,
+          "s_end_m": 13.499999999999995
+        }
+      ],
+      "available_window_intervals": [
+        {
+          "s_start_m": 0.6,
+          "s_end_m": 6.6,
+          "length_m": 6.0,
+          "room_id": null,
+          "room_area_m2": null,
+          "room_use": "unassigned",
+          "office_candidate": true,
+          "office_candidate_note": "Geometry-based screening; unassigned area needs a Room before room-area scoring."
+        },
+        {
+          "s_start_m": 7.4,
+          "s_end_m": 12.7,
+          "length_m": 5.3,
+          "room_id": null,
+          "room_area_m2": null,
+          "room_use": "unassigned",
+          "office_candidate": true,
+          "office_candidate_note": "Geometry-based screening; unassigned area needs a Room before room-area scoring."
+        },
+        {
+          "s_start_m": 13.5,
+          "s_end_m": 19.66315,
+          "length_m": 6.16315,
+          "room_id": null,
+          "room_area_m2": null,
+          "room_use": "unassigned",
+          "office_candidate": true,
+          "office_candidate_note": "Geometry-based screening; unassigned area needs a Room before room-area scoring."
+        }
+      ],
+      "window_space_status": "preliminary_horizontal_clearance_from_model_geometry",
+      "vertical_window_band_m": null,
+      "requires_3d_host_and_family_validation": true,
+      "room_boundary_intervals": []
+    },
+    {
+      "wall_id": "1664841",
+      "model_id": "model_02",
+      "wall_type": "Generic - 200mm",
+      "is_exterior": true,
+      "exterior_classification_basis": "outer rectangular envelope; two partition walls form northwest core with portions of north/west envelope",
+      "orientation": {
+        "cardinal": "S",
+        "azimuth_deg": 180.0,
+        "reference": "true_north_at_displayed_0_degree_rotation",
+        "outward_normal_xyz": [
+          0,
+          -1,
+          0
+        ]
+      },
+      "length_m": 24.98356,
+      "height_m": 4.0,
+      "thickness_m": 0.2,
+      "level": "L1",
+      "location_line": {
+        "start_xyz_m": [
+          13.8,
+          -5.0,
+          0
+        ],
+        "end_xyz_m": [
+          -11.18356,
+          -5.0,
+          0
+        ],
+        "s_axis_unit_xyz": [
+          -1.0,
+          0.0,
+          0
+        ],
+        "z_source": "L1 elevation 0; base offset not independently read"
+      },
+      "room_id": null,
+      "room_area_m2": null,
+      "room_assignment_status": "no_adjacent_office_Room_element",
+      "existing_openings": [],
+      "existing_openings_scope": "model-wide Windows, Doors and OST_SWallRectOpening queries returned zero; edited profiles and generic voids not inspected",
+      "blocked_intervals": [
+        {
+          "reason": "corner_clearance_design_assumption",
+          "s_start_m": 0,
+          "s_end_m": 0.3
+        },
+        {
+          "reason": "corner_clearance_design_assumption",
+          "s_start_m": 24.68356,
+          "s_end_m": 24.98356
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668290",
+          "s_start_m": 24.38356,
+          "s_end_m": 24.98356
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668455",
+          "s_start_m": 0,
+          "s_end_m": 0.6053800000000006
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1669986",
+          "s_start_m": 12.091780000000002,
+          "s_end_m": 12.89178
+        }
+      ],
+      "available_window_intervals": [
+        {
+          "s_start_m": 0.60538,
+          "s_end_m": 12.09178,
+          "length_m": 11.4864,
+          "room_id": null,
+          "room_area_m2": null,
+          "room_use": "unassigned",
+          "office_candidate": true,
+          "office_candidate_note": "Geometry-based screening; unassigned area needs a Room before room-area scoring."
+        },
+        {
+          "s_start_m": 12.89178,
+          "s_end_m": 24.38356,
+          "length_m": 11.49178,
+          "room_id": null,
+          "room_area_m2": null,
+          "room_use": "unassigned",
+          "office_candidate": true,
+          "office_candidate_note": "Geometry-based screening; unassigned area needs a Room before room-area scoring."
+        }
+      ],
+      "window_space_status": "preliminary_horizontal_clearance_from_model_geometry",
+      "vertical_window_band_m": null,
+      "requires_3d_host_and_family_validation": true,
+      "room_boundary_intervals": []
+    },
+    {
+      "wall_id": "1664926",
+      "model_id": "model_02",
+      "wall_type": "Generic - 200mm",
+      "is_exterior": true,
+      "exterior_classification_basis": "outer rectangular envelope; two partition walls form northwest core with portions of north/west envelope",
+      "orientation": {
+        "cardinal": "W",
+        "azimuth_deg": 270.0,
+        "reference": "true_north_at_displayed_0_degree_rotation",
+        "outward_normal_xyz": [
+          -1,
+          0,
+          0
+        ]
+      },
+      "length_m": 20.263150000000003,
+      "height_m": 4.0,
+      "thickness_m": 0.2,
+      "level": "L1",
+      "location_line": {
+        "start_xyz_m": [
+          -11.18356,
+          -5.0,
+          0
+        ],
+        "end_xyz_m": [
+          -11.18356,
+          15.26315,
+          0
+        ],
+        "s_axis_unit_xyz": [
+          0.0,
+          0.9999999999999998,
+          0
+        ],
+        "z_source": "L1 elevation 0; base offset not independently read"
+      },
+      "room_id": null,
+      "room_area_m2": null,
+      "room_assignment_status": "partial_core_adjacency_see_intervals",
+      "existing_openings": [],
+      "existing_openings_scope": "model-wide Windows, Doors and OST_SWallRectOpening queries returned zero; edited profiles and generic voids not inspected",
+      "blocked_intervals": [
+        {
+          "reason": "corner_clearance_design_assumption",
+          "s_start_m": 0,
+          "s_end_m": 0.3
+        },
+        {
+          "reason": "corner_clearance_design_assumption",
+          "s_start_m": 19.963150000000002,
+          "s_end_m": 20.263150000000003
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668091",
+          "s_start_m": 19.663149999999995,
+          "s_end_m": 20.263150000000003
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668290",
+          "s_start_m": 0,
+          "s_end_m": 0.5999999999999999
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668323",
+          "s_start_m": 12.863149999999996,
+          "s_end_m": 13.663149999999996
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668387",
+          "s_start_m": 6.763149999999999,
+          "s_end_m": 7.5631499999999985
+        },
+        {
+          "reason": "interior_wall_tee_junction_plus_clearance",
+          "element_id": "1668849",
+          "s_start_m": 6.863149999999998,
+          "s_end_m": 7.463149999999998
+        }
+      ],
+      "available_window_intervals": [
+        {
+          "s_start_m": 0.6,
+          "s_end_m": 6.76315,
+          "length_m": 6.16315,
+          "room_id": null,
+          "room_area_m2": null,
+          "room_use": "unassigned",
+          "office_candidate": true,
+          "office_candidate_note": "Geometry-based screening; unassigned area needs a Room before room-area scoring."
+        },
+        {
+          "s_start_m": 7.56315,
+          "s_end_m": 12.86315,
+          "length_m": 5.3,
+          "room_id": "1670243",
+          "room_area_m2": 74.34,
+          "room_use": "Core",
+          "office_candidate": false,
+          "office_candidate_note": "Geometry-based screening; unassigned area needs a Room before room-area scoring."
+        },
+        {
+          "s_start_m": 13.66315,
+          "s_end_m": 19.66315,
+          "length_m": 6.0,
+          "room_id": "1670243",
+          "room_area_m2": 74.34,
+          "room_use": "Core",
+          "office_candidate": false,
+          "office_candidate_note": "Geometry-based screening; unassigned area needs a Room before room-area scoring."
+        }
+      ],
+      "window_space_status": "preliminary_horizontal_clearance_from_model_geometry",
+      "vertical_window_band_m": null,
+      "requires_3d_host_and_family_validation": true,
+      "room_boundary_intervals": [
+        {
+          "s_start_m": 13.56315,
+          "s_end_m": 19.76315,
+          "room_id": "1670243",
+          "room_area_m2": 74.34,
+          "basis": "parallel Room boundary at wall inner face"
+        },
+        {
+          "s_start_m": 7.46315,
+          "s_end_m": 12.96315,
+          "room_id": "1670243",
+          "room_area_m2": 74.34,
+          "basis": "parallel Room boundary at wall inner face"
+        }
+      ]
+    },
+    {
+      "wall_id": "1668849",
+      "model_id": "model_02",
+      "wall_type": "Generic - 200mm",
+      "is_exterior": false,
+      "exterior_classification_basis": "outer rectangular envelope; two partition walls form northwest core with portions of north/west envelope",
+      "orientation": {
+        "cardinal": "N",
+        "azimuth_deg": 0.0,
+        "reference": "true_north_at_displayed_0_degree_rotation",
+        "outward_normal_xyz": [
+          0,
+          1,
+          0
+        ]
+      },
+      "length_m": 6.0,
+      "height_m": 4.0,
+      "thickness_m": 0.2,
+      "level": "L1",
+      "location_line": {
+        "start_xyz_m": [
+          -11.18356,
+          2.16315,
+          0
+        ],
+        "end_xyz_m": [
+          -5.183560000000001,
+          2.16315,
+          0
+        ],
+        "s_axis_unit_xyz": [
+          0.9999999999999999,
+          0.0,
+          0
+        ],
+        "z_source": "L1 elevation 0; base offset not independently read"
+      },
+      "room_id": "1670243",
+      "room_area_m2": 74.34,
+      "room_assignment_status": "inferred_from_core_room_boundary",
+      "existing_openings": [],
+      "existing_openings_scope": "model-wide Windows, Doors and OST_SWallRectOpening queries returned zero; edited profiles and generic voids not inspected",
+      "blocked_intervals": [
+        {
+          "reason": "corner_clearance_design_assumption",
+          "s_start_m": 0,
+          "s_end_m": 0.3
+        },
+        {
+          "reason": "corner_clearance_design_assumption",
+          "s_start_m": 5.7,
+          "s_end_m": 6.0
+        },
+        {
+          "reason": "structural_column_bbox_plus_clearance",
+          "element_id": "1668387",
+          "s_start_m": 0,
+          "s_end_m": 0.6
+        }
+      ],
+      "available_window_intervals": [],
+      "window_space_status": "excluded_interior_core_wall",
+      "vertical_window_band_m": null,
+      "requires_3d_host_and_family_validation": true
+    },
+    {
+      "wall_id": "1670073",
+      "model_id": "model_02",
+      "wall_type": "Generic - 200mm",
+      "is_exterior": false,
+      "exterior_classification_basis": "outer rectangular envelope; two partition walls form northwest core with portions of north/west envelope",
+      "orientation": {
+        "cardinal": "W",
+        "azimuth_deg": 270.0,
+        "reference": "true_north_at_displayed_0_degree_rotation",
+        "outward_normal_xyz": [
+          -1,
+          0,
+          0
+        ]
+      },
+      "length_m": 13.1,
+      "height_m": 4.0,
+      "thickness_m": 0.2,
+      "level": "L1",
+      "location_line": {
+        "start_xyz_m": [
+          -5.183560000000001,
+          2.16315,
+          0
+        ],
+        "end_xyz_m": [
+          -5.183560000000001,
+          15.26315,
+          0
+        ],
+        "s_axis_unit_xyz": [
+          0.0,
+          1.0,
+          0
+        ],
+        "z_source": "L1 elevation 0; base offset not independently read"
+      },
+      "room_id": "1670243",
+      "room_area_m2": 74.34,
+      "room_assignment_status": "inferred_from_core_room_boundary",
+      "existing_openings": [],
+      "existing_openings_scope": "model-wide Windows, Doors and OST_SWallRectOpening queries returned zero; edited profiles and generic voids not inspected",
+      "blocked_intervals": [
+        {
+          "reason": "corner_clearance_design_assumption",
+          "s_start_m": 0,
+          "s_end_m": 0.3
+        },
+        {
+          "reason": "corner_clearance_design_assumption",
+          "s_start_m": 12.799999999999999,
+          "s_end_m": 13.1
+        }
+      ],
+      "available_window_intervals": [],
+      "window_space_status": "excluded_interior_core_wall",
+      "vertical_window_band_m": null,
+      "requires_3d_host_and_family_validation": true
+    }
+  ],
+  "missing_data": [
+    "Exterior office Room and area",
+    "Family flex constraints and exact numeric default sill",
+    "Full 3D collision and host-cut validation"
+  ],
+  "safe_for_automatic_creation": false,
+  "columns_units": "mm; raw MCP bounding boxes; all wall dimensions and intervals use m"
+}

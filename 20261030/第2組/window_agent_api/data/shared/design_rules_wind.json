@@ -1,0 +1,372 @@
+{
+  "schema_version": "1.1.0",
+  "document_type": "revit_ai_window_design_rules",
+  "domain": "natural_ventilation",
+  "title": "台灣商辦標準層自然通風與開口設計規則",
+  "jurisdiction": "TW",
+  "verified_through": "2026-10-21",
+  "language": "zh-TW",
+  "agent_scope": {
+    "scope_statement": "本次 PoC Agent 只處理商辦標準層的自然通風開窗配置、法定有效通風面積初判、EEWH 自然通風 VP 評分及簡化風量排序；不處理採光、外殼節能、消防排煙或施工圖核定。",
+    "active_rule_ids": [
+      "TW-WIND-LAW-001",
+      "TW-WIND-ASSUMPTION-001",
+      "TW-WIND-EEWH-001",
+      "TW-WIND-REC-001"
+    ],
+    "conditional_reference_rule_ids": ["TW-WIND-LAW-002"],
+    "inactive_rule_ids": ["TW-WIND-LAW-003", "TW-WIND-LAW-004", "TW-WIND-EEWH-002"],
+    "inactive_reason": "本輪 Agent 不設計自然通風管道、不判定無窗戶居室消防效果，也不執行 ENVLOAD 能源優惠；規則保留供後續擴充。"
+  },
+  "units": {
+    "length": "m",
+    "area": "m2",
+    "volume_flow": "m3/h",
+    "pressure": "Pa",
+    "air_density": "kg/m3",
+    "angle": "deg",
+    "ratio": "1"
+  },
+  "null_unknown_policy": {
+    "null": "資料確定不存在或規則明定不適用時使用。",
+    "unknown": "資料尚未提供、無法從模型推導或官方來源未規定時使用字串 unknown，不得以 0 代替。",
+    "not_applicable": "規則不適用時 status 設為 not_applicable，結果值設為 null，並填寫 reason。",
+    "blocked": "強制規則缺少必要輸入時 status 設為 requires_verification，不得自動判定合格。",
+    "assumption": "採用示意值時 status 設為 assumption，並保留原始值、假設理由與待驗證項目。"
+  },
+  "classification_definitions": {
+    "mandatory_law": "依法令適用條件成立時必須符合。",
+    "eewh_scoring": "申請 EEWH 時使用的評分或優惠計算，不是一般建築許可的最低開窗法規。",
+    "design_recommendation": "設計建議，不具有法定最低要求效力。",
+    "unverified_assumption": "PoC 或模擬預設，尚未經產品試驗、主管機關或專業技師確認。"
+  },
+  "applicability": {
+    "target_use_groups": ["G-1", "G-2"],
+    "primary_target": "G-2 辦公場所之標準層",
+    "room_definition": "供工作使用之辦公室屬建築技術規則建築設計施工編第1條第19款之居室。",
+    "exclusions": [
+      "走廊、樓梯間、廁所盥洗室、儲藏室、機械室及車庫原則上不屬居室。",
+      "EEWH-BC 2026 附錄一的自然通風評估對象列有 G-2，但未列 G-1；G-1 不得在未確認評定邊界前直接套用。"
+    ]
+  },
+  "required_inputs": [
+    "building.use_group",
+    "building.is_new_or_addition",
+    "building.above_ground_floor_area_m2",
+    "room.use_type",
+    "room.floor_area_m2",
+    "room.ceiling_height_m",
+    "window.window_type",
+    "window.width",
+    "window.height",
+    "window.position",
+    "window.opening_ratio",
+    "window.direct_to_outdoor",
+    "window.legal_effective_open_area_m2",
+    "opening.center_height_m",
+    "opening.can_remain_open",
+    "mechanical_ventilation.provided",
+    "mechanical_ventilation.design_flow_m3_h",
+    "eewh.application_requested",
+    "eewh.ventilation_assessment_area_m2",
+    "eewh.single_side_open_area_m2",
+    "eewh.cross_flow_open_area_m2"
+  ],
+  "rules": [
+    {
+      "rule_id": "TW-WIND-LAW-001",
+      "classification": "mandatory_law",
+      "status": "active",
+      "reason": "一般辦公居室屬一般居室；選擇以直接對外窗或開口作為通風符合路徑時，有效通風面積不得小於樓地板面積 5%。",
+      "applies_when": "room.is_habitable == true AND room.use_type IN ['office','private_office','meeting_room'] AND compliance_path == 'direct_outdoor_opening'",
+      "requirement": "legal_effective_open_area_m2 >= 0.05 * room_floor_area_m2",
+      "machine_readable": {
+        "operator": ">=",
+        "left": "sum(window.legal_effective_open_area_m2)",
+        "right": "0.05 * room.floor_area_m2",
+        "result": "pass_fail",
+        "rounding": "不得在比較前向上取整",
+        "fallback": "產品或主管機關接受面積未知時，可依 TW-WIND-ASSUMPTION-001 暫算；結果須標為 provisional_assumption。"
+      },
+      "exceptions": [
+        "已設置符合規定之自然通風設備者，不受 5% 直接開口面積限制。",
+        "已依建築設備編設置符合規定之機械通風設備者，不受 5% 直接開口面積限制。"
+      ],
+      "cautions": [
+        "法規未依側開、上懸、橫拉窗提供 Cd 或折減係數。法規面積不得直接以 window_types.json 的 airflow_discharge_coefficient_cd 折減。",
+        "有效通風面積的個案認定仍屬地方主管建築機關權責。"
+      ],
+      "source": [
+        {
+          "source_id": "SRC-LAW-DESIGN",
+          "title": "建築技術規則建築設計施工編",
+          "authority": "內政部／全國法規資料庫",
+          "version": "修正日期 2026-02-23",
+          "article_or_page": "第1條第19款、第43條第1項第1款",
+          "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0070115",
+          "retrieved_on": "2026-10-21"
+        }
+      ]
+    },
+    {
+      "rule_id": "TW-WIND-LAW-002",
+      "classification": "mandatory_law",
+      "status": "conditional",
+      "reason": "以機械通風替代第43條自然通風開口時，設備構造與最小通風量應符合建築設備編。",
+      "applies_when": "mechanical_ventilation.provided == true AND compliance_path == 'mechanical_ventilation'",
+      "requirements": [
+        {
+          "space_type": "private_office_low_occupancy",
+          "minimum_flow_per_floor_area_m3_h_m2": 8,
+          "expression": "design_flow_m3_h >= 8 * room_floor_area_m2"
+        },
+        {
+          "space_type": "office_or_reception",
+          "minimum_flow_per_floor_area_m3_h_m2": 10,
+          "expression": "design_flow_m3_h >= 10 * room_floor_area_m2"
+        },
+        {
+          "space_type": "meeting_room_high_occupancy",
+          "minimum_flow_per_floor_area_m3_h_m2": 15,
+          "expression": "design_flow_m3_h >= 15 * room_floor_area_m2"
+        }
+      ],
+      "machine_readable": {
+        "lookup_key": "room.use_type",
+        "left": "mechanical_ventilation.design_flow_m3_h",
+        "operator": ">=",
+        "right": "lookup(minimum_flow_per_floor_area_m3_h_m2) * room.floor_area_m2"
+      },
+      "verification_note": "已於 2026-10-21 重新核對全國法規資料庫第102條：私人辦公室等容納人數不多者為 8、辦公室及會客室為 10、會議室等容納人數較多者為 15；單位均為每平方公尺樓地板面積所需立方公尺／小時，且第101條三種通風方式數值相同。",
+      "exceptions": [],
+      "source": [
+        {
+          "source_id": "SRC-LAW-EQUIPMENT",
+          "title": "建築技術規則建築設備編",
+          "authority": "內政部／全國法規資料庫",
+          "version": "修正日期 2022-12-29",
+          "article_or_page": "第100條至第102條",
+          "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0070117",
+          "retrieved_on": "2026-10-21"
+        }
+      ]
+    },
+    {
+      "rule_id": "TW-WIND-LAW-003",
+      "classification": "mandatory_law",
+      "status": "conditional",
+      "reason": "採用第43條所稱有效自然通風設備時，排風管、進風口及排風口須符合第44條構造與面積規定。",
+      "applies_when": "compliance_path == 'natural_ventilation_equipment'",
+      "machine_readable": {
+        "adjusted_floor_area_expression": "Af = max(0, room.floor_area_m2 - 20 * other_effective_vent_open_area_m2)",
+        "minimum_exhaust_duct_area_expression": "Av_min = Af / (250 * sqrt(h_m))",
+        "checks": [
+          "exhaust_duct_effective_area_m2 >= Av_min",
+          "inlet_effective_area_m2 >= exhaust_duct_effective_area_m2",
+          "outlet_effective_area_m2 >= exhaust_duct_effective_area_m2",
+          "inlet_center_height_m <= 0.5 * room.ceiling_height_m",
+          "outlet_distance_below_ceiling_m <= 0.8",
+          "outlet.normally_open == true"
+        ]
+      },
+      "requirements_text": [
+        "進風口、排風口及排風管道應具防雨、防蟲作用。",
+        "排風管道應以不燃材料建造，儘可能豎立並直通戶外。",
+        "進風口應開向與空氣直接流通之空間。"
+      ],
+      "exceptions": [],
+      "source": [
+        {
+          "source_id": "SRC-LAW-DESIGN",
+          "title": "建築技術規則建築設計施工編",
+          "authority": "內政部／全國法規資料庫",
+          "version": "修正日期 2026-02-23",
+          "article_or_page": "第44條",
+          "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0070115",
+          "retrieved_on": "2026-10-16"
+        }
+      ]
+    },
+    {
+      "rule_id": "TW-WIND-LAW-004",
+      "classification": "mandatory_law",
+      "status": "informational",
+      "reason": "這是無窗戶居室的定義條件之一，不是所有商辦居室一律必須在天花板下 80 cm 內設置 2% 開口的獨立最低要求。",
+      "applies_when": "room.is_habitable == true AND room.floor_area_m2 > 50",
+      "machine_readable": {
+        "unwindowed_criterion_3": "high_level_effective_vent_area_m2 < 0.02 * room.floor_area_m2",
+        "high_level_zone": "ceiling plane OR within 0.8 m below ceiling",
+        "result": "if_true_then_room_is_unwindowed_by_criterion_3"
+      },
+      "exceptions": [],
+      "source": [
+        {
+          "source_id": "SRC-LAW-DESIGN",
+          "title": "建築技術規則建築設計施工編",
+          "authority": "內政部／全國法規資料庫",
+          "version": "修正日期 2026-02-23",
+          "article_or_page": "第1條第35款第3目",
+          "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0070115",
+          "retrieved_on": "2026-10-16"
+        }
+      ]
+    },
+    {
+      "rule_id": "TW-WIND-EEWH-001",
+      "classification": "eewh_scoring",
+      "status": "conditional",
+      "reason": "EEWH-BC 2026 室內環境指標以自然通風潛力 VP 評分；此為標章評分，不是第43條 5% 法定面積的替代判定。",
+      "applies_when": "eewh.application_requested == true AND building.use_group IN ['D-2','E','G-2','F-3','F-4']",
+      "machine_readable": {
+        "expression": "VP = (sum_Avi_m2 + 3.0 * sum_Acj_m2) / sum_Ak_m2",
+        "variables": {
+          "Avi": "單側通風窗面積",
+          "Acj": "可形成室內對流路徑之對流窗面積",
+          "Ak": "通風檢討空間樓板面積"
+        },
+        "score_band": [
+          {"condition": "VP >= 0.10", "score": 100},
+          {"condition": "0.07 <= VP AND VP < 0.10", "score": 80},
+          {"condition": "0.05 <= VP AND VP < 0.07", "score": 60},
+          {"condition": "0.03 <= VP AND VP < 0.05", "score": 40},
+          {"condition": "VP < 0.03", "score": 10}
+        ]
+      },
+      "path_constraints": [
+        "對流路徑以兩方開窗中心最短距離連線認定，可為直線或折線；折線轉彎角度合計不得大於 90 度。",
+        "室內路徑全程最小通過面積須至少 1.0 m2。",
+        "經常關閉之密閉門扉與自動門不得作為路徑；常開且開口至少 1.0 m2 的門、氣窗、百葉窗或可通風門可認定。",
+        "每一可開窗僅得計入三條由最短路徑起算且互不交叉的對流路徑；第四條以上不計。",
+        "高處天窗、通風塔或屋頂通風器可與下方開窗形成豎向路徑。"
+      ],
+      "source": [
+        {
+          "source_id": "SRC-EEWH-BC-2026",
+          "title": "2026年版綠建築評估手冊－基本型（EEWH-BC）",
+          "authority": "內政部建築研究所",
+          "version": "2026年版，官方技術手冊頁面更新 2026-06-15",
+          "article_or_page": "附表1-6第110至112頁；附錄一第121至126頁",
+          "url": "https://www.abri.gov.tw/News_Content.aspx?n=20916&s=339049",
+          "retrieved_on": "2026-10-16"
+        }
+      ]
+    },
+    {
+      "rule_id": "TW-WIND-EEWH-002",
+      "classification": "eewh_scoring",
+      "status": "conditional",
+      "reason": "間歇型空調的辦公文教宗教照護分區可用 VP 推算自然通風空調節能率 Vac；計算是節能優惠，可省略並令 Vac=1.0。",
+      "applies_when": "energy.compliance_method == 'ENVLOAD' AND energy.zone == 'office_education_religion_care' AND natural_ventilation_credit_requested == true",
+      "machine_readable": {
+        "expression": "if VP < 0.05 then Vac = 1.0 else Vac = max(0.8, 0.9 - 0.1 * (VP - 0.02) / 0.13)",
+        "opt_out_expression": "Vac = 1.0",
+        "ENVLOAD_integration": "ENVLOADm = a1m + (a2m * Lm * DH + a3m * sum(Mmk * IHk)) * Vacm"
+      },
+      "preconditions": [
+        "須確實採用間歇空調系統。",
+        "須具備開窗操作制度或控制邏輯，使涼爽季節可停用空調並開窗。",
+        "VP 必須大於或等於 0.05 才執行自然通風節能評估。"
+      ],
+      "source": [
+        {
+          "source_id": "SRC-EEWH-BC-2026",
+          "title": "2026年版綠建築評估手冊－基本型（EEWH-BC）",
+          "authority": "內政部建築研究所",
+          "version": "2026年版",
+          "article_or_page": "附錄一第127頁",
+          "url": "https://www.abri.gov.tw/News_Content.aspx?n=20916&s=339049",
+          "retrieved_on": "2026-10-16"
+        },
+        {
+          "source_id": "SRC-ENERGY-2020",
+          "title": "建築物節約能源設計技術規範",
+          "authority": "內政部國土管理署",
+          "version": "2019-12-31 修正，2021-01-01 生效",
+          "article_or_page": "第9.1.4、9.1.7.12節及公式(13)至(20)",
+          "url": "https://www.nlma.gov.tw/ch/legislation/regsearch/6187",
+          "direct_pdf_url": "https://www.nlma.gov.tw/uploads/files/ad1d46151d95afce37ddf77954111364.pdf",
+          "retrieved_on": "2026-10-16"
+        }
+      ]
+    },
+    {
+      "rule_id": "TW-WIND-ASSUMPTION-001",
+      "classification": "unverified_assumption",
+      "status": "assumption",
+      "reason": "為使 PoC 在尚無產品核定淨開口資料時可執行第43條 5% 初判，暫以淨寬、淨高及開啟比例估算；此算法不是法規明定的窗型折減公式。",
+      "applies_when": "window.product_or_authority_accepted_clear_open_area_m2 == 'unknown' AND poc_fallback_enabled == true",
+      "machine_readable": {
+        "expression": "window.legal_effective_open_area_m2 = window.width * window.height * window.opening_ratio",
+        "opening_ratio_source": "依 window_types.json 各窗型公式計算",
+        "result_status": "provisional_assumption",
+        "override_priority": ["authority_accepted_value", "manufacturer_tested_value", "verified_revit_geometry_value", "poc_assumption_value"]
+      },
+      "constraints": [
+        "width 與 height 必須是實際可開扇淨尺寸，不得使用含固定扇或窗框的整樘名目尺寸。",
+        "opening_ratio 必須介於 0 與 1。",
+        "不得乘入 Cd；Cd 僅用於氣流量估算。",
+        "輸出報告須顯示 assumption_flag=true，並要求建築師或門窗廠覆核。"
+      ],
+      "source": [{
+        "source_id": "SRC-INTERNAL-LEGAL-AREA-FALLBACK",
+        "title": "PoC 法定有效通風面積暫算規則",
+        "authority": null,
+        "version": "1.1.0",
+        "article_or_page": null,
+        "url": null,
+        "retrieved_on": null,
+        "source_status": "unverified_assumption"
+      }]
+    },
+    {
+      "rule_id": "TW-WIND-REC-001",
+      "classification": "design_recommendation",
+      "status": "advisory",
+      "reason": "法規面積合格不等於使用時段具有足夠風量；PoC 可另以壓差模型比較方案，但不得取代法規與 EEWH 計算。",
+      "applies_when": "airflow_screening_requested == true",
+      "machine_readable": {
+        "single_opening_screening": "Q_m3_h = 3600 * Cd * A_geometric_effective_m2 * sqrt(2 * abs(delta_pressure_Pa) / air_density_kg_m3)",
+        "two_opening_equivalent_area": "Aeq_m2 = 1 / sqrt(1 / A1_m2^2 + 1 / A2_m2^2)",
+        "two_opening_screening": "Q_m3_h = 3600 * Cd_system * Aeq_m2 * sqrt(2 * abs(delta_pressure_Pa) / air_density_kg_m3)"
+      },
+      "limitations": [
+        "不含風壓係數、紗網、百葉、雨遮、室內隔間、熱浮力與瞬時風向的完整耦合。",
+        "Cd 預設值僅供方案排序，須由窗廠試驗、風洞、CFD 或現場量測校正。"
+      ],
+      "source": [
+        {
+          "source_id": "SRC-INTERNAL-ENGINEERING",
+          "title": "PoC 孔口流量篩選模型",
+          "authority": null,
+          "version": "1.0.0",
+          "article_or_page": null,
+          "url": null,
+          "retrieved_on": null,
+          "source_status": "unverified_assumption"
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SRC-LAW-DESIGN",
+      "official": true,
+      "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0070115"
+    },
+    {
+      "source_id": "SRC-LAW-EQUIPMENT",
+      "official": true,
+      "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0070117"
+    },
+    {
+      "source_id": "SRC-EEWH-BC-2026",
+      "official": true,
+      "url": "https://www.abri.gov.tw/News_Content.aspx?n=20916&s=339049"
+    },
+    {
+      "source_id": "SRC-ENERGY-2020",
+      "official": true,
+      "url": "https://www.nlma.gov.tw/ch/legislation/regsearch/6187"
+    }
+  ]
+}

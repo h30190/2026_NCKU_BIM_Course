@@ -1,0 +1,871 @@
+{
+ "schema": "build_report/1.0",
+ "model_id": "01",
+ "revit_project_name": "BIM_商辦標準層01",
+ "proposal": {
+  "proposal_id": "P1",
+  "rank": 1,
+  "scheme": "N-S",
+  "window_count": 10,
+  "family_type": "M_Window-Casement-Double: 1400 x 1800mm",
+  "reason": "N-S 相對外牆開窗形成穿堂風,連線避開服務核;Tainan annual(僅統計 18–30°C、8–22 時的可開窗時數)風資料,常見風向 N。採 M_Window-Casement-Double 1400 x 1800mm 共 10 扇:N向牆(1664649)5 扇(方向分數 1.00,窗牆比 15.8%)、S向牆(1664841)5 扇(方向分數 0.73,窗牆比 15.8%)。所有窗皆避開正對服務核的牆段;法定有效通風面積(PoC 暫算)21.82 m² ≥ 辦公區 5% = 17.89 m²;EEWH VP=0.183(100 分);達標即止,不追求最大窗。"
+ },
+ "commands_file": "output/mcp_commands_model01_P1_20261023_034336.json",
+ "source_proposals_file": "data/model_01/proposals_default.json",
+ "confirmed_by_user": true,
+ "started_at": "2026-10-23T03:43:37.142Z",
+ "finished_at": "2026-10-23T03:43:41.963Z",
+ "cleanup_before_build": {
+  "replace_previous": true,
+  "deleted": [
+   {
+    "element_id": 1668687,
+    "created_by": null,
+    "error": null
+   },
+   {
+    "element_id": 1668692,
+    "created_by": null,
+    "error": null
+   },
+   {
+    "element_id": 1668697,
+    "created_by": null,
+    "error": null
+   },
+   {
+    "element_id": 1668702,
+    "created_by": null,
+    "error": null
+   },
+   {
+    "element_id": 1668707,
+    "created_by": null,
+    "error": null
+   },
+   {
+    "element_id": 1668712,
+    "created_by": null,
+    "error": null
+   },
+   {
+    "element_id": 1668717,
+    "created_by": null,
+    "error": null
+   },
+   {
+    "element_id": 1668722,
+    "created_by": null,
+    "error": null
+   },
+   {
+    "element_id": 1668727,
+    "created_by": null,
+    "error": null
+   },
+   {
+    "element_id": 1668732,
+    "created_by": null,
+    "error": null
+   },
+   {
+    "element_id": 1668880,
+    "created_by": {
+     "report_file": "output/build_report_model01_P2_20261023_033312.json",
+     "proposal_id": "P2"
+    },
+    "error": null
+   },
+   {
+    "element_id": 1668890,
+    "created_by": {
+     "report_file": "output/build_report_model01_P2_20261023_033312.json",
+     "proposal_id": "P2"
+    },
+    "error": null
+   },
+   {
+    "element_id": 1668900,
+    "created_by": {
+     "report_file": "output/build_report_model01_P2_20261023_033312.json",
+     "proposal_id": "P2"
+    },
+    "error": null
+   },
+   {
+    "element_id": 1668931,
+    "created_by": {
+     "report_file": "output/build_report_model01_P2_20261023_033312.json",
+     "proposal_id": "P2"
+    },
+    "error": null
+   },
+   {
+    "element_id": 1668939,
+    "created_by": {
+     "report_file": "output/build_report_model01_P2_20261023_033312.json",
+     "proposal_id": "P2"
+    },
+    "error": null
+   },
+   {
+    "element_id": 1668949,
+    "created_by": {
+     "report_file": "output/build_report_model01_P2_20261023_033312.json",
+     "proposal_id": "P2"
+    },
+    "error": null
+   },
+   {
+    "element_id": 1669041,
+    "created_by": {
+     "report_file": "output/build_report_model01_P1_20261023_033425.json",
+     "proposal_id": "P1"
+    },
+    "error": null
+   },
+   {
+    "element_id": 1669049,
+    "created_by": {
+     "report_file": "output/build_report_model01_P1_20261023_033425.json",
+     "proposal_id": "P1"
+    },
+    "error": null
+   },
+   {
+    "element_id": 1669059,
+    "created_by": {
+     "report_file": "output/build_report_model01_P1_20261023_033425.json",
+     "proposal_id": "P1"
+    },
+    "error": null
+   }
+  ],
+  "failed": []
+ },
+ "summary": {
+  "requested": 10,
+  "created": 10,
+  "pass": 10,
+  "warning": 0,
+  "fail": 0
+ },
+ "created_element_ids": [
+  1669135,
+  1669148,
+  1669158,
+  1669168,
+  1669178,
+  1669188,
+  1669198,
+  1669208,
+  1669218,
+  1669228
+ ],
+ "VC_006": {
+  "check_id": "VC-006",
+  "item": "確認 Revit family、type、host wall、位置及碰撞狀態",
+  "status": "pass",
+  "result": {
+   "family_loaded": true,
+   "type_resolved": true,
+   "host_wall_resolved": true,
+   "facing": "interior",
+   "collision_status": "pass",
+   "wall_cut_status": "pass"
+  },
+  "evidence": [
+   "MCP 指令回傳",
+   "Revit ElementId",
+   "範圍框平面重疊預檢(柱、同牆窗)",
+   "Revit 3D 視圖人工檢查(牆體切割)",
+   "Revit 干涉檢查"
+  ],
+  "note": "完整 3D 碰撞與牆體切割須人工在 Revit 檢查後,用 /api/review 寫回結果",
+  "reviewer": "組員4",
+  "reviewed_at": "2026-10-23T03:46:16.583Z"
+ },
+ "failures_for_member3": [],
+ "windows": [
+  {
+   "window_no": 1,
+   "wall_id": "1664649",
+   "orientation": "N",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664649",
+    "s_center_mm": 1750,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "element_id": 1669135,
+   "status": "pass",
+   "steps": [
+    {
+     "step": "create",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "verify_type_and_host",
+     "ok": true,
+     "error": null,
+     "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+     "host_wall_id": "1664649"
+    },
+    {
+     "step": "set_sill",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "face_interior",
+     "ok": true,
+     "error": null,
+     "flipped": true
+    },
+    {
+     "step": "verify_geometry",
+     "ok": true,
+     "error": null
+    }
+   ],
+   "issues": [],
+   "actual": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664649"
+   },
+   "bbox_mm": {
+    "MinX": -10206.7,
+    "MinY": 14686.14,
+    "MinZ": 819.57,
+    "MaxX": -8661.3,
+    "MaxY": 15393.15,
+    "MaxZ": 2760
+   },
+   "measured": {
+    "s_center_mm": 1749.6,
+    "outward_extent_mm": 130,
+    "inward_extent_mm": 577,
+    "z_min_mm": 819.57,
+    "z_max_mm": 2760,
+    "facing": "interior"
+   }
+  },
+  {
+   "window_no": 2,
+   "wall_id": "1664649",
+   "orientation": "N",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664649",
+    "s_center_mm": 3650,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "element_id": 1669148,
+   "status": "pass",
+   "steps": [
+    {
+     "step": "create",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "verify_type_and_host",
+     "ok": true,
+     "error": null,
+     "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+     "host_wall_id": "1664649"
+    },
+    {
+     "step": "set_sill",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "face_interior",
+     "ok": true,
+     "error": null,
+     "flipped": true
+    },
+    {
+     "step": "verify_geometry",
+     "ok": true,
+     "error": null
+    }
+   ],
+   "issues": [],
+   "actual": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664649"
+   },
+   "bbox_mm": {
+    "MinX": -8306.7,
+    "MinY": 14686.14,
+    "MinZ": 819.57,
+    "MaxX": -6761.3,
+    "MaxY": 15393.15,
+    "MaxZ": 2760
+   },
+   "measured": {
+    "s_center_mm": 3649.6,
+    "outward_extent_mm": 130,
+    "inward_extent_mm": 577,
+    "z_min_mm": 819.57,
+    "z_max_mm": 2760,
+    "facing": "interior"
+   }
+  },
+  {
+   "window_no": 3,
+   "wall_id": "1664649",
+   "orientation": "N",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664649",
+    "s_center_mm": 5550,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "element_id": 1669158,
+   "status": "pass",
+   "steps": [
+    {
+     "step": "create",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "verify_type_and_host",
+     "ok": true,
+     "error": null,
+     "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+     "host_wall_id": "1664649"
+    },
+    {
+     "step": "set_sill",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "face_interior",
+     "ok": true,
+     "error": null,
+     "flipped": true
+    },
+    {
+     "step": "verify_geometry",
+     "ok": true,
+     "error": null
+    }
+   ],
+   "issues": [],
+   "actual": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664649"
+   },
+   "bbox_mm": {
+    "MinX": -6406.7,
+    "MinY": 14686.14,
+    "MinZ": 819.57,
+    "MaxX": -4861.3,
+    "MaxY": 15393.15,
+    "MaxZ": 2760
+   },
+   "measured": {
+    "s_center_mm": 5549.6,
+    "outward_extent_mm": 130,
+    "inward_extent_mm": 577,
+    "z_min_mm": 819.57,
+    "z_max_mm": 2760,
+    "facing": "interior"
+   }
+  },
+  {
+   "window_no": 4,
+   "wall_id": "1664649",
+   "orientation": "N",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664649",
+    "s_center_mm": 15209,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "element_id": 1669168,
+   "status": "pass",
+   "steps": [
+    {
+     "step": "create",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "verify_type_and_host",
+     "ok": true,
+     "error": null,
+     "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+     "host_wall_id": "1664649"
+    },
+    {
+     "step": "set_sill",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "face_interior",
+     "ok": true,
+     "error": null,
+     "flipped": true
+    },
+    {
+     "step": "verify_geometry",
+     "ok": true,
+     "error": null
+    }
+   ],
+   "issues": [],
+   "actual": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664649"
+   },
+   "bbox_mm": {
+    "MinX": 3253.3,
+    "MinY": 14686.14,
+    "MinZ": 819.57,
+    "MaxX": 4798.7,
+    "MaxY": 15393.15,
+    "MaxZ": 2760
+   },
+   "measured": {
+    "s_center_mm": 15209.6,
+    "outward_extent_mm": 130,
+    "inward_extent_mm": 577,
+    "z_min_mm": 819.57,
+    "z_max_mm": 2760,
+    "facing": "interior"
+   }
+  },
+  {
+   "window_no": 5,
+   "wall_id": "1664649",
+   "orientation": "N",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664649",
+    "s_center_mm": 17669,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "element_id": 1669178,
+   "status": "pass",
+   "steps": [
+    {
+     "step": "create",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "verify_type_and_host",
+     "ok": true,
+     "error": null,
+     "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+     "host_wall_id": "1664649"
+    },
+    {
+     "step": "set_sill",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "face_interior",
+     "ok": true,
+     "error": null,
+     "flipped": true
+    },
+    {
+     "step": "verify_geometry",
+     "ok": true,
+     "error": null
+    }
+   ],
+   "issues": [],
+   "actual": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664649"
+   },
+   "bbox_mm": {
+    "MinX": 5712.3,
+    "MinY": 14686.14,
+    "MinZ": 819.57,
+    "MaxX": 7257.7,
+    "MaxY": 15393.15,
+    "MaxZ": 2760
+   },
+   "measured": {
+    "s_center_mm": 17668.6,
+    "outward_extent_mm": 130,
+    "inward_extent_mm": 577,
+    "z_min_mm": 819.57,
+    "z_max_mm": 2760,
+    "facing": "interior"
+   }
+  },
+  {
+   "window_no": 6,
+   "wall_id": "1664841",
+   "orientation": "S",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664841",
+    "s_center_mm": 2315,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "element_id": 1669188,
+   "status": "pass",
+   "steps": [
+    {
+     "step": "create",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "verify_type_and_host",
+     "ok": true,
+     "error": null,
+     "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+     "host_wall_id": "1664841"
+    },
+    {
+     "step": "set_sill",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "face_interior",
+     "ok": true,
+     "error": null,
+     "flipped": true
+    },
+    {
+     "step": "verify_geometry",
+     "ok": true,
+     "error": null
+    }
+   ],
+   "issues": [],
+   "actual": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664841"
+   },
+   "bbox_mm": {
+    "MinX": 5712.3,
+    "MinY": -5130,
+    "MinZ": 819.57,
+    "MaxX": 7257.7,
+    "MaxY": -4422.99,
+    "MaxZ": 2760
+   },
+   "measured": {
+    "s_center_mm": 2315,
+    "outward_extent_mm": 130,
+    "inward_extent_mm": 577,
+    "z_min_mm": 819.57,
+    "z_max_mm": 2760,
+    "facing": "interior"
+   }
+  },
+  {
+   "window_no": 7,
+   "wall_id": "1664841",
+   "orientation": "S",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664841",
+    "s_center_mm": 4774,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "element_id": 1669198,
+   "status": "pass",
+   "steps": [
+    {
+     "step": "create",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "verify_type_and_host",
+     "ok": true,
+     "error": null,
+     "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+     "host_wall_id": "1664841"
+    },
+    {
+     "step": "set_sill",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "face_interior",
+     "ok": true,
+     "error": null,
+     "flipped": true
+    },
+    {
+     "step": "verify_geometry",
+     "ok": true,
+     "error": null
+    }
+   ],
+   "issues": [],
+   "actual": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664841"
+   },
+   "bbox_mm": {
+    "MinX": 3253.3,
+    "MinY": -5130,
+    "MinZ": 819.57,
+    "MaxX": 4798.7,
+    "MaxY": -4422.99,
+    "MaxZ": 2760
+   },
+   "measured": {
+    "s_center_mm": 4774,
+    "outward_extent_mm": 130,
+    "inward_extent_mm": 577,
+    "z_min_mm": 819.57,
+    "z_max_mm": 2760,
+    "facing": "interior"
+   }
+  },
+  {
+   "window_no": 8,
+   "wall_id": "1664841",
+   "orientation": "S",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664841",
+    "s_center_mm": 14434,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "element_id": 1669208,
+   "status": "pass",
+   "steps": [
+    {
+     "step": "create",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "verify_type_and_host",
+     "ok": true,
+     "error": null,
+     "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+     "host_wall_id": "1664841"
+    },
+    {
+     "step": "set_sill",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "face_interior",
+     "ok": true,
+     "error": null,
+     "flipped": true
+    },
+    {
+     "step": "verify_geometry",
+     "ok": true,
+     "error": null
+    }
+   ],
+   "issues": [],
+   "actual": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664841"
+   },
+   "bbox_mm": {
+    "MinX": -6406.7,
+    "MinY": -5130,
+    "MinZ": 819.57,
+    "MaxX": -4861.3,
+    "MaxY": -4422.99,
+    "MaxZ": 2760
+   },
+   "measured": {
+    "s_center_mm": 14434,
+    "outward_extent_mm": 130,
+    "inward_extent_mm": 577,
+    "z_min_mm": 819.57,
+    "z_max_mm": 2760,
+    "facing": "interior"
+   }
+  },
+  {
+   "window_no": 9,
+   "wall_id": "1664841",
+   "orientation": "S",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664841",
+    "s_center_mm": 16334,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "element_id": 1669218,
+   "status": "pass",
+   "steps": [
+    {
+     "step": "create",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "verify_type_and_host",
+     "ok": true,
+     "error": null,
+     "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+     "host_wall_id": "1664841"
+    },
+    {
+     "step": "set_sill",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "face_interior",
+     "ok": true,
+     "error": null,
+     "flipped": true
+    },
+    {
+     "step": "verify_geometry",
+     "ok": true,
+     "error": null
+    }
+   ],
+   "issues": [],
+   "actual": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664841"
+   },
+   "bbox_mm": {
+    "MinX": -8306.7,
+    "MinY": -5130,
+    "MinZ": 819.57,
+    "MaxX": -6761.3,
+    "MaxY": -4422.99,
+    "MaxZ": 2760
+   },
+   "measured": {
+    "s_center_mm": 16334,
+    "outward_extent_mm": 130,
+    "inward_extent_mm": 577,
+    "z_min_mm": 819.57,
+    "z_max_mm": 2760,
+    "facing": "interior"
+   }
+  },
+  {
+   "window_no": 10,
+   "wall_id": "1664841",
+   "orientation": "S",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664841",
+    "s_center_mm": 18234,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "element_id": 1669228,
+   "status": "pass",
+   "steps": [
+    {
+     "step": "create",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "verify_type_and_host",
+     "ok": true,
+     "error": null,
+     "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+     "host_wall_id": "1664841"
+    },
+    {
+     "step": "set_sill",
+     "ok": true,
+     "error": null
+    },
+    {
+     "step": "face_interior",
+     "ok": true,
+     "error": null,
+     "flipped": true
+    },
+    {
+     "step": "verify_geometry",
+     "ok": true,
+     "error": null
+    }
+   ],
+   "issues": [],
+   "actual": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664841"
+   },
+   "bbox_mm": {
+    "MinX": -10206.7,
+    "MinY": -5130,
+    "MinZ": 819.57,
+    "MaxX": -8661.3,
+    "MaxY": -4422.99,
+    "MaxZ": 2760
+   },
+   "measured": {
+    "s_center_mm": 18234,
+    "outward_extent_mm": 130,
+    "inward_extent_mm": 577,
+    "z_min_mm": 819.57,
+    "z_max_mm": 2760,
+    "facing": "interior"
+   }
+  }
+ ]
+}

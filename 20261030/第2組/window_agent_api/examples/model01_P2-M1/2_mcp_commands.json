@@ -1,0 +1,1329 @@
+{
+ "schema": "mcp_commands/1.0",
+ "generated_at": "2026-10-30T04:57:00.688Z",
+ "model_id": "01",
+ "revit_project_name": "BIM_商辦標準層01",
+ "source_proposals_file": "output/proposals_model01_20261030_045652.json",
+ "proposal": {
+  "proposal_id": "P2-M1",
+  "rank": null,
+  "scheme": "N-E-S-W",
+  "window_count": 14,
+  "family_type": "M_Window-Casement-Double: 1050 x 1350mm + M_Window-Casement-Double: 1400 x 1800mm",
+  "reason": "手動調整:N向牆 4 扇 M_Window-Casement-Double: 1050 x 1350mm、E向牆 3 扇 M_Window-Casement-Double: 1400 x 1800mm、S向牆 4 扇 M_Window-Casement-Double: 1050 x 1350mm、W向牆 3 扇 M_Window-Casement-Double: 1400 x 1800mm。法定有效通風面積(PoC 暫算)22.92 m² ≥ 辦公區 5% = 17.89 m²;EEWH VP=0.192(100 分);最大窗牆比 9.3%。"
+ },
+ "requires_user_confirmation": true,
+ "confirmation_rule": "執行時必須再輸入一次方案編號 P2-M1",
+ "preflight": [
+  {
+   "check": "active_project",
+   "tool": "get_project_info",
+   "expect": {
+    "ProjectName": "BIM_商辦標準層01"
+   }
+  },
+  {
+   "check": "window_type_loaded",
+   "tool": "list_family_symbols",
+   "params": {
+    "filter": "M_Window-Casement-Double"
+   },
+   "expect": {
+    "family_and_type": "M_Window-Casement-Double: 1050 x 1350mm"
+   }
+  },
+  {
+   "check": "window_type_loaded",
+   "tool": "list_family_symbols",
+   "params": {
+    "filter": "M_Window-Casement-Double"
+   },
+   "expect": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm"
+   }
+  },
+  {
+   "check": "host_wall_exists",
+   "tool": "get_wall_info",
+   "params": {
+    "wallId": 1664649
+   }
+  },
+  {
+   "check": "host_wall_exists",
+   "tool": "get_wall_info",
+   "params": {
+    "wallId": 1664784
+   }
+  },
+  {
+   "check": "host_wall_exists",
+   "tool": "get_wall_info",
+   "params": {
+    "wallId": 1664841
+   }
+  },
+  {
+   "check": "host_wall_exists",
+   "tool": "get_wall_info",
+   "params": {
+    "wallId": 1664926
+   }
+  }
+ ],
+ "columns_for_overlap_check": [
+  {
+   "id": 1668091,
+   "bbox_mm": {
+    "HasBoundingBox": true,
+    "MinX": -11283.56,
+    "MinY": 14763.15,
+    "MinZ": 0,
+    "MaxX": -10683.56,
+    "MaxY": 15363.15,
+    "MaxZ": 4000
+   }
+  },
+  {
+   "id": 1668290,
+   "bbox_mm": {
+    "HasBoundingBox": true,
+    "MinX": -11283.56,
+    "MinY": -5100,
+    "MinZ": 0,
+    "MaxX": -10683.56,
+    "MaxY": -4500,
+    "MaxZ": 4000
+   }
+  },
+  {
+   "id": 1668323,
+   "bbox_mm": {
+    "HasBoundingBox": true,
+    "MinX": -11283.56,
+    "MinY": 7963.15,
+    "MinZ": 0,
+    "MaxX": -10683.56,
+    "MaxY": 8563.15,
+    "MaxZ": 4000
+   }
+  },
+  {
+   "id": 1668387,
+   "bbox_mm": {
+    "HasBoundingBox": true,
+    "MinX": -11283.56,
+    "MinY": 1863.15,
+    "MinZ": 0,
+    "MaxX": -10683.56,
+    "MaxY": 2463.15,
+    "MaxZ": 4000
+   }
+  },
+  {
+   "id": 1668454,
+   "bbox_mm": {
+    "HasBoundingBox": true,
+    "MinX": 8294.62,
+    "MinY": 14763.15,
+    "MinZ": 0,
+    "MaxX": 8894.62,
+    "MaxY": 15363.15,
+    "MaxZ": 4000
+   }
+  },
+  {
+   "id": 1668455,
+   "bbox_mm": {
+    "HasBoundingBox": true,
+    "MinX": 8294.62,
+    "MinY": -5100,
+    "MinZ": 0,
+    "MaxX": 8894.62,
+    "MaxY": -4500,
+    "MaxZ": 4000
+   }
+  },
+  {
+   "id": 1668456,
+   "bbox_mm": {
+    "HasBoundingBox": true,
+    "MinX": 8294.62,
+    "MinY": 7963.15,
+    "MinZ": 0,
+    "MaxX": 8894.62,
+    "MaxY": 8563.15,
+    "MaxZ": 4000
+   }
+  },
+  {
+   "id": 1668457,
+   "bbox_mm": {
+    "HasBoundingBox": true,
+    "MinX": 8294.62,
+    "MinY": 1863.15,
+    "MinZ": 0,
+    "MaxX": 8894.62,
+    "MaxY": 2463.15,
+    "MaxZ": 4000
+   }
+  },
+  {
+   "id": 1668502,
+   "bbox_mm": {
+    "HasBoundingBox": true,
+    "MinX": -4383.56,
+    "MinY": 14763.15,
+    "MinZ": 0,
+    "MaxX": -3783.56,
+    "MaxY": 15363.15,
+    "MaxZ": 4000
+   }
+  },
+  {
+   "id": 1668525,
+   "bbox_mm": {
+    "HasBoundingBox": true,
+    "MinX": 1616.44,
+    "MinY": 14763.15,
+    "MinZ": 0,
+    "MaxX": 2216.44,
+    "MaxY": 15363.15,
+    "MaxZ": 4000
+   }
+  },
+  {
+   "id": 1668555,
+   "bbox_mm": {
+    "HasBoundingBox": true,
+    "MinX": -4383.56,
+    "MinY": -5100,
+    "MinZ": 0,
+    "MaxX": -3783.56,
+    "MaxY": -4500,
+    "MaxZ": 4000
+   }
+  },
+  {
+   "id": 1668580,
+   "bbox_mm": {
+    "HasBoundingBox": true,
+    "MinX": 1616.44,
+    "MinY": -5100,
+    "MinZ": 0,
+    "MaxX": 2216.44,
+    "MaxY": -4500,
+    "MaxZ": 4000
+   }
+  }
+ ],
+ "windows": [
+  {
+   "window_no": 1,
+   "wall_id": "1664649",
+   "orientation": "N",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1050 x 1350mm",
+    "host_wall_id": "1664649",
+    "s_center_mm": 2442,
+    "sill_mm": 900,
+    "head_mm": 2250,
+    "width_mm": 1050,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     -11183.56,
+     15263.15,
+     0
+    ],
+    "s_axis_unit": [
+     1,
+     0,
+     0
+    ],
+    "outward_normal": [
+     0,
+     1,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664649,
+      "locationX": -8742,
+      "locationY": 15263,
+      "windowType": "M_Window-Casement-Double: 1050 x 1350mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 2,
+   "wall_id": "1664649",
+   "orientation": "N",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1050 x 1350mm",
+    "host_wall_id": "1664649",
+    "s_center_mm": 4858,
+    "sill_mm": 900,
+    "head_mm": 2250,
+    "width_mm": 1050,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     -11183.56,
+     15263.15,
+     0
+    ],
+    "s_axis_unit": [
+     1,
+     0,
+     0
+    ],
+    "outward_normal": [
+     0,
+     1,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664649,
+      "locationX": -6325,
+      "locationY": 15263,
+      "windowType": "M_Window-Casement-Double: 1050 x 1350mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 3,
+   "wall_id": "1664649",
+   "orientation": "N",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1050 x 1350mm",
+    "host_wall_id": "1664649",
+    "s_center_mm": 15268,
+    "sill_mm": 900,
+    "head_mm": 2250,
+    "width_mm": 1050,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     -11183.56,
+     15263.15,
+     0
+    ],
+    "s_axis_unit": [
+     1,
+     0,
+     0
+    ],
+    "outward_normal": [
+     0,
+     1,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664649,
+      "locationX": 4084,
+      "locationY": 15263,
+      "windowType": "M_Window-Casement-Double: 1050 x 1350mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 4,
+   "wall_id": "1664649",
+   "orientation": "N",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1050 x 1350mm",
+    "host_wall_id": "1664649",
+    "s_center_mm": 17610,
+    "sill_mm": 900,
+    "head_mm": 2250,
+    "width_mm": 1050,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     -11183.56,
+     15263.15,
+     0
+    ],
+    "s_axis_unit": [
+     1,
+     0,
+     0
+    ],
+    "outward_normal": [
+     0,
+     1,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664649,
+      "locationX": 6427,
+      "locationY": 15263,
+      "windowType": "M_Window-Casement-Double: 1050 x 1350mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 5,
+   "wall_id": "1664784",
+   "orientation": "E",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664784",
+    "s_center_mm": 3600,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     8800,
+     15263.15,
+     0
+    ],
+    "s_axis_unit": [
+     0,
+     -0.9999999999999998,
+     0
+    ],
+    "outward_normal": [
+     1,
+     0,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664784,
+      "locationX": 8800,
+      "locationY": 11663,
+      "windowType": "M_Window-Casement-Double: 1400 x 1800mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 6,
+   "wall_id": "1664784",
+   "orientation": "E",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664784",
+    "s_center_mm": 15304,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     8800,
+     15263.15,
+     0
+    ],
+    "s_axis_unit": [
+     0,
+     -0.9999999999999998,
+     0
+    ],
+    "outward_normal": [
+     1,
+     0,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664784,
+      "locationX": 8800,
+      "locationY": -41,
+      "windowType": "M_Window-Casement-Double: 1400 x 1800mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 7,
+   "wall_id": "1664784",
+   "orientation": "E",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664784",
+    "s_center_mm": 17859,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     8800,
+     15263.15,
+     0
+    ],
+    "s_axis_unit": [
+     0,
+     -0.9999999999999998,
+     0
+    ],
+    "outward_normal": [
+     1,
+     0,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664784,
+      "locationX": 8800,
+      "locationY": -2596,
+      "windowType": "M_Window-Casement-Double: 1400 x 1800mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 8,
+   "wall_id": "1664841",
+   "orientation": "S",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1050 x 1350mm",
+    "host_wall_id": "1664841",
+    "s_center_mm": 2373,
+    "sill_mm": 900,
+    "head_mm": 2250,
+    "width_mm": 1050,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     8800,
+     -5000,
+     0
+    ],
+    "s_axis_unit": [
+     -1,
+     0,
+     0
+    ],
+    "outward_normal": [
+     0,
+     -1,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664841,
+      "locationX": 6427,
+      "locationY": -5000,
+      "windowType": "M_Window-Casement-Double: 1050 x 1350mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 9,
+   "wall_id": "1664841",
+   "orientation": "S",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1050 x 1350mm",
+    "host_wall_id": "1664841",
+    "s_center_mm": 4716,
+    "sill_mm": 900,
+    "head_mm": 2250,
+    "width_mm": 1050,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     8800,
+     -5000,
+     0
+    ],
+    "s_axis_unit": [
+     -1,
+     0,
+     0
+    ],
+    "outward_normal": [
+     0,
+     -1,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664841,
+      "locationX": 4084,
+      "locationY": -5000,
+      "windowType": "M_Window-Casement-Double: 1050 x 1350mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 10,
+   "wall_id": "1664841",
+   "orientation": "S",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1050 x 1350mm",
+    "host_wall_id": "1664841",
+    "s_center_mm": 15125,
+    "sill_mm": 900,
+    "head_mm": 2250,
+    "width_mm": 1050,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     8800,
+     -5000,
+     0
+    ],
+    "s_axis_unit": [
+     -1,
+     0,
+     0
+    ],
+    "outward_normal": [
+     0,
+     -1,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664841,
+      "locationX": -6325,
+      "locationY": -5000,
+      "windowType": "M_Window-Casement-Double: 1050 x 1350mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 11,
+   "wall_id": "1664841",
+   "orientation": "S",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1050 x 1350mm",
+    "host_wall_id": "1664841",
+    "s_center_mm": 17542,
+    "sill_mm": 900,
+    "head_mm": 2250,
+    "width_mm": 1050,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     8800,
+     -5000,
+     0
+    ],
+    "s_axis_unit": [
+     -1,
+     0,
+     0
+    ],
+    "outward_normal": [
+     0,
+     -1,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664841,
+      "locationX": -8742,
+      "locationY": -5000,
+      "windowType": "M_Window-Casement-Double: 1050 x 1350mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 12,
+   "wall_id": "1664926",
+   "orientation": "W",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664926",
+    "s_center_mm": 2404,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     -11183.56,
+     -5000,
+     0
+    ],
+    "s_axis_unit": [
+     0,
+     0.9999999999999998,
+     0
+    ],
+    "outward_normal": [
+     -1,
+     0,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664926,
+      "locationX": -11184,
+      "locationY": -2596,
+      "windowType": "M_Window-Casement-Double: 1400 x 1800mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 13,
+   "wall_id": "1664926",
+   "orientation": "W",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664926",
+    "s_center_mm": 4959,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     -11183.56,
+     -5000,
+     0
+    ],
+    "s_axis_unit": [
+     0,
+     0.9999999999999998,
+     0
+    ],
+    "outward_normal": [
+     -1,
+     0,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664926,
+      "locationX": -11184,
+      "locationY": -41,
+      "windowType": "M_Window-Casement-Double: 1400 x 1800mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  },
+  {
+   "window_no": 14,
+   "wall_id": "1664926",
+   "orientation": "W",
+   "expected": {
+    "family_and_type": "M_Window-Casement-Double: 1400 x 1800mm",
+    "host_wall_id": "1664926",
+    "s_center_mm": 16663,
+    "sill_mm": 900,
+    "head_mm": 2700,
+    "width_mm": 1400,
+    "facing": "interior",
+    "tolerance_mm": 5
+   },
+   "wall_geometry": {
+    "start_mm": [
+     -11183.56,
+     -5000,
+     0
+    ],
+    "s_axis_unit": [
+     0,
+     0.9999999999999998,
+     0
+    ],
+    "outward_normal": [
+     -1,
+     0,
+     0
+    ]
+   },
+   "steps": [
+    {
+     "step": "create",
+     "tool": "create_window",
+     "params": {
+      "wallId": 1664926,
+      "locationX": -11184,
+      "locationY": 11663,
+      "windowType": "M_Window-Casement-Double: 1400 x 1800mm"
+     }
+    },
+    {
+     "step": "verify_type_and_host",
+     "tool": "get_element_info",
+     "params": {
+      "elementId": "$element"
+     },
+     "on_fail": "delete_element"
+    },
+    {
+     "step": "set_sill",
+     "tool": "modify_element_parameter",
+     "params": {
+      "elementId": "$element",
+      "parameterName": "窗台高度",
+      "value": "2.952755905511811"
+     },
+     "note": "900 mm ÷ 304.8 = ft(Revit 內部單位)"
+    },
+    {
+     "step": "face_interior",
+     "tool": "flip_element",
+     "params": {
+      "elementId": "$element",
+      "flipType": "facing"
+     },
+     "condition": "bbox 外凸量 > 內凸量(窗扇朝室外)時才執行"
+    },
+    {
+     "step": "verify_geometry",
+     "tool": "get_element_geometry",
+     "params": {
+      "elementId": "$element",
+      "geometryType": "boundingbox"
+     }
+    }
+   ]
+  }
+ ],
+ "failure_policy": "單扇失敗不重試,記錄後繼續下一扇;類型或宿主牆不符時刪除該窗"
+}

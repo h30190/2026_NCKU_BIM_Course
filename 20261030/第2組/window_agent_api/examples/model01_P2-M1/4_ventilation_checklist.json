@@ -1,0 +1,316 @@
+{
+ "schema_version": "1.1.0",
+ "document_type": "ventilation_compliance_checklist",
+ "title": "台灣商辦標準層 Revit AI 通風開窗 PoC 規範檢核表",
+ "verified_through": "2026-10-21",
+ "units": {
+  "length": "m",
+  "area": "m2",
+  "volume_flow": "m3/h",
+  "flow_per_area": "m3/(h*m2)",
+  "ratio": "1"
+ },
+ "agent_scope": {
+  "active_rule_ids": [
+   "TW-WIND-LAW-001",
+   "TW-WIND-ASSUMPTION-001",
+   "TW-WIND-EEWH-001",
+   "TW-WIND-REC-001"
+  ],
+  "conditional_reference_rule_ids": [
+   "TW-WIND-LAW-002"
+  ],
+  "scope_statement": "只檢核自然通風開窗；機械通風僅在自然開口路徑不採用時作替代參考。"
+ },
+ "null_unknown_policy": {
+  "null": "已確認不適用時使用。",
+  "unknown": "尚無資料或尚未驗證時使用字串 unknown，不得以 0 代替。",
+  "not_applicable": "檢核條件不成立時 status 設為 not_applicable，result 設為 null。",
+  "assumption": "使用 PoC 示意值時 status 設為 provisional_assumption，並保留 assumption_flag=true。"
+ },
+ "status_enum": [
+  "not_started",
+  "pass",
+  "fail",
+  "provisional_assumption",
+  "requires_verification",
+  "not_applicable"
+ ],
+ "checklist": [
+  {
+   "check_id": "VC-001",
+   "order": 1,
+   "rule_id": "TW-WIND-LAW-001",
+   "item": "確認房間屬辦公居室且採直接對外開口路徑",
+   "reason": "第43條自然通風路徑須由可開啟且直接與戶外空氣流通的窗或開口提供。",
+   "required_inputs": [
+    "room.use_type",
+    "window.direct_to_outdoor",
+    "window.operable"
+   ],
+   "check_expression": "room.use_type IN ['office','private_office','meeting_room'] AND all_selected_windows.direct_to_outdoor == true AND all_selected_windows.operable == true",
+   "status": "provisional_assumption",
+   "result": "辦公居室、可開啟、直接對外(以 family 類型假設)",
+   "evidence": [],
+   "reviewer": null,
+   "source": [
+    {
+     "source_id": "SRC-LAW-DESIGN",
+     "article_or_page": "第43條"
+    }
+   ]
+  },
+  {
+   "check_id": "VC-002",
+   "order": 2,
+   "rule_id": "TW-WIND-ASSUMPTION-001",
+   "item": "計算各窗 PoC 法定有效通風面積",
+   "reason": "尚無產品或主管機關認可淨開口值時，使用明確標記的暫算公式維持 PoC 可運行。",
+   "required_inputs": [
+    "window.window_type",
+    "window.width",
+    "window.height",
+    "window.opening_ratio"
+   ],
+   "check_expression": "window.legal_effective_open_area_m2 = window.width * window.height * window.opening_ratio",
+   "status": "provisional_assumption",
+   "result": "Σ寬×高×開啟比例 = 22.915 m²",
+   "evidence": [
+    "Revit instance parameters",
+    "window_types.json opening ratio"
+   ],
+   "reviewer": null,
+   "mandatory_output_flags": {
+    "assumption_flag": true,
+    "compliance_quality": "provisional_assumption"
+   },
+   "source": [
+    {
+     "source_id": "SRC-INTERNAL-LEGAL-AREA-FALLBACK",
+     "source_status": "unverified_assumption"
+    }
+   ]
+  },
+  {
+   "check_id": "VC-003",
+   "order": 3,
+   "rule_id": "TW-WIND-LAW-001",
+   "item": "有效通風面積是否達樓地板面積 5%",
+   "reason": "辦公居室採自然通風開口路徑時，總有效通風面積須達該居室樓地板面積二十分之一。",
+   "required_inputs": [
+    "room.floor_area_m2",
+    "window.legal_effective_open_area_m2"
+   ],
+   "check_expression": "sum(window.legal_effective_open_area_m2) >= 0.05 * room.floor_area_m2",
+   "status": "pass",
+   "result": {
+    "legal_effective_open_area_m2": 22.915,
+    "required_m2": 17.893,
+    "room_area_m2": 357.861
+   },
+   "evidence": [
+    "房間面積表",
+    "窗面積計算表"
+   ],
+   "reviewer": null,
+   "source": [
+    {
+     "source_id": "SRC-LAW-DESIGN",
+     "article_or_page": "第43條"
+    }
+   ]
+  },
+  {
+   "check_id": "VC-004",
+   "order": 4,
+   "rule_id": "TW-WIND-EEWH-001",
+   "item": "計算 EEWH 自然通風潛力 VP 與得分",
+   "reason": "EEWH-BC 自然通風潛力是標章評分項目，不是第43條法定門檻。",
+   "required_inputs": [
+    "eewh.ventilation_assessment_area_m2",
+    "eewh.single_side_open_area_m2",
+    "eewh.cross_flow_open_area_m2"
+   ],
+   "check_expression": "VP = (sum_Avi_m2 + 3.0 * sum_Acj_m2) / sum_Ak_m2",
+   "status": "provisional_assumption",
+   "result": {
+    "VP": 0.1921,
+    "score": 100,
+    "Acj_m2": 22.915,
+    "Avi_m2": 0
+   },
+   "evidence": [
+    "通風路徑圖",
+    "開窗面積表"
+   ],
+   "reviewer": null,
+   "source": [
+    {
+     "source_id": "SRC-EEWH-BC-2026",
+     "article_or_page": "室內環境指標自然通風評估"
+    }
+   ]
+  },
+  {
+   "check_id": "VC-005",
+   "order": 5,
+   "rule_id": "TW-WIND-REC-001",
+   "item": "以統一單位估算方案風量",
+   "reason": "簡化孔口流量只用於方案相對比較，不取代法規面積判定或 CFD。",
+   "required_inputs": [
+    "window.airflow_effective_area_m2",
+    "window.Cd",
+    "delta_pressure_Pa",
+    "air_density_kg_m3"
+   ],
+   "check_expression": "Q_m3_h = 3600 * Cd * airflow_effective_area_m2 * sqrt(2 * abs(delta_pressure_Pa) / air_density_kg_m3)",
+   "status": "provisional_assumption",
+   "result": {
+    "Q_m3_h": 46891,
+    "note": "PoC 相對比較,非法規值"
+   },
+   "evidence": [
+    "氣象／壓差輸入",
+    "Cd 假設紀錄"
+   ],
+   "reviewer": null,
+   "source": [
+    {
+     "source_id": "SRC-INTERNAL-AIRFLOW",
+     "source_status": "design_recommendation"
+    }
+   ]
+  },
+  {
+   "check_id": "VC-006",
+   "order": 6,
+   "rule_id": "TW-WTYPE-SELECT-001",
+   "item": "確認 Revit family、type、host wall、位置及碰撞狀態",
+   "reason": "MCP 放置前必須能唯一解析 family/type、宿主牆與座標，且不得與既有構件衝突。",
+   "required_inputs": [
+    "window.window_type",
+    "window.position",
+    "revit.family_name",
+    "revit.type_name",
+    "collision_status"
+   ],
+   "check_expression": "host_wall_id != 'unknown' AND family_loaded == true AND type_resolved == true AND collision_status == 'pass'",
+   "status": "requires_verification",
+   "result": {
+    "family_loaded": true,
+    "type_resolved": true,
+    "host_wall_resolved": true,
+    "facing": "interior",
+    "collision_status": "unknown"
+   },
+   "evidence": [
+    "MCP 指令回傳",
+    "Revit ElementId",
+    "範圍框平面重疊預檢(柱、同牆窗)"
+   ],
+   "reviewer": null,
+   "source": [
+    {
+     "source_id": "SRC-INTERNAL-REVIT",
+     "source_status": "project_contract"
+    }
+   ]
+  },
+  {
+   "check_id": "VC-007",
+   "order": 7,
+   "rule_id": "TW-WIND-LAW-002",
+   "item": "若改採機械通風，核對第102條最小通風量",
+   "reason": "只有採機械通風替代路徑時才套用；8、10、15 分別對應私人辦公室、一般辦公室／會客室、會議室。",
+   "required_inputs": [
+    "room.use_type",
+    "room.floor_area_m2",
+    "mechanical_ventilation.design_flow_m3_h"
+   ],
+   "check_expression": "design_flow_m3_h >= lookup(8|10|15 m3/(h*m2)) * room.floor_area_m2",
+   "status": "not_applicable",
+   "result": null,
+   "evidence": [
+    "機械通風設計圖",
+    "設備風量表"
+   ],
+   "reviewer": null,
+   "source_note": "私人辦公室 8；辦公室／會客室 10；會議室 15 m3/(h*m2)。",
+   "source": [
+    {
+     "source_id": "SRC-LAW-EQUIPMENT",
+     "article_or_page": "第102條"
+    }
+   ]
+  },
+  {
+   "check_id": "VC-008",
+   "order": 8,
+   "rule_id": "PROJECT-REVIEW-001",
+   "item": "建築師或門窗廠覆核 assumption",
+   "reason": "PoC 暫算值不具有產品試驗或主管機關認可效力，細部設計發布前須由專業人員覆核。",
+   "required_inputs": [
+    "assumption_items",
+    "reviewer_decision"
+   ],
+   "check_expression": "all_assumptions_resolved == true before detailed_design_release",
+   "status": "not_started",
+   "result": null,
+   "evidence": [
+    "覆核紀錄",
+    "產品型錄或測試報告"
+   ],
+   "reviewer": null,
+   "source": [
+    {
+     "source_id": "SRC-INTERNAL-REVIEW",
+     "source_status": "project_gate"
+    }
+   ]
+  }
+ ],
+ "sources": [
+  {
+   "source_id": "SRC-LAW-DESIGN",
+   "title": "建築技術規則建築設計施工編",
+   "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0070115"
+  },
+  {
+   "source_id": "SRC-LAW-EQUIPMENT",
+   "title": "建築技術規則建築設備編",
+   "article_or_page": "第100條至第102條",
+   "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0070117"
+  },
+  {
+   "source_id": "SRC-EEWH-BC-2026",
+   "title": "2026年版綠建築評估手冊－基本型（EEWH-BC）",
+   "url": "https://www.abri.gov.tw/News_Content.aspx?n=20916&s=339049"
+  },
+  {
+   "source_id": "SRC-INTERNAL-LEGAL-AREA-FALLBACK",
+   "title": "PoC 法定有效通風面積暫算規則",
+   "official": false
+  },
+  {
+   "source_id": "SRC-INTERNAL-AIRFLOW",
+   "title": "PoC 簡化孔口流量模型",
+   "official": false
+  },
+  {
+   "source_id": "SRC-INTERNAL-REVIT",
+   "title": "Day 1 Revit MCP 欄位契約",
+   "official": false
+  },
+  {
+   "source_id": "SRC-INTERNAL-REVIEW",
+   "title": "PoC assumption 人工覆核閘門",
+   "official": false
+  }
+ ],
+ "project": {
+  "model": "model_01",
+  "revit_project": "model_01",
+  "proposal_id": "P2-M1",
+  "scheme": "N-E-S-W"
+ }
+}

@@ -1,0 +1,5 @@
+output/*
+!output/.gitkeep
+
+# 不上傳 Revit 模型（課程規定不可 commit .rvt；請用雲端共享資料夾分享）
+*.rvt

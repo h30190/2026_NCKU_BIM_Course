@@ -1,0 +1,254 @@
+{
+  "schema_version": "1.1.0",
+  "document_type": "revit_ai_window_type_catalog",
+  "domain": "window_geometry_and_airflow",
+  "title": "台灣商辦 Revit AI 通風開窗 Agent 窗型參數目錄",
+  "jurisdiction": "TW",
+  "verified_through": "2026-10-21",
+  "language": "zh-TW",
+  "agent_scope": {
+    "scope_statement": "本檔只供自然通風窗選型、Revit 放置、法定有效通風面積 PoC 初判與簡化風量排序使用，不執行採光或外殼節能評估。",
+    "active_rule_ids": [
+      "TW-WTYPE-GLOBAL-001",
+      "TW-WTYPE-GLOBAL-002",
+      "TW-WTYPE-CASEMENT-001",
+      "TW-WTYPE-AWNING-001",
+      "TW-WTYPE-SLIDING-001",
+      "TW-WTYPE-SELECT-001"
+    ]
+  },
+  "units": {
+    "length": "m",
+    "area": "m2",
+    "angle": "deg",
+    "volume_flow": "m3/h",
+    "pressure": "Pa",
+    "air_density": "kg/m3",
+    "ratio": "1",
+    "position": "Revit internal coordinates converted to m"
+  },
+  "null_unknown_policy": {
+    "null": "參數確定不適用於該窗型時使用。",
+    "unknown": "產品資料未提供、無法由 Revit family 推導或未完成試驗校正時使用字串 unknown，不得以 0 代替。",
+    "not_applicable": "規則不適用時 status 設為 not_applicable，結果值設為 null，並填寫 reason。",
+    "blocked": "必要幾何或 host wall 不明時 status 設為 requires_verification，禁止發出放置指令。",
+    "assumption": "PoC fallback 可運算但輸出必須保留 assumption_flag=true，正式案須覆寫。"
+  },
+  "classification_definitions": {
+    "mandatory_law": "依法令適用條件成立時必須符合。",
+    "design_recommendation": "設計與建模建議。",
+    "unverified_assumption": "示意預設，未經產品試驗或主管機關確認。"
+  },
+  "compatibility": {
+    "wind_rules_file": "design_rules_wind.json",
+    "compliance_checklist_file": "ventilation_compliance_checklist.json",
+    "shared_keys": ["schema_version", "units", "null_unknown_policy", "rule_id", "classification", "status", "reason", "source"],
+    "legal_area_warning": "legal_effective_open_area_m2 與 airflow_effective_area_m2 分欄保存；Cd 不得用於第43條法定面積加總。"
+  },
+  "day1_field_contract": {
+    "window_type": "enum: side_hung_casement | top_hung_awning | horizontal_sliding",
+    "width": "number，單一可開扇淨寬，m",
+    "height": "number，單一可開扇淨高，m",
+    "position": {
+      "host_wall_id": "Revit ElementId string",
+      "level_id": "Revit Level ElementId string",
+      "x": "number, m",
+      "y": "number, m",
+      "z": "number, m",
+      "sill_height": "number, m",
+      "facing_orientation": "number, deg clockwise from project north"
+    }
+  },
+  "revit_parameter_mapping": {
+    "input_to_revit": {
+      "window_type": "family_and_type_lookup_key",
+      "width": "Width",
+      "height": "Height",
+      "position.host_wall_id": "HostWallId",
+      "position.level_id": "LevelId",
+      "position.x": "Location.X",
+      "position.y": "Location.Y",
+      "position.z": "Location.Z",
+      "position.sill_height": "Sill Height"
+    },
+    "shared_parameters": [
+      "AI_Window_Type",
+      "AI_Opening_Ratio",
+      "AI_Legal_Effective_Open_Area_m2",
+      "AI_Airflow_Effective_Area_m2",
+      "AI_Cd",
+      "AI_Assumption_Flag",
+      "AI_Compliance_Status"
+    ],
+    "mcp_payload_template": {
+      "family_name": "{{revit.family_name}}",
+      "type_name": "{{revit.type_name_template_resolved}}",
+      "host_wall_id": "{{position.host_wall_id}}",
+      "level_id": "{{position.level_id}}",
+      "position_m": {"x": "{{position.x}}", "y": "{{position.y}}", "z": "{{position.z}}"},
+      "parameters": {
+        "Width": "{{width}}",
+        "Height": "{{height}}",
+        "Sill Height": "{{position.sill_height}}",
+        "AI_Window_Type": "{{window_type}}",
+        "AI_Opening_Ratio": "{{opening_ratio}}",
+        "AI_Legal_Effective_Open_Area_m2": "{{legal_effective_open_area_m2}}",
+        "AI_Assumption_Flag": "{{assumption_flag}}"
+      }
+    }
+  },
+  "global_constraints": [
+    {
+      "rule_id": "TW-WTYPE-GLOBAL-001",
+      "classification": "mandatory_law",
+      "status": "active",
+      "reason": "作為第43條直接對外自然通風開口時，窗須可開啟並與戶外空氣直接流通；法規沒有規定窗型 Cd。",
+      "applies_when": "window.used_for_article_43 == true",
+      "machine_readable": {
+        "checks": [
+          "window.direct_to_outdoor == true",
+          "window.operable == true",
+          "window.legal_effective_open_area_m2 > 0",
+          "window.airflow_discharge_coefficient_cd is not used in legal_area_sum"
+        ]
+      },
+      "source": [{
+        "source_id": "SRC-LAW-DESIGN",
+        "title": "建築技術規則建築設計施工編",
+        "authority": "內政部／全國法規資料庫",
+        "version": "修正日期 2026-02-23",
+        "article_or_page": "第43條",
+        "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0070115",
+        "retrieved_on": "2026-10-21"
+      }]
+    },
+    {
+      "rule_id": "TW-WTYPE-GLOBAL-002",
+      "classification": "unverified_assumption",
+      "status": "assumption",
+      "reason": "法定面積 fallback、Cd 及簡化風量公式只供 PoC，正式法規判定須以主管機關接受值或產品資料覆寫。",
+      "applies_when": "poc_fallback_enabled == true",
+      "machine_readable": {
+        "legal_area_fallback": "legal_effective_open_area_m2 = width * height * opening_ratio",
+        "airflow": "Q_m3_h = 3600 * Cd * airflow_effective_area_m2 * sqrt(2 * abs(delta_pressure_Pa) / air_density_kg_m3)",
+        "default_air_density_kg_m3": 1.2,
+        "result_status": "provisional_assumption"
+      },
+      "source": [{
+        "source_id": "SRC-INTERNAL-ENGINEERING",
+        "title": "PoC 通風面積與孔口流量篩選模型",
+        "authority": null,
+        "version": "1.1.0",
+        "article_or_page": null,
+        "url": null,
+        "retrieved_on": null,
+        "source_status": "unverified_assumption"
+      }]
+    }
+  ],
+  "window_types": [
+    {
+      "rule_id": "TW-WTYPE-CASEMENT-001",
+      "window_type": "side_hung_casement",
+      "name_zh_tw": "側開窗",
+      "classification": "unverified_assumption",
+      "status": "assumption",
+      "reason": "開啟角公式與 Cd 為 PoC 預設，須以實際 family 幾何與產品資料覆核。",
+      "revit": {
+        "family_name": "AI_Window_SideHung",
+        "family_file": "AI_Window_SideHung.rfa",
+        "type_name_template": "AI_SideHung_{{width_mm}}x{{height_mm}}",
+        "mapping_status": "poc_proposed_name"
+      },
+      "geometry": {
+        "required_parameters": ["window_type", "width", "height", "position", "open_angle"],
+        "constraints": ["width > 0", "height > 0", "0 <= open_angle AND open_angle <= 90"],
+        "defaults": {"open_angle": 60, "Cd": 0.60},
+        "opening_ratio_expression": "opening_ratio = sin(open_angle * pi / 180)",
+        "legal_effective_open_area_fallback_expression": "legal_effective_open_area_m2 = width * height * opening_ratio",
+        "fallback_legal_area_status": "assumption",
+        "airflow_effective_area_expression": "airflow_effective_area_m2 = width * height * opening_ratio"
+      },
+      "airflow_discharge_coefficient_cd": {"default_value": 0.60, "minimum_poc": 0.40, "maximum_poc": 0.75, "value_status": "illustrative"},
+      "source": [{"source_id": "SRC-INTERNAL-WINDOW-TYPE", "title": "PoC 側開窗假設", "authority": null, "version": "1.1.0", "article_or_page": null, "url": null, "retrieved_on": null, "source_status": "unverified_assumption"}]
+    },
+    {
+      "rule_id": "TW-WTYPE-AWNING-001",
+      "window_type": "top_hung_awning",
+      "name_zh_tw": "上懸窗",
+      "classification": "unverified_assumption",
+      "status": "assumption",
+      "reason": "開啟角公式與 Cd 為 PoC 預設，未含側邊三角開口、雨遮或紗網修正。",
+      "revit": {
+        "family_name": "AI_Window_TopHung",
+        "family_file": "AI_Window_TopHung.rfa",
+        "type_name_template": "AI_TopHung_{{width_mm}}x{{height_mm}}",
+        "mapping_status": "poc_proposed_name"
+      },
+      "geometry": {
+        "required_parameters": ["window_type", "width", "height", "position", "open_angle"],
+        "constraints": ["width > 0", "height > 0", "0 <= open_angle AND open_angle <= 45"],
+        "defaults": {"open_angle": 30, "Cd": 0.55},
+        "opening_ratio_expression": "opening_ratio = sin(open_angle * pi / 180)",
+        "legal_effective_open_area_fallback_expression": "legal_effective_open_area_m2 = width * height * opening_ratio",
+        "fallback_legal_area_status": "assumption",
+        "airflow_effective_area_expression": "airflow_effective_area_m2 = width * height * opening_ratio"
+      },
+      "airflow_discharge_coefficient_cd": {"default_value": 0.55, "minimum_poc": 0.35, "maximum_poc": 0.70, "value_status": "illustrative"},
+      "source": [{"source_id": "SRC-INTERNAL-WINDOW-TYPE", "title": "PoC 上懸窗假設", "authority": null, "version": "1.1.0", "article_or_page": null, "url": null, "retrieved_on": null, "source_status": "unverified_assumption"}]
+    },
+    {
+      "rule_id": "TW-WTYPE-SLIDING-001",
+      "window_type": "horizontal_sliding",
+      "name_zh_tw": "橫拉窗",
+      "classification": "unverified_assumption",
+      "status": "assumption",
+      "reason": "開啟比例依軌道及扇數決定；0.5 只是兩扇單軌 PoC 上限，不是法規值。",
+      "revit": {
+        "family_name": "AI_Window_HorizontalSliding",
+        "family_file": "AI_Window_HorizontalSliding.rfa",
+        "type_name_template": "AI_HSliding_{{width_mm}}x{{height_mm}}",
+        "mapping_status": "poc_proposed_name"
+      },
+      "geometry": {
+        "required_parameters": ["window_type", "width", "height", "position", "open_fraction", "track_configuration"],
+        "constraints": ["width > 0", "height > 0", "0 <= open_fraction AND open_fraction <= max_open_fraction"],
+        "defaults": {"open_fraction": 0.45, "max_open_fraction_two_panel_single_track": 0.50, "max_open_fraction_three_panel_multi_track": 0.667, "Cd": 0.60},
+        "opening_ratio_expression": "opening_ratio = open_fraction",
+        "legal_effective_open_area_fallback_expression": "legal_effective_open_area_m2 = width * height * opening_ratio",
+        "fallback_legal_area_status": "assumption",
+        "airflow_effective_area_expression": "airflow_effective_area_m2 = width * height * opening_ratio"
+      },
+      "airflow_discharge_coefficient_cd": {"default_value": 0.60, "minimum_poc": 0.40, "maximum_poc": 0.75, "value_status": "illustrative"},
+      "source": [{"source_id": "SRC-INTERNAL-WINDOW-TYPE", "title": "PoC 橫拉窗假設", "authority": null, "version": "1.1.0", "article_or_page": null, "url": null, "retrieved_on": null, "source_status": "unverified_assumption"}]
+    }
+  ],
+  "selection_logic": [
+    {
+      "rule_id": "TW-WTYPE-SELECT-001",
+      "classification": "design_recommendation",
+      "status": "advisory",
+      "reason": "本輪只比較通風效益與風險；不納入採光、日射、成本或能源分數。",
+      "applies_when": "agent.generating_window_options == true",
+      "machine_readable": {
+        "hard_gates": [
+          "ventilation_law_status != 'fail'",
+          "direct_to_outdoor == true",
+          "operable == true",
+          "host_wall_id != 'unknown'",
+          "collision_status == 'pass'",
+          "product_data_status != 'rejected'"
+        ],
+        "ranking_expression": "score = w_ventilation * normalized_ventilation - w_risk * normalized_risk",
+        "default_weights": {"w_ventilation": 0.70, "w_risk": 0.30},
+        "comparison_scope": "ventilation_only",
+        "weight_status": "illustrative"
+      },
+      "source": [{"source_id": "SRC-INTERNAL-SELECTION", "title": "PoC 通風與風險選型建議", "authority": null, "version": "1.1.0", "article_or_page": null, "url": null, "retrieved_on": null, "source_status": "design_recommendation"}]
+    }
+  ],
+  "sources": [
+    {"source_id": "SRC-LAW-DESIGN", "official": true, "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0070115"},
+    {"source_id": "SRC-INTERNAL-WINDOW-TYPE", "official": false, "url": null}
+  ]
+}

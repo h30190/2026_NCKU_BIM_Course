@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "note": "模型登錄表。revit_project_name 必須等於 Revit 開啟該 rvt 後 get_project_info 回傳的 ProjectName;兩個模型的 ElementId 互不通用。",
+  "models": [
+    {
+      "model_id": "01",
+      "name": "商辦標準層 01",
+      "rvt_file": "revit_models/model_01.rvt",
+      "revit_project_name": "BIM_商辦標準層01",
+      "data_dir": "data/model_01",
+      "level": "L1",
+      "description": "中央服務核"
+    },
+    {
+      "model_id": "02",
+      "name": "商辦標準層 02",
+      "rvt_file": "revit_models/model_02.rvt",
+      "revit_project_name": "BIM_商辦標準層02",
+      "data_dir": "data/model_02",
+      "level": "L1",
+      "description": "服務核貼北牆與西牆"
+    }
+  ],
+  "revit_conventions": {
+    "mcp_port": 8964,
+    "sill_parameter_names": ["窗台高度", "Sill Height"],
+    "family_and_type_parameter_names": ["族群與類型", "Family and Type"],
+    "host_parameter_names": ["主體 ID", "Host Id"],
+    "internal_length_unit": "ft",
+    "mm_per_ft": 304.8
+  }
+}
