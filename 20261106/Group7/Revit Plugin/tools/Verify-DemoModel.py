@@ -6,7 +6,15 @@ import json
 import codecs
 import traceback
 
-ROOT = r'C:\Users\izumi\Desktop\Revit Plugin Test'
+# Paths come from the environment, not from one machine:
+#   CASEGRAPH_ROOT  - plugin folder (default: the folder that contains tools/)
+#   CASEGRAPH_MODEL - the .rvt model to read (required when a model is opened)
+try:
+    _TOOLS = os.path.dirname(os.path.abspath(__file__))
+except NameError:  # Some pyRevit hosts do not define __file__.
+    _TOOLS = os.path.join(os.getcwd(), 'tools')
+ROOT = os.environ.get('CASEGRAPH_ROOT') or os.path.dirname(_TOOLS)
+MODEL = os.environ.get('CASEGRAPH_MODEL') or u''
 sys.path.insert(0, os.path.join(ROOT, 'CaseBase.extension', 'lib'))
 from casegraph.extractor import document_id
 from casegraph.serialization import dumps
@@ -20,7 +28,10 @@ try:
         export = json.load(stream)
     with codecs.open(os.path.join(ROOT, 'samples', 'model-case-topics.json'), 'r', 'utf-8') as stream:
         topics = json.load(stream)
-    doc = __revit__.Application.OpenDocumentFile(export['source_path'])
+    # The sample keeps only the file name; the full path comes from CASEGRAPH_MODEL.
+    if not MODEL:
+        raise ValueError(u'請先設定環境變數 CASEGRAPH_MODEL 為要讀取的 .rvt 完整路徑。')
+    doc = __revit__.Application.OpenDocumentFile(MODEL)
     assert document_id(doc) == export['document']
     records = dict((n['properties']['element_id'], n) for n in export['elements'])
     validated = []

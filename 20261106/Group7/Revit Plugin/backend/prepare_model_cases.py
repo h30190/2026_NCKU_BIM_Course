@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import ntpath
 import copy
 import hashlib
 import html
@@ -66,7 +67,7 @@ def prepare(export_path=EXPORT, topics_path=TOPICS):
         draft = Draft.model_validate(dict(title='{}｜{}'.format(case_key, topic['title']),
             description='模型資料\n' + facts + '\n\n檢查項目\n' + topic['review'] + '\n\n' + note,
             issue_type=topic['issue_type'], priority=topic['priority'],
-            notes=marker + '\n來源路徑：' + export['source_path'] + '\nUniqueId：' + root['source_element_id']
+            notes=marker + '\n來源路徑：' + ntpath.basename(export['source_path']) + '\nUniqueId：' + root['source_element_id']
                 + '\n擷取時間：' + export['exported_at'], graph=graph)).model_dump(mode='json')
         solution = '\n'.join(['建議處理方式（待確認）',
             *['{}. {}'.format(i, step) for i, step in enumerate(topic['steps'], 1)], '', '完成後檢查',
@@ -170,7 +171,7 @@ def write_report(export, prepared, receipt=(), path=REPORT):
 <p>在 Revit 開啟來源模型，在「案例庫」選取案例即可高亮對應元件。處理方式待檢查及審核確認。</p>
 <input aria-label="搜尋案例" placeholder="搜尋名稱、元件 ID 或處理方式" oninput="for(const c of document.querySelectorAll('details'))c.hidden=!c.textContent.toLowerCase().includes(this.value.toLowerCase())">
 __CARDS__</html>'''
-    Path(path).write_text(document.replace('__MODEL__', esc(export['source_path'])).replace('__CARDS__', '\n'.join(cards)), encoding='utf-8')
+    Path(path).write_text(document.replace('__MODEL__', esc(ntpath.basename(export['source_path']))).replace('__CARDS__', '\n'.join(cards)), encoding='utf-8')
 
 
 def main():
@@ -182,7 +183,7 @@ def main():
     if args.apply:
         _, legacy = prepare_catalog()
         receipt, backup = migrate(database.DATABASE_PATH, prepared, legacy, database.DATA_DIR / 'backups')
-        output = dict(document=export['document'], source_path=export['source_path'], cases=receipt,
+        output = dict(document=export['document'], source_path=ntpath.basename(export['source_path']), cases=receipt,
                       backup=backup, export_sha256=hashlib.sha256(EXPORT.read_bytes()).hexdigest())
         (database.DATA_DIR / 'model-case-import.json').write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding='utf-8')
     else:

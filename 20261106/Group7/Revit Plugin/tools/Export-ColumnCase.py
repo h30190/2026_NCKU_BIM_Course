@@ -7,15 +7,22 @@ import traceback
 from datetime import datetime
 from Autodesk.Revit import DB
 
-ROOT = r'C:\Users\izumi\Desktop\Revit Plugin Test'
-MODEL = u'C:\\Users\\izumi\\Desktop\\(U1-U21)個別元件測試用平面圖.rvt'
+# Paths come from the environment, not from one machine:
+#   CASEGRAPH_ROOT  - plugin folder (default: the folder that contains tools/)
+#   CASEGRAPH_MODEL - the .rvt model to read (required when a model is opened)
+try:
+    _TOOLS = os.path.dirname(os.path.abspath(__file__))
+except NameError:  # Some pyRevit hosts do not define __file__.
+    _TOOLS = os.path.join(os.getcwd(), 'tools')
+ROOT = os.environ.get('CASEGRAPH_ROOT') or os.path.dirname(_TOOLS)
+MODEL = os.environ.get('CASEGRAPH_MODEL') or u''
 OUTPUT = os.path.join(ROOT, 'backend', 'data', 'column-case-export.json')
 sys.path.insert(0, os.path.join(ROOT, 'CaseBase.extension', 'lib'))
 from casegraph.element_index import detail_snapshot
 from casegraph.extractor import document_id, Context, explicit
 from casegraph.serialization import dumps
 
-result = dict(state='opening', source_path=MODEL, categories={}, columns=[], errors=[])
+result = dict(state='opening', source_path=os.path.basename(MODEL), categories={}, columns=[], errors=[])
 doc = None
 
 
@@ -26,6 +33,8 @@ def write():
 
 try:
     write()
+    if not MODEL:
+        raise ValueError(u'請先設定環境變數 CASEGRAPH_MODEL 為要讀取的 .rvt 完整路徑。')
     doc = __revit__.Application.OpenDocumentFile(MODEL)
     original_modified = doc.IsModified
     result.update(state='reading', document=document_id(doc), title=doc.Title,

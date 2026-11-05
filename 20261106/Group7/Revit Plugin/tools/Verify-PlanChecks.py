@@ -7,7 +7,14 @@ import codecs
 import traceback
 from Autodesk.Revit import DB
 
-ROOT = r'C:\Users\izumi\Desktop\Revit Plugin Test'
+# Paths come from the environment, not from one machine:
+#   CASEGRAPH_ROOT  - plugin folder (default: the folder that contains tools/)
+#   CASEGRAPH_MODEL - the .rvt model to read (required when a model is opened)
+try:
+    _TOOLS = os.path.dirname(os.path.abspath(__file__))
+except NameError:  # Some pyRevit hosts do not define __file__.
+    _TOOLS = os.path.join(os.getcwd(), 'tools')
+ROOT = os.environ.get('CASEGRAPH_ROOT') or os.path.dirname(_TOOLS)
 sys.path.insert(0, os.path.join(ROOT, 'CaseBase.extension', 'lib'))
 from casegraph.extractor import document_id
 from casegraph.serialization import dumps

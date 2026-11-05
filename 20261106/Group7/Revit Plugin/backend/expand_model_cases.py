@@ -1,5 +1,6 @@
 """Append 100 native-model cases atomically, retaining existing cases and history."""
 import argparse
+import ntpath
 import copy
 import hashlib
 import html
@@ -132,14 +133,14 @@ def prepare(export, existing):
             description += '\n此為二維詳圖元件，定位時切換至所屬視圖；不納入實體碰撞。'
         draft = Draft.model_validate(dict(title='CASE-{:03}｜{}｜{} · ID {}'.format(offset,p['type_name'],title,p['element_id']),
             issue_type=issue, priority='Medium', description=description,
-            notes=marker+'\n來源：'+export['source_path']+'\nUniqueId：'+root['source_element_id']+'\n讀取時間：'+export['exported_at'], graph=graph)).model_dump(mode='json')
+            notes=marker+'\n來源：'+ntpath.basename(export['source_path'])+'\nUniqueId：'+root['source_element_id']+'\n讀取時間：'+export['exported_at'], graph=graph)).model_dump(mode='json')
         solution = '\n'.join(['處理方式', '1. 在 Revit 定位 {}（ID {}），保存修改前參數及視圖紀錄。'.format(p['type_name'],p['element_id']),
             '2. '+investigate, '3. '+fix,
             '4. '+('與同型元件 ID '+peer['properties']['element_id']+' 比較，逐一確認合理差異。' if peer else '逐一檢查受影響的依附元件及相關圖面。'),
             '5. 更新受影響的平面、立面或明細表，記錄修改前後差異。', '', '驗收條件', '□ '+check,
             '□ 保存實際修改及複查結果，由審核者確認後才更新為已驗證。', '', '目前狀態：已提出解法；模型修正及效果尚待驗證。'])
         prepared.append(dict(marker=marker, draft=draft, solution=solution, root=root, topic=title))
-    return dict(batch=BATCH, document=export['document'], exported_at=export['exported_at'], source_path=export['source_path'], cases=prepared)
+    return dict(batch=BATCH, document=export['document'], exported_at=export['exported_at'], source_path=ntpath.basename(export['source_path']), cases=prepared)
 
 
 def apply_plan(path, plan, backup_dir):

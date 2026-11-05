@@ -1,5 +1,6 @@
 """Create one model-backed column case through the local API, preserving other cases."""
 import copy
+import ntpath
 import json
 import re
 from pathlib import Path
@@ -63,7 +64,7 @@ def prepare(export, number):
     draft = Draft.model_validate(dict(title='CASE-{:03}｜RC柱基底／頂部樓層與柱長核對'.format(number),
         description='模型資料\n'+'\n'.join(facts)+'\n\n核對項目\n'+review+'\n\n'+evidence_note,
         issue_type='PARAMETER_ERROR', priority='Medium',
-        notes=marker+'\n來源路徑：'+export['source_path']+'\nUniqueId：'+root['source_element_id']
+        notes=marker+'\n來源路徑：'+ntpath.basename(export['source_path'])+'\nUniqueId：'+root['source_element_id']
               +'\n擷取時間：'+export['exported_at'], graph=graph)).model_dump(mode='json')
     solution = '\n'.join([
         '處理方式',
