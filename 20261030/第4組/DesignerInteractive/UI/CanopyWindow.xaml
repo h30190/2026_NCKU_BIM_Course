@@ -1,0 +1,78 @@
+<Window x:Class="EVCanopyDesigner.Canopy.UI.CanopyWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:EVCanopyDesigner.Canopy.UI" Title="Interactive EV Canopy Designer — Offline Candidate" Width="1350" Height="900" MinWidth="1000" MinHeight="680" Background="#F3F5F2">
+ <Window.Resources>
+  <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
+  <DataTemplate x:Key="SummaryTemplate"><StackPanel Margin="7,6"><TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="#24485A"/><TextBlock Text="{Binding Detail}" TextWrapping="Wrap" FontSize="12"/></StackPanel></DataTemplate>
+  <ItemsPanelTemplate x:Key="InputPanel"><WrapPanel/></ItemsPanelTemplate>
+  <DataTemplate x:Key="InputTemplate"><StackPanel Width="132" Margin="4,5,4,8">
+   <TextBlock Text="{Binding Label}" TextWrapping="Wrap" FontSize="12" MinHeight="30"/>
+   <Slider Minimum="{Binding SliderMinimum}" Maximum="{Binding SliderMaximum}" Value="{Binding SliderValue,Mode=OneWay}" TickFrequency="{Binding Step}" SmallChange="{Binding Step}" IsEnabled="{Binding SliderEnabled}" Visibility="{Binding IsNumeric,Converter={StaticResource BoolVisibility}}" ValueChanged="SliderChanged" ToolTip="Navigation range expands to retain precise typed/imported values. Preview only."/>
+   <TextBox Text="{Binding Value,UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="{Binding Key}"><TextBox.Style><Style TargetType="TextBox"><Setter Property="Visibility" Value="Visible"/><Style.Triggers><DataTrigger Binding="{Binding HasOptions}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></TextBox.Style></TextBox>
+   <ComboBox ItemsSource="{Binding Options}" SelectedItem="{Binding Value,UpdateSourceTrigger=PropertyChanged}"><ComboBox.Style><Style TargetType="ComboBox"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding HasOptions}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></ComboBox.Style></ComboBox>
+   <TextBlock Text="{Binding InputError}" Foreground="#A73327" FontSize="10" TextWrapping="Wrap"/>
+  </StackPanel></DataTemplate>
+ </Window.Resources>
+ <DockPanel Margin="12">
+  <Border DockPanel.Dock="Top" Background="#193C32" Padding="14" Margin="0,0,0,9"><StackPanel><TextBlock Text="EV Charging Hub · Interactive Parametric Designer" Foreground="White" FontSize="22" FontWeight="SemiBold"/><TextBlock x:Name="ScopeModeText" Text="Preview edits never generate Revit geometry. Standalone candidate — nothing installed or deployed." Foreground="#D4E2D9" Margin="0,5,0,0"/><TextBlock Text="{Binding Disclaimer}" Foreground="#E6CC99" TextWrapping="Wrap" FontSize="11" Margin="0,4,0,0"/></StackPanel></Border>
+  <Border DockPanel.Dock="Bottom" Background="White" BorderBrush="#CDD6D0" BorderThickness="1" Padding="8" Margin="0,8,0,0"><StackPanel>
+   <TextBlock Text="{Binding Status}" Foreground="#963727" FontWeight="Bold" TextWrapping="Wrap"/>
+   <CheckBox x:Name="ScopeAck" Visibility="Collapsed" Content="I confirm CANOPY ONLY: charging equipment is excluded; the site layout is not approved." Checked="ReviewChanged" Unchecked="ReviewChanged" Margin="3"/>
+   <WrapPanel><Button Content="Import JSON…" Click="Import_Click" Padding="9,5" Margin="3"/><Button Content="Export JSON…" Click="Export_Click" Padding="9,5" Margin="3"/><Button Content="Validate &amp; Preview — No Revit Changes" Click="Calculate_Click" Padding="9,5" Margin="3"/><Button x:Name="Generate" Content="Continue to Revit placement…" Click="Generate_Click" IsEnabled="False" Padding="9,5" Margin="3"/><Button Content="Import equipment…" Click="ImportEquipment_Click" Padding="9,5" Margin="3"/><Button Content="Export equipment…" Click="ExportEquipment_Click" Padding="9,5" Margin="3"/><Button Content="Close" Click="Close_Click" Padding="9,5" Margin="3"/></WrapPanel>
+   <TextBlock Text="Placement stays explicit: choose the SITE lower-left origin in a Revit plan; Escape cancels before generation. Preview does not validate model ownership or transactions." TextWrapping="Wrap" FontSize="11"/>
+   <TextBox x:Name="PreflightStatus" Text="Standalone preview only — no Revit generation context." IsReadOnly="True" TextWrapping="Wrap" Height="50" VerticalScrollBarVisibility="Auto" FontSize="11"/>
+  </StackPanel></Border>
+  <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="345"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,9,0"><StackPanel>
+    <Expander x:Name="BasicExpander" Header="Basic Design" IsExpanded="True" Background="White" Padding="6" Margin="0,0,0,5"><StackPanel>
+     <TextBlock Text="{Binding BasicGroup.Information}" TextWrapping="Wrap" FontSize="11" Margin="4"/>
+     <ItemsControl ItemsSource="{Binding BasicGroup.Fields}" ItemTemplate="{StaticResource InputTemplate}" ItemsPanel="{StaticResource InputPanel}"/>
+     <RadioButton x:Name="CreateNew" Content="Create New Design" IsChecked="True" GroupName="Action" Checked="ModeChanged" Margin="4"/>
+     <RadioButton x:Name="Replace" Content="Replace / Reposition Existing Design" GroupName="Action" Checked="ModeChanged" Margin="4"/>
+     <ComboBox x:Name="DesignChoices" DisplayMemberPath="Description" SelectionChanged="SelectedDesignChanged" Margin="4"/>
+     <Slider x:Name="RotationSlider" Minimum="-180" Maximum="180" SmallChange="1" TickFrequency="1" ValueChanged="RotationSliderChanged" Margin="4" ToolTip="Placement rotation in degrees. Precise text remains authoritative."/>
+     <WrapPanel Margin="4"><TextBlock Text="Rotation (deg)" VerticalAlignment="Center"/><TextBox x:Name="Rotation" Text="0" TextChanged="PlacementChanged" Width="75" Margin="8,0,0,0"/></WrapPanel>
+     <TextBlock Text="Previews use local design coordinates; rotation is applied only at explicit placement." TextWrapping="Wrap" FontSize="10" Margin="4"/>
+     <CheckBox x:Name="LegacyConfirm" Checked="ReviewChanged" Unchecked="ReviewChanged" Content="Legacy rotation reviewed" Margin="4"/>
+    </StackPanel></Expander>
+    <ItemsControl ItemsSource="{Binding AdditionalGroups}"><ItemsControl.ItemTemplate><DataTemplate>
+     <Expander Header="{Binding Name}" Background="White" Padding="6" Margin="0,0,0,5"><StackPanel>
+      <TextBlock Text="{Binding Information}" TextWrapping="Wrap" FontSize="11" Margin="4" Foreground="#43535E"/>
+      <TextBlock Text="{Binding DataContext.EquipmentSummary,RelativeSource={RelativeSource AncestorType=Window}}" Visibility="{Binding ShowEquipment,Converter={StaticResource BoolVisibility}}" TextWrapping="Wrap" Margin="4" FontWeight="SemiBold"/>
+      <StackPanel Visibility="{Binding ShowShapes,Converter={StaticResource BoolVisibility}}" Margin="4">
+       <TextBlock Text="Canopy shape (existing generator modes)" FontWeight="Bold"/>
+       <ComboBox ItemsSource="{Binding DataContext.RoofChoices,RelativeSource={RelativeSource AncestorType=Window}}" SelectedItem="{Binding DataContext.SelectedRoof,RelativeSource={RelativeSource AncestorType=Window},Mode=TwoWay,ValidatesOnExceptions=True}" DisplayMemberPath="Label" Margin="0,5">
+        <ComboBox.ItemContainerStyle><Style TargetType="ComboBoxItem"><Setter Property="IsEnabled" Value="{Binding Enabled}"/><Setter Property="ToolTip" Value="{Binding Explanation}"/></Style></ComboBox.ItemContainerStyle>
+       </ComboBox>
+       <TextBlock Text="{Binding DataContext.RoofExplanation,RelativeSource={RelativeSource AncestorType=Window}}" TextWrapping="Wrap" FontSize="11"/>
+       <TextBlock Text="Future / disabled: flat (0%), curved timber arch, wave/freeform." TextWrapping="Wrap" Foreground="#806C50" FontSize="11" Margin="0,3"/>
+      </StackPanel>
+      <CheckBox Content="Explicit row allocation" Visibility="{Binding ShowRows,Converter={StaticResource BoolVisibility}}" IsChecked="{Binding DataContext.Site.ExplicitRows,RelativeSource={RelativeSource AncestorType=Window}}" Margin="4"/>
+      <ItemsControl ItemsSource="{Binding Fields}" ItemTemplate="{StaticResource InputTemplate}" ItemsPanel="{StaticResource InputPanel}"/>
+      <StackPanel Visibility="{Binding ShowManual,Converter={StaticResource BoolVisibility}}" Margin="4"><TextBlock Text="Manual offsets (m; semicolon separated; used in Manual mode)" TextWrapping="Wrap" FontSize="11"/><TextBox Text="{Binding DataContext.ManualOffsets,RelativeSource={RelativeSource AncestorType=Window},UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
+      <StackPanel Visibility="{Binding ShowExclusions,Converter={StaticResource BoolVisibility}}" Margin="4"><TextBlock Text="PV exclusions: X;Y;Width;Depth (site m), one rectangle per line" TextWrapping="Wrap" FontSize="11"/><TextBox Text="{Binding DataContext.Exclusions,RelativeSource={RelativeSource AncestorType=Window},UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="60" VerticalScrollBarVisibility="Auto"/></StackPanel>
+      <StackPanel Visibility="{Binding ShowVisualization,Converter={StaticResource BoolVisibility}}" Margin="4">
+       <CheckBox Content="Show PV in preview" IsChecked="{Binding DataContext.Visualization.ShowPv,RelativeSource={RelativeSource AncestorType=Window}}" Margin="2"/>
+       <CheckBox Content="Show roof panels in preview" IsChecked="{Binding DataContext.Visualization.ShowRoof,RelativeSource={RelativeSource AncestorType=Window}}" Margin="2"/>
+       <CheckBox Content="Show columns and timber in preview" IsChecked="{Binding DataContext.Visualization.ShowStructure,RelativeSource={RelativeSource AncestorType=Window}}" Margin="2"/>
+      </StackPanel>
+     </StackPanel></Expander>
+    </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+   </StackPanel></ScrollViewer>
+   <Grid Grid.Column="1"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition><ColumnDefinition.Style><Style TargetType="ColumnDefinition"><Setter Property="Width" Value="235"/><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=DesignTabs}" Value="2"><Setter Property="Width" Value="0"/></DataTrigger><DataTrigger Binding="{Binding SelectedIndex,ElementName=DesignTabs}" Value="3"><Setter Property="Width" Value="0"/></DataTrigger><DataTrigger Binding="{Binding SelectedIndex,ElementName=DesignTabs}" Value="4"><Setter Property="Width" Value="0"/></DataTrigger><DataTrigger Binding="{Binding SelectedIndex,ElementName=DesignTabs}" Value="5"><Setter Property="Width" Value="0"/></DataTrigger></Style.Triggers></Style></ColumnDefinition.Style></ColumnDefinition></Grid.ColumnDefinitions>
+    <TabControl x:Name="DesignTabs">
+     <TabItem Header="Plan"><local:CanopyPreview x:Name="PlanPreview"/></TabItem>
+     <TabItem Header="Section"><local:CanopyPreview x:Name="SectionPreview" Section="True"/></TabItem>
+     <TabItem Header="Design Summary"><ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding DesignSummary}" ItemTemplate="{StaticResource SummaryTemplate}"/></ScrollViewer></TabItem>
+     <TabItem Header="Equipment"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="10"><TextBlock Text="{Binding EquipmentSummary}" FontWeight="Bold" TextWrapping="Wrap"/><TextBlock Text="STATION → OUTPUT → PARKING SPACE" FontWeight="Bold" Margin="0,12,0,4"/><TextBlock Text="{Binding EquipmentAssignments}" TextWrapping="Wrap"/><TextBlock Text="CLEARANCE AND CABLE CHECKS" FontWeight="Bold" Margin="0,12,0,4"/><TextBlock Text="{Binding EquipmentValidation}" TextWrapping="Wrap" Foreground="#963727"/></StackPanel></ScrollViewer></TabItem>
+     <TabItem Header="Material Takeoff"><DockPanel>
+      <StackPanel DockPanel.Dock="Bottom" Margin="4"><TextBlock Text="Dimensions, calculation basis and physical-ledger traceability" FontWeight="Bold" FontSize="11"/><TextBlock Text="{Binding SelectedItem.Dimensions,ElementName=TakeoffGrid}" TextWrapping="Wrap" FontSize="12"/><TextBlock Text="{Binding SelectedItem.Basis,ElementName=TakeoffGrid}" TextWrapping="Wrap" FontSize="12"/><TextBox Text="{Binding SelectedItem.ComponentIds,ElementName=TakeoffGrid,Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" Height="52" VerticalScrollBarVisibility="Auto"/></StackPanel>
+      <DataGrid x:Name="TakeoffGrid" ItemsSource="{Binding MaterialTakeoff}" SelectedIndex="0" IsReadOnly="True" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column" HorizontalScrollBarVisibility="Auto"><DataGrid.Columns>
+       <DataGridTextColumn Header="Category" Binding="{Binding DisplayCategory}" Width="110"/><DataGridTextColumn Header="Material" Binding="{Binding Material}" Width="100"/><DataGridTextColumn Header="Count" Binding="{Binding Count}" Width="50"/><DataGridTextColumn Header="Length" Binding="{Binding Length}" Width="90"/><DataGridTextColumn Header="Surface area" Binding="{Binding Area}" Width="100"/><DataGridTextColumn Header="Material volume" Binding="{Binding Volume}" Width="110"/><DataGridTextColumn Header="DC capacity" Binding="{Binding Capacity}" Width="100"/>
+      </DataGrid.Columns></DataGrid>
+     </DockPanel></TabItem>
+     <TabItem Header="Charging plan"><local:CanopyPreview x:Name="ChargingPreview"/></TabItem>
+    </TabControl>
+    <Border Grid.Column="1" Background="White" BorderBrush="#D0D8DC" BorderThickness="1" Margin="6,0,0,0"><DockPanel><TextBlock DockPanel.Dock="Top" Text="CALCULATED DESIGN" FontWeight="Bold" Margin="7"/><ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsControl ItemsSource="{Binding DesignSummary}" ItemTemplate="{StaticResource SummaryTemplate}"/></ScrollViewer></DockPanel></Border>
+   </Grid>
+  </Grid>
+ </DockPanel>
+</Window>

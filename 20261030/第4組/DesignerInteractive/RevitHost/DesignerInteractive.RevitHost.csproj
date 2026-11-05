@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><TargetFramework>net10.0-windows</TargetFramework><UseWPF>true</UseWPF><AssemblyName>EVCanopyDesigner.Interactive.Revit.Host</AssemblyName><GenerateDependencyFile>true</GenerateDependencyFile><RevitInstallDir Condition="'$(RevitInstallDir)' == ''">C:/Program Files/Autodesk/Revit 2026</RevitInstallDir></PropertyGroup>
+ <ItemGroup>
+  <ProjectReference Include="../UI/DesignerInteractive.UI.csproj"/>
+  <Reference Include="RevitAPI"><HintPath>$(RevitInstallDir)/RevitAPI.dll</HintPath><Private>False</Private><ExternallyResolved>true</ExternallyResolved></Reference>
+  <Reference Include="RevitAPIUI"><HintPath>$(RevitInstallDir)/RevitAPIUI.dll</HintPath><Private>False</Private><ExternallyResolved>true</ExternallyResolved></Reference>
+  <Compile Include="$(BaselineRoot)/EVCanopyDesigner.Canopy.Revit/GenerationService.cs" Link="Baseline/GenerationService.cs"/>
+  <Compile Include="$(BaselineRoot)/EVCanopyDesigner.Canopy.Revit/DesignValidation.cs" Link="Baseline/DesignValidation.cs"/>
+  <Compile Include="$(BaselineRoot)/EVCanopyDesigner.Canopy.Revit/OwnedDesignRepository.cs" Link="Baseline/OwnedDesignRepository.cs"/>
+  <Compile Include="$(BaselineRoot)/EVCanopyDesigner.Canopy.Revit/Planner11BDocumentGuard.cs" Link="Baseline/Planner11BDocumentGuard.cs"/>
+  <Compile Include="$(BaselineRoot)/EVCanopyDesigner.Canopy.Revit/RevitComponentFactory.cs" Link="Baseline/RevitComponentFactory.cs"/>
+ </ItemGroup>
+</Project>

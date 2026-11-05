@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><TargetFramework>net10.0-windows</TargetFramework><AssemblyName>EVCanopyDesigner.Poc2.Revit.Bootstrap$(PocBootstrapSuffix)</AssemblyName><RevitInstallDir Condition="'$(RevitInstallDir)' == ''">C:/Program Files/Autodesk/Revit 2026</RevitInstallDir></PropertyGroup>
+ <ItemGroup>
+  <ProjectReference Include="../Host/Poc2Revit.Host.csproj" ReferenceOutputAssembly="false"/>
+  <Compile Include="../../RevitBootstrap/CandidateLoadContext.cs" Link="Reuse/CandidateLoadContext.cs"/>
+  <Reference Include="RevitAPI"><HintPath>$(RevitInstallDir)/RevitAPI.dll</HintPath><Private>False</Private><ExternallyResolved>true</ExternallyResolved></Reference>
+  <Reference Include="RevitAPIUI"><HintPath>$(RevitInstallDir)/RevitAPIUI.dll</HintPath><Private>False</Private><ExternallyResolved>true</ExternallyResolved></Reference>
+ </ItemGroup>
+</Project>

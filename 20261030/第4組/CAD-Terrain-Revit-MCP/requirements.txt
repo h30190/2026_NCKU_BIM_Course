@@ -1,0 +1,3 @@
+shapely==2.2.0
+numpy==2.5.4
+# Bundled in vendor; CPython 3.12 Windows x64.
