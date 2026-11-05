@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- OFFLINE TEMPLATE ONLY. Do not place in Addins or point at the old c4072dc3 DLL,
+     which does not contain the diagnostic class. A new uniquely named diagnostic
+     assembly and separately authorized loading are required. -->
+<RevitAddIns>
+  <AddIn Type="Command">
+    <Text>POC 2 - Inspect Generate gate (READ ONLY)</Text>
+    <Assembly>REPLACE_WITH_NEW_DIAGNOSTIC_ASSEMBLY_ABSOLUTE_PATH</Assembly>
+    <AddInId>REPLACE_WITH_NEW_UNIQUE_GUID</AddInId>
+    <FullClassName>EVCanopyDesigner.Poc2.Revit.Bootstrap.DiagnoseGenerateAvailability</FullClassName>
+    <VendorId>EVHB</VendorId>
+    <VendorDescription>Read-only observation of the existing c4072dc3 gate; no generation</VendorDescription>
+  </AddIn>
+</RevitAddIns>

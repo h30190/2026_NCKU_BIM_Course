@@ -1,0 +1,13 @@
+# CODEOWNERS
+# 此檔案定義誰能審核和批准不同部分的變更
+
+# 知識貢獻區域 - 學員可以提交 PR
+# 這些會由老師審核後合併
+/domain/                 @shuotaochiang
+/GEMINI.md              @shuotaochiang
+
+# 核心程式碼 - 只有老師能修改
+# 學員的 PR 會被自動標記需要額外審核
+/MCP/                   @shuotaochiang
+/MCP-Server/src/        @shuotaochiang
+/scripts/               @shuotaochiang

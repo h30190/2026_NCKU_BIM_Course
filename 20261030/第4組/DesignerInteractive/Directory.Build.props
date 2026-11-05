@@ -1,0 +1,4 @@
+<Project><PropertyGroup>
+ <BaselineRoot>$(MSBuildThisFileDirectory)..\Revit_Addin\EVCanopyDesigner_11B_v1.1.2\EVCanopyDesigner-Phase11B-1.1.2.0-deployment-r2</BaselineRoot>
+ <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+</PropertyGroup></Project>

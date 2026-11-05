@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
+ <ItemGroup>
+  <ProjectReference Include="$(BaselineRoot)/EVCanopyDesigner.Canopy.Core/EVCanopyDesigner.Canopy.Core.csproj"/>
+  <Compile Include="$(BaselineRoot)/EVCanopyDesigner.Canopy.UI/CanopyViewModel.cs" Link="Baseline/CanopyViewModel.cs"/>
+  <Compile Include="$(BaselineRoot)/EVCanopyDesigner.Canopy.UI/CanopyPresentation.cs" Link="Baseline/CanopyPresentation.cs"/>
+  <Compile Include="$(BaselineRoot)/EVCanopyDesigner.Planner.UI/PlannerViewModel.cs" Link="Baseline/PlannerViewModel.cs"/>
+ </ItemGroup>
+</Project>
