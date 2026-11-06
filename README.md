@@ -32,4 +32,7 @@
 4. 從組 fork 發 PR 回主 repo，標題寫組別＋題目；業師 review 後 squash merge（一組一個 commit）
 5. 截止 10/29 23:59；merge 完的版本就是 10/30 發表＋投票用
 
-授權：MIT（見 [LICENSE](LICENSE)）
+## Copyright & License
+
+- Course materials (instructor-authored files outside group submission folders): Copyright © 2026 Hsu Hao. All rights reserved.
+- Student project submissions (group folders under `20261030/`): copyright is held jointly by the members of each group. No license is granted for reuse without the members' consent.
