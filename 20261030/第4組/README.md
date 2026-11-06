@@ -4,10 +4,10 @@
 
 | 組員 | 專案 / 工具 | 主題 |
 |---|---|---|
-| 范姜政佑 | `REVIT_MCP_study` | 自然排煙開口檢核 |
-| 李昕紘 | `REVIT_MCP_study` | 避難路線 |
-| 陳慧芳 | `DesignerInteractive`、`demo` | Designer Interactive |
-| 陳盈曄 | `CAD-Terrain-Revit-MCP` | CAD Terrain Revit MCP |
+| 范姜政佑 | `REVIT_MCP_study` | 自然排煙開口檢核與改善 |
+| 李昕紘 | `REVIT_MCP_study` | 逃生避難距離自動檢討與製圖 |
+| 陳慧芳 | `DesignerInteractive`、`demo` | EV Charging Hub 互動式配置設計 |
+| 陳盈曄 | `CAD-Terrain-Revit-MCP` | CAD 圖資轉 Revit 基地建模 |
 
 ## 課堂簡報
 
