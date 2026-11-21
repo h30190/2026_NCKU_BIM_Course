@@ -1,7 +1,8 @@
 package main
 
 // 減碳建議（AI 分析計畫書 6 節）：AI agent 用 lebr-snapshot scenario 試算後，把建議寫進 proposals.json；
-// 網頁選定一份（chosen），外掛「套用建議」取回、寫回 Revit 後回報已套用（applied）。
+// 網頁選定一份或多份互不衝突的建議（chosen），外掛「套用建議」一次取回、合併寫回 Revit 後逐份回報已套用（applied）；
+// 套用過的可再選定重新套用，也可刪除。衝突規則見 proposal_conflicts.go。
 // 後端只存狀態，不計算碳排，也從不呼叫 Revit。
 
 import (
@@ -42,6 +43,8 @@ type Proposal struct {
 	ChosenAt  string           `json:"chosenAt,omitempty"`
 	Applied   *ProposalResult  `json:"applied,omitempty"` // 外掛套用後重算的結果
 	AppliedAt string           `json:"appliedAt,omitempty"`
+	// 只在列表回應時計算，不存進檔案：與同案件哪些建議不能同時選定
+	Conflicts []ProposalConflict `json:"conflicts,omitempty"`
 }
 
 type proposalFile struct {
@@ -145,7 +148,8 @@ func (s *Server) lockProposals(w http.ResponseWriter) (*ProposalStore, bool) {
 	return p, true
 }
 
-// GET /api/proposals?project= — 該案子的建議（不帶 project 回傳全部），依檔案順序。
+// GET /api/proposals?project= — 該案子的建議（不帶 project 回傳全部），依檔案順序；
+// 每份附上與同案件哪些建議衝突（conflicts），網頁據此標示不能同時選定的組合。
 func (s *Server) handleListProposals(w http.ResponseWriter, r *http.Request) {
 	p, ok := s.lockProposals(w)
 	if !ok {
@@ -154,15 +158,17 @@ func (s *Server) handleListProposals(w http.ResponseWriter, r *http.Request) {
 	defer p.mu.Unlock()
 	project := r.URL.Query().Get("project")
 	out := []Proposal{}
-	for _, x := range p.data.Proposals {
+	for i := range p.data.Proposals {
+		x := p.data.Proposals[i]
 		if project == "" || x.Project == project {
+			x.Conflicts = conflictsOf(&p.data.Proposals[i], p.data.Proposals)
 			out = append(out, x)
 		}
 	}
 	writeJSON(w, http.StatusOK, out)
 }
 
-// GET /api/proposals/chosen?project= — 外掛取回目前選定、尚未套用的建議；沒有回 404。
+// GET /api/proposals/chosen?project= — 外掛取回目前選定的所有建議（依檔案順序），一次合併套用；沒有時回空陣列。
 func (s *Server) handleChosenProposal(w http.ResponseWriter, r *http.Request) {
 	project := r.URL.Query().Get("project")
 	if project == "" {
@@ -174,17 +180,25 @@ func (s *Server) handleChosenProposal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer p.mu.Unlock()
+	out := []Proposal{}
 	for _, x := range p.data.Proposals {
 		if x.Project == project && x.Status == "chosen" {
-			writeJSON(w, http.StatusOK, x)
-			return
+			out = append(out, x)
 		}
 	}
-	writeErr(w, http.StatusNotFound, fmt.Sprintf("「%s」沒有選定的建議", project))
+	writeJSON(w, http.StatusOK, out)
 }
 
-// PATCH /api/proposals/{id} — body: {status: "chosen" | "proposed"}。
-// 同一案子只能選定一份：選定新的時，原本選定的退回 proposed。已套用的不能再改。
+// unchosenStatus：取消選定後回到的狀態——套用過的回 applied（保留套用紀錄），沒套用過的回 proposed。
+func unchosenStatus(x *Proposal) string {
+	if x.Applied != nil {
+		return "applied"
+	}
+	return "proposed"
+}
+
+// PATCH /api/proposals/{id} — body: {status: "chosen" | "proposed"}。"proposed" 代表取消選定。
+// 同一案子可以選定多份，但不能和已選定的衝突（回 409 並說明原因）。套用過的也能再選定（在 Revit 重新套用一次）。
 func (s *Server) handleChooseProposal(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Status string `json:"status"`
@@ -207,27 +221,49 @@ func (s *Server) handleChooseProposal(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "找不到這份建議")
 		return
 	}
-	if x.Status == "applied" {
-		writeErr(w, http.StatusConflict, "這份建議已套用到模型，不能再改")
-		return
-	}
-	if body.Status == "chosen" {
+	if body.Status == "chosen" && x.Status != "chosen" {
 		for i := range p.data.Proposals {
 			o := &p.data.Proposals[i]
-			if o.Project == x.Project && o.Status == "chosen" {
-				o.Status, o.ChosenAt = "proposed", ""
+			if o.Status != "chosen" {
+				continue
+			}
+			if reason := proposalConflict(x, o); reason != "" {
+				writeErr(w, http.StatusConflict, fmt.Sprintf("和已選定的「%s」衝突：%s。請先取消選定那一份。", o.Title, reason))
+				return
 			}
 		}
-		x.ChosenAt = time.Now().Format(time.RFC3339)
-	} else {
-		x.ChosenAt = ""
+		x.Status, x.ChosenAt = "chosen", time.Now().Format(time.RFC3339)
+	} else if body.Status == "proposed" && x.Status == "chosen" {
+		x.Status, x.ChosenAt = unchosenStatus(x), ""
 	}
-	x.Status = body.Status
 	if err := p.saveLocked(); err != nil {
 		writeErr(w, 500, "存檔失敗："+err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, x)
+}
+
+// DELETE /api/proposals/{id} — 從 proposals.json 移除這份建議。只刪紀錄：已寫回模型的參數與材料對照表不會還原。
+func (s *Server) handleDeleteProposal(w http.ResponseWriter, r *http.Request) {
+	p, ok := s.lockProposals(w)
+	if !ok {
+		return
+	}
+	defer p.mu.Unlock()
+	id := r.PathValue("id")
+	list := p.data.Proposals
+	for i := range list {
+		if list[i].ID == id {
+			p.data.Proposals = append(list[:i:i], list[i+1:]...)
+			if err := p.saveLocked(); err != nil {
+				writeErr(w, 500, "存檔失敗："+err.Error())
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]string{"id": id})
+			return
+		}
+	}
+	writeErr(w, http.StatusNotFound, "找不到這份建議")
 }
 
 // PATCH /api/proposals/{id}/applied — 外掛寫回 Revit 後回報，body: {applied: {cfr, grade, eec}}。

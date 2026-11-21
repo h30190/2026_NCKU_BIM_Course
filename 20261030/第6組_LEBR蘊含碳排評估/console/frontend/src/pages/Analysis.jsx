@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { listProposals, setProposalStatus } from '../api.js'
+import { listProposals, setProposalStatus, deleteProposal } from '../api.js'
 import { kg, pct, time } from '../format.js'
 import GradeBadge from '../components/GradeBadge.jsx'
 import SnapshotPicker from '../components/SnapshotPicker.jsx'
@@ -167,6 +167,13 @@ function PotentialCard({ potential, contributions }) {
 
 const STATUS = { proposed: ['建議', 'status-approx'], chosen: ['已選定', 'status-guess'], applied: ['已套用', 'status-ok'] }
 
+// 套用過的建議都留著 applied 狀態；只有最近一次套用的才是模型目前的樣子，其他標「曾套用」
+function statusLabel(p, latestAppliedId) {
+  if (p.status === 'applied' && p.id !== latestAppliedId) return ['曾套用', '']
+  if (p.status === 'applied') return ['已套用（目前）', 'status-ok']
+  return STATUS[p.status] ?? STATUS.proposed
+}
+
 function ProposalsCard({ project, current }) {
   const [list, setList] = useState(null)
   const [error, setError] = useState('')
@@ -181,25 +188,48 @@ function ProposalsCard({ project, current }) {
     try { await setProposalStatus(id, status); load() } catch (e) { setError(e.message) }
   }
 
+  // 刪除只移除建議紀錄，已寫回模型的參數不會還原，確認訊息要講清楚
+  const remove = async (p) => {
+    const note = p.appliedAt ? '\n這份建議已寫回過模型；刪除只移除紀錄，模型裡的 LEBR_BlccId 不會還原。' : ''
+    if (!window.confirm(`刪除建議「${p.title}」？刪除後無法復原。${note}`)) return
+    setError('')
+    try { await deleteProposal(p.id); load() } catch (e) { setError(e.message) }
+  }
+
+  const latestAppliedId = list
+    ?.filter((p) => p.appliedAt)
+    .reduce((a, b) => (!a || b.appliedAt > a.appliedAt ? b : a), null)?.id
+  const chosen = list?.filter((p) => p.status === 'chosen') ?? []
+  const chosenIds = new Set(chosen.map((p) => p.id))
+
   return (
     <section className="card">
       <div className="card-head">
         <div>
           <h2>減碳建議</h2>
           <p className="muted small">
-            由 AI 依上面的分析提出，數字用 lebr-snapshot scenario 試算（不是 AI 自己算的）。選定一份後，在 Revit 按「LEBR → 套用建議」寫回模型。
+            由 AI 依上面的分析提出，數字用 lebr-snapshot scenario 試算（不是 AI 自己算的）。可以選定多份互不衝突的建議，
+            在 Revit 按「LEBR → 套用建議」一次寫回模型。
           </p>
         </div>
         <button type="button" onClick={load}>重新整理</button>
       </div>
       {error && <div className="banner banner-error">{error}</div>}
+      {chosen.length > 0 && (
+        <div className="banner banner-info small">
+          已選定 {chosen.length} 份，等待在 Revit 按「套用建議」。
+          {chosen.length > 1 && ' 每份的試算是單獨算的，合併後的減碳率以套用後重算為準。'}
+        </div>
+      )}
       {list?.length === 0 && (
         <p className="muted small">「{project}」還沒有建議。請 AI agent 依 MaterialMapping/AGENTS.md 的「減碳建議」流程產生 proposals.json。</p>
       )}
       <ul className="proposal-list">
         {list?.map((p) => {
-          const [label, tone] = STATUS[p.status] ?? STATUS.proposed
+          const [label, tone] = statusLabel(p, latestAppliedId)
           const result = p.applied ?? p.expected
+          // 和已選定的建議衝突就不能選（後端也會擋），列出原因
+          const blockers = p.status === 'chosen' ? [] : (p.conflicts ?? []).filter((c) => chosenIds.has(c.id))
           return (
             <li key={p.id} className={`proposal ${p.status === 'chosen' ? 'is-chosen' : ''}`}>
               <div className="proposal-head">
@@ -223,14 +253,22 @@ function ProposalsCard({ project, current }) {
               </ul>
               {p.reason && <p className="small muted">{p.reason}</p>}
               <div className="proposal-actions">
-                {p.status === 'proposed' && <button type="button" onClick={() => set(p.id, 'chosen')}>選定這份</button>}
-                {p.status === 'chosen' && (
-                  <>
-                    <span className="small">等待在 Revit 按「套用建議」</span>
-                    <button type="button" onClick={() => set(p.id, 'proposed')}>取消選定</button>
-                  </>
+                {p.status === 'chosen' ? (
+                  <button type="button" onClick={() => set(p.id, 'proposed')}>取消選定</button>
+                ) : (
+                  <button type="button" onClick={() => set(p.id, 'chosen')} disabled={blockers.length > 0}
+                    title={p.appliedAt ? '選定後在 Revit 按「套用建議」，會把這份的變更再寫一次到目前的模型' : undefined}>
+                    {p.appliedAt ? '再次選定' : '選定這份'}
+                  </button>
                 )}
-                {p.status === 'applied' && <span className="small muted">已於 {time(p.appliedAt)} 寫回模型</span>}
+                {p.appliedAt && <span className="small muted">已於 {time(p.appliedAt)} 寫回模型</span>}
+                {blockers.length > 0 && (
+                  <span className="small delta-bad">
+                    和已選定的{blockers.map((c) => `「${c.title}」`).join('、')}衝突（{blockers[0].reason}），要先取消那一份
+                  </span>
+                )}
+                <button type="button" className="danger-link proposal-delete" aria-label={`刪除建議 ${p.title}`}
+                  onClick={() => remove(p)}>刪除</button>
               </div>
             </li>
           )

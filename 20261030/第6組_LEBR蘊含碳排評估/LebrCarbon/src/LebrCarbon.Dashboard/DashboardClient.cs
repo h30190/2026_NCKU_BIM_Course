@@ -8,8 +8,8 @@ namespace LebrCarbon.Dashboard;
 /// <summary>上傳結果：成功時帶回後端給的快照 ID。</summary>
 public sealed record UploadResult(bool Ok, string Message, long? SnapshotId = null);
 
-/// <summary>取回選定建議：Ok 但 Proposal 為 null 代表後端有開、只是沒有選定的建議。</summary>
-public sealed record ProposalFetch(bool Ok, string Message, Proposal? Proposal = null);
+/// <summary>取回選定建議：Ok 但 Proposals 為空代表後端有開、只是沒有選定的建議。</summary>
+public sealed record ProposalFetch(bool Ok, string Message, List<Proposal> Proposals);
 
 /// <summary>
 /// 控制台後端的 HTTP 包裝（控制台計畫書第 7 節）。外掛一律主動連線，後端從不呼叫 Revit。
@@ -89,24 +89,25 @@ public sealed class DashboardClient : IDisposable
         }
     }
 
-    /// <summary>GET /api/proposals/chosen?project=：該案子目前選定、尚未套用的建議；沒有時 Proposal 為 null。</summary>
-    public async Task<ProposalFetch> GetChosenProposalAsync(string project, CancellationToken ct = default)
+    /// <summary>
+    /// GET /api/proposals/chosen?project=：該案子目前選定的所有建議（後端已保證彼此不衝突）；沒有時 Proposals 為空。
+    /// </summary>
+    public async Task<ProposalFetch> GetChosenProposalsAsync(string project, CancellationToken ct = default)
     {
         if (!await IsRunningAsync(ct).ConfigureAwait(false))
-            return new ProposalFetch(false, $"{NotRunningMessage}（{BaseUrl}）");
+            return new ProposalFetch(false, $"{NotRunningMessage}（{BaseUrl}）", []);
         try
         {
             using var res = await _http.GetAsync($"api/proposals/chosen?project={Uri.EscapeDataString(project)}", ct).ConfigureAwait(false);
             var body = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            if (res.StatusCode == System.Net.HttpStatusCode.NotFound)
-                return new ProposalFetch(true, $"控制台上「{project}」沒有選定的建議");
             if (!res.IsSuccessStatusCode)
-                return new ProposalFetch(false, $"讀取建議失敗（HTTP {(int)res.StatusCode}）：{ErrorText(body)}");
-            return new ProposalFetch(true, "", JsonSerializer.Deserialize<Proposal>(body, DataLoader.Options));
+                return new ProposalFetch(false, $"讀取建議失敗（HTTP {(int)res.StatusCode}）：{ErrorText(body)}", []);
+            var list = JsonSerializer.Deserialize<List<Proposal>>(body, DataLoader.Options) ?? [];
+            return new ProposalFetch(true, list.Count == 0 ? $"控制台上「{project}」沒有選定的建議" : "", list);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
-            return new ProposalFetch(false, $"讀取建議失敗：{ex.Message}");
+            return new ProposalFetch(false, $"讀取建議失敗：{ex.Message}", []);
         }
     }
 

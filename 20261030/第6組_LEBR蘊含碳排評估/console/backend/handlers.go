@@ -42,6 +42,7 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/proposals", s.handleListProposals)
 	mux.HandleFunc("GET /api/proposals/chosen", s.handleChosenProposal)
 	mux.HandleFunc("PATCH /api/proposals/{id}", s.handleChooseProposal)
+	mux.HandleFunc("DELETE /api/proposals/{id}", s.handleDeleteProposal)
 	mux.HandleFunc("PATCH /api/proposals/{id}/applied", s.handleProposalApplied)
 }
 

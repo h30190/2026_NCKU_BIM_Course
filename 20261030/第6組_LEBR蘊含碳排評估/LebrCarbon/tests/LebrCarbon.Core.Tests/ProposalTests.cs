@@ -61,28 +61,47 @@ public class ProposalTests
     }
 
     [Fact]
-    public async Task 取回選定建議()
+    public async Task 取回所有選定建議()
     {
         var handler = new StubHandler(req => req.RequestUri!.AbsolutePath switch
         {
             "/api/health" => (HttpStatusCode.OK, "{}"),
             "/api/proposals/chosen" when req.RequestUri.Query.Contains(Uri.EscapeDataString("專案1")) => (HttpStatusCode.OK, """
-                {"id":"p1","project":"專案1","title":"內隔間改輕質","status":"chosen",
-                 "changes":[{"from":"IW-3","to":"IW-1"}],"expected":{"cfr":0.1614,"grade":"1級"}}
+                [{"id":"p1","project":"專案1","title":"內隔間改輕質","status":"chosen",
+                  "changes":[{"from":"IW-3","to":"IW-1"}],"expected":{"cfr":0.1614,"grade":"1級"}},
+                 {"id":"p2","project":"專案1","title":"窗框改塑鋼","status":"chosen",
+                  "changes":[{"from":"W-11-AL","to":"W-1-PL"}]}]
                 """),
-            _ => (HttpStatusCode.NotFound, """{"error":"沒有選定的建議"}"""),
+            _ => (HttpStatusCode.OK, "[]"),
         });
         using var client = new DashboardClient("http://test", handler);
 
-        var hit = await client.GetChosenProposalAsync("專案1");
+        var hit = await client.GetChosenProposalsAsync("專案1");
         Assert.True(hit.Ok);
-        Assert.Equal("p1", hit.Proposal!.Id);
-        Assert.Equal("IW-1", Assert.Single(hit.Proposal.Changes).To);
-        Assert.Equal("1級", hit.Proposal.Expected!.Grade);
+        Assert.Equal(new[] { "p1", "p2" }, hit.Proposals.Select(p => p.Id));
+        Assert.Equal("IW-1", Assert.Single(hit.Proposals[0].Changes).To);
+        Assert.Equal("1級", hit.Proposals[0].Expected!.Grade);
 
-        var none = await client.GetChosenProposalAsync("專案2");
+        var none = await client.GetChosenProposalsAsync("專案2");
         Assert.True(none.Ok);
-        Assert.Null(none.Proposal);
+        Assert.Empty(none.Proposals);
+    }
+
+    [Fact]
+    public void 多份建議合併_相同替換只留一個()
+    {
+        Proposal P(string id, params ScenarioChange[] cs) => new() { Id = id, Project = "專案1", Title = id, Changes = cs.ToList() };
+        var merged = ProposalMerge.Changes(new[]
+        {
+            P("a", new ScenarioChange("IW-3", "IW-1"), new ScenarioChange("W-11-AL", "W-1-PL")),
+            P("b", new ScenarioChange("iw-3 ", "IW-1"), new ScenarioChange("CW-0", "CW-2", DropFinish: true)),
+        });
+        Assert.Equal(new[] { "IW-3", "W-11-AL", "CW-0" }, merged.Select(c => c.From));
+
+        // 合併後三個類型都改到，重複的替換不會變成「找不到」
+        var (edits, missing) = BlccIdEditor.Plan(Types, merged, Lib);
+        Assert.Empty(missing);
+        Assert.Equal(3, edits.Count);
     }
 
     [Fact]

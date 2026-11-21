@@ -51,3 +51,5 @@ export const setProposalStatus = (id, status) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
   })
+// 刪除只移除建議紀錄；已寫回模型的參數不會還原
+export const deleteProposal = (id) => request(`/api/proposals/${encodeURIComponent(id)}`, { method: 'DELETE' })

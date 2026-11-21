@@ -296,6 +296,7 @@ a.button:hover { background: var(--surface-2); }
 .notice h2 { margin-bottom: 8px; }
 .banner { padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; }
 .banner-error { background: var(--error-soft); color: var(--error-ink); }
+.banner-info { background: var(--accent-soft); color: var(--ink); }
 
 /* ── 手機寬度 ── */
 @media (max-width: 760px) {
@@ -321,7 +322,8 @@ a.button:hover { background: var(--surface-2); }
 .proposal-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .proposal-result { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 .change-list { margin: 6px 0; padding-left: 1.2em; }
-.proposal-actions { display: flex; align-items: center; gap: 10px; }
+.proposal-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.proposal-delete { margin-left: auto; }
 @media (max-width: 640px) {
   .hbars > li, .hbar-row { grid-template-columns: minmax(0, 1fr) auto; }
   .hbar-track { grid-column: 1 / -1; grid-row: 2; }

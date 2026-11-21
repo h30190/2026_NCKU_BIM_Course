@@ -42,33 +42,49 @@ func TestProposalsListByProject(t *testing.T) {
 	if len(got) != 2 || got[0].Status != "proposed" {
 		t.Fatalf("got %+v", got)
 	}
-	if rec := do(t, mux, "GET", "/api/proposals/chosen?project="+urlq("專案1"), ""); rec.Code != 404 {
-		t.Fatalf("no chosen yet, code = %d", rec.Code)
+	if got := chosenIDs(t, mux, "專案1"); len(got) != 0 {
+		t.Fatalf("no chosen yet, got %v", got)
 	}
 }
 
-func TestChooseKeepsOnlyOnePerProject(t *testing.T) {
+// chosenIDs：外掛取回的選定建議 ID（依檔案順序）
+func chosenIDs(t *testing.T, mux *http.ServeMux, project string) []string {
+	t.Helper()
+	rec := do(t, mux, "GET", "/api/proposals/chosen?project="+urlq(project), "")
+	if rec.Code != 200 {
+		t.Fatalf("chosen = %d %s", rec.Code, rec.Body)
+	}
+	var list []Proposal
+	_ = json.Unmarshal(rec.Body.Bytes(), &list)
+	ids := []string{}
+	for _, p := range list {
+		ids = append(ids, p.ID)
+	}
+	return ids
+}
+
+// 不衝突的建議可以同時選定，外掛一次取回全部；另一案不受影響，結果寫回檔案
+func TestChooseMultipleCompatible(t *testing.T) {
 	_, mux, path := newProposalServer(t)
 	for _, id := range []string{"p1", "x1", "p2"} {
 		if rec := do(t, mux, "PATCH", "/api/proposals/"+id, `{"status":"chosen"}`); rec.Code != 200 {
 			t.Fatalf("choose %s: %d %s", id, rec.Code, rec.Body)
 		}
 	}
-	var chosen Proposal
-	rec := do(t, mux, "GET", "/api/proposals/chosen?project="+urlq("專案1"), "")
-	_ = json.Unmarshal(rec.Body.Bytes(), &chosen)
-	if chosen.ID != "p2" || chosen.ChosenAt == "" || !chosen.Changes[0].DropFinish {
-		t.Fatalf("chosen = %+v", chosen)
+	if got := chosenIDs(t, mux, "專案1"); strings.Join(got, ",") != "p1,p2" {
+		t.Fatalf("chosen 專案1 = %v", got)
 	}
-	// 另一案的選定不受影響；結果寫回檔案
 	raw, _ := os.ReadFile(path)
 	var f proposalFile
 	_ = json.Unmarshal(raw, &f)
 	status := map[string]string{}
 	for _, p := range f.Proposals {
 		status[p.ID] = p.Status
+		if len(p.Conflicts) != 0 {
+			t.Fatalf("conflicts must not be saved to file: %+v", p)
+		}
 	}
-	if status["p1"] != "proposed" || status["p2"] != "chosen" || status["x1"] != "chosen" {
+	if status["p1"] != "chosen" || status["p2"] != "chosen" || status["x1"] != "chosen" {
 		t.Fatalf("file statuses = %v", status)
 	}
 	if rec := do(t, mux, "PATCH", "/api/proposals/p1", `{"status":"applied"}`); rec.Code != 400 {
@@ -107,11 +123,61 @@ func TestAppliedUpdatesMappingAndLocks(t *testing.T) {
 		t.Fatalf("other project touched: %+v", m.Items[1].MappingItem)
 	}
 
-	if rec := do(t, mux, "PATCH", "/api/proposals/p2", `{"status":"proposed"}`); rec.Code != 409 {
-		t.Fatalf("applied proposal must be locked, got %d", rec.Code)
+	if got := chosenIDs(t, mux, "專案1"); len(got) != 0 {
+		t.Fatalf("applied is no longer chosen, got %v", got)
 	}
-	if rec := do(t, mux, "GET", "/api/proposals/chosen?project="+urlq("專案1"), ""); rec.Code != 404 {
-		t.Fatalf("applied is no longer chosen, got %d", rec.Code)
+}
+
+// 套用過的建議可以再選定（重新套用）；取消時回到 applied，紀錄保留。沒套用過的取消回 proposed
+func TestReChooseAppliedProposal(t *testing.T) {
+	_, mux, _ := newProposalServer(t)
+	do(t, mux, "PATCH", "/api/proposals/p2", `{"status":"chosen"}`)
+	do(t, mux, "PATCH", "/api/proposals/p2/applied", `{"applied":{"cfr":0.2263,"grade":"1+級"}}`)
+
+	status := func(id string) Proposal {
+		var list []Proposal
+		_ = json.Unmarshal(do(t, mux, "GET", "/api/proposals?project="+urlq("專案1"), "").Body.Bytes(), &list)
+		for _, p := range list {
+			if p.ID == id {
+				return p
+			}
+		}
+		t.Fatalf("%s not found", id)
+		return Proposal{}
+	}
+	// 對未選定的建議送「取消」不改變狀態
+	if rec := do(t, mux, "PATCH", "/api/proposals/p2", `{"status":"proposed"}`); rec.Code != 200 || status("p2").Status != "applied" {
+		t.Fatalf("deselect on applied = %d, status %s", rec.Code, status("p2").Status)
+	}
+	if rec := do(t, mux, "PATCH", "/api/proposals/p2", `{"status":"chosen"}`); rec.Code != 200 || status("p2").Status != "chosen" {
+		t.Fatalf("re-choose applied = %d %s", rec.Code, rec.Body)
+	}
+	// 取消再次選定：回到 applied（保留套用結果），不是 proposed
+	do(t, mux, "PATCH", "/api/proposals/p2", `{"status":"proposed"}`)
+	if p2 := status("p2"); p2.Status != "applied" || p2.Applied == nil {
+		t.Fatalf("p2 after deselect = %+v", p2)
+	}
+	do(t, mux, "PATCH", "/api/proposals/p1", `{"status":"chosen"}`)
+	do(t, mux, "PATCH", "/api/proposals/p1", `{"status":"proposed"}`)
+	if p1 := status("p1"); p1.Status != "proposed" || p1.ChosenAt != "" {
+		t.Fatalf("p1 after deselect = %+v", p1)
+	}
+}
+
+// 刪除只移除該筆，寫回檔案；其他案件、其他建議不受影響
+func TestDeleteProposal(t *testing.T) {
+	_, mux, path := newProposalServer(t)
+	if rec := do(t, mux, "DELETE", "/api/proposals/p1", ""); rec.Code != 200 {
+		t.Fatalf("delete = %d %s", rec.Code, rec.Body)
+	}
+	raw, _ := os.ReadFile(path)
+	var f proposalFile
+	_ = json.Unmarshal(raw, &f)
+	if len(f.Proposals) != 2 || f.Proposals[0].ID != "p2" || f.Proposals[1].ID != "x1" {
+		t.Fatalf("file after delete = %+v", f.Proposals)
+	}
+	if rec := do(t, mux, "DELETE", "/api/proposals/p1", ""); rec.Code != 404 {
+		t.Fatalf("delete again = %d", rec.Code)
 	}
 }
 

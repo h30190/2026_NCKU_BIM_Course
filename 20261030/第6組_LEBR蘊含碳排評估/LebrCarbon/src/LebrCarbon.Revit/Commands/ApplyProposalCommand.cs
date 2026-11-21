@@ -11,8 +11,8 @@ namespace LebrCarbon.Revit.Commands;
 
 /// <summary>
 /// 套用控制台建議（AI 分析計畫書 6 節，資料流回 Revit 的那一段）：
-/// 取回網頁上選定的建議 → 列出要改的類型請使用者確認 → 改類型參數 LEBR_BlccId →
-/// 同步更新 {模型}.lebr.json 並重算 → 回報控制台已套用。外掛主動連線，後端從不呼叫 Revit。
+/// 取回網頁上選定的建議（可多份，後端已確保彼此不衝突）→ 合併替換、列出要改的類型請使用者確認 →
+/// 改類型參數 LEBR_BlccId → 同步更新 {模型}.lebr.json 並重算 → 逐份回報控制台已套用。外掛主動連線，後端從不呼叫 Revit。
 /// </summary>
 [Transaction(TransactionMode.Manual)]
 public sealed class ApplyProposalCommand : IExternalCommand
@@ -28,29 +28,31 @@ public sealed class ApplyProposalCommand : IExternalCommand
             return Result.Cancelled;
         }
 
-        // 案子 key 與「上傳到控制台」相同：模型檔名，未存檔時用標題
-        var key = string.IsNullOrWhiteSpace(doc.PathName) ? doc.Title : Path.GetFileNameWithoutExtension(doc.PathName);
+        var key = ConsoleCase.KeyFor(doc);
         using var client = new DashboardClient(DashboardSettings.Load().BaseUrl);
-        var fetch = Task.Run(() => client.GetChosenProposalAsync(key)).GetAwaiter().GetResult();
-        if (fetch.Proposal is not { } proposal)
+        var fetch = Task.Run(() => client.GetChosenProposalsAsync(key)).GetAwaiter().GetResult();
+        var proposals = fetch.Proposals;
+        if (proposals.Count == 0)
         {
             TaskDialog.Show(Title, fetch.Ok
-                ? $"{fetch.Message}。\n\n請先在網頁控制台「分析與建議」選一份建議。"
+                ? $"{fetch.Message}。\n\n請先在網頁控制台「分析與建議」選定一份或多份建議。"
                 : fetch.Message);
             return Result.Cancelled;
         }
 
         var lib = BlccLibrary.Load();
-        var (edits, missing) = BlccIdEditor.Plan(CollectTypes(doc), proposal.Changes, lib);
+        var changes = ProposalMerge.Changes(proposals);
+        var (edits, missing) = BlccIdEditor.Plan(CollectTypes(doc), changes, lib);
         if (edits.Count == 0)
         {
-            TaskDialog.Show(Title, $"建議「{proposal.Title}」在模型中找不到可修改的類型：\n\n• " + string.Join("\n• ", missing));
+            TaskDialog.Show(Title, $"{Names(proposals)}在模型中找不到可修改的類型：\n\n• " + string.Join("\n• ", missing));
             return Result.Cancelled;
         }
 
-        if (!Confirm(proposal, edits, missing)) return Result.Cancelled;
+        if (!Confirm(proposals, edits, missing)) return Result.Cancelled;
 
-        using (var t = new Transaction(doc, $"LEBR 套用建議：{proposal.Title}"))
+        // 多份建議放在同一個交易：Ctrl+Z 一次全部撤銷
+        using (var t = new Transaction(doc, proposals.Count == 1 ? $"LEBR 套用建議：{proposals[0].Title}" : $"LEBR 套用 {proposals.Count} 份建議"))
         {
             t.Start();
             foreach (var e in edits)
@@ -59,10 +61,13 @@ public sealed class ApplyProposalCommand : IExternalCommand
         }
 
         var report = new StringBuilder($"已修改 {edits.Count} 個類型的 LEBR_BlccId（可用復原 Ctrl+Z 撤銷）。\n");
-        report.Append(SyncProjectFile(doc, lib, proposal, client));
+        report.Append(SyncProjectFile(doc, lib, proposals, changes, client));
         TaskDialog.Show(Title, report.ToString());
         return Result.Succeeded;
     }
+
+    private static string Names(List<Proposal> ps) =>
+        ps.Count == 1 ? $"建議「{ps[0].Title}」" : $"選定的 {ps.Count} 份建議";
 
     /// <summary>模型中實際用到、且類型上有 LEBR_BlccId 的類型。</summary>
     private static List<TypeBlccIds> CollectTypes(Document doc) =>
@@ -77,21 +82,25 @@ public sealed class ApplyProposalCommand : IExternalCommand
             .Select(x => new TypeBlccIds(x.Type!.Id.Value, x.Type.Name, x.Type.Category?.Name ?? "", x.Value!))
             .ToList();
 
-    private static bool Confirm(Proposal p, List<TypeEdit> edits, List<string> missing)
+    private static bool Confirm(List<Proposal> ps, List<TypeEdit> edits, List<string> missing)
     {
         var sb = new StringBuilder();
+        if (ps.Count > 1)
+            sb.AppendLine("一起套用：").AppendLine("• " + string.Join("\n• ", ps.Select(p => p.Title))).AppendLine();
         foreach (var e in edits)
             sb.AppendLine($"• {e.CategoryName}「{e.TypeName}」：{e.Old} → {e.New}");
         if (missing.Count > 0)
             sb.AppendLine().AppendLine("以下替換在模型中找不到，會略過：").AppendLine("• " + string.Join("\n• ", missing));
-        if (p.Expected is { } x)
+        if (ps.Count == 1 && ps[0].Expected is { } x)
             sb.AppendLine().Append($"控制台試算：減碳率 {x.Cfr:P2}、{x.Grade}");
+        else if (ps.Count > 1)
+            sb.AppendLine().Append("控制台的試算是各份單獨算的；合併後的減碳率以套用後重算為準。");
 
         var dlg = new TaskDialog(Title)
         {
-            MainInstruction = $"把建議「{p.Title}」寫回模型？",
+            MainInstruction = $"把{Names(ps)}寫回模型？",
             MainContent = sb.ToString(),
-            ExpandedContent = p.Reason ?? "",
+            ExpandedContent = string.Join("\n\n", ps.Where(p => !string.IsNullOrWhiteSpace(p.Reason)).Select(p => $"【{p.Title}】{p.Reason}")),
             CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No,
             DefaultButton = TaskDialogResult.No,
         };
@@ -99,10 +108,10 @@ public sealed class ApplyProposalCommand : IExternalCommand
     }
 
     /// <summary>
-    /// 同步 {模型}.lebr.json 的明細列並重算，與控制台試算比對後回報已套用。
+    /// 同步 {模型}.lebr.json 的明細列並重算，再逐份回報已套用（同一個重算結果）。
     /// 評估檔不存在或明細與模型對不上時，只提醒使用者重新「從模型帶入」，不回報。
     /// </summary>
-    private static string SyncProjectFile(Document doc, BlccLibrary lib, Proposal p, DashboardClient client)
+    private static string SyncProjectFile(Document doc, BlccLibrary lib, List<Proposal> ps, List<ScenarioChange> changes, DashboardClient client)
     {
         var path = ProjectStore.PathFor(doc.PathName, doc.Title);
         var file = ProjectStore.TryLoad(path);
@@ -111,7 +120,7 @@ public sealed class ApplyProposalCommand : IExternalCommand
 
         try
         {
-            ScenarioRunner.ApplyTo(file, lib, p.Changes);
+            ScenarioRunner.ApplyTo(file, lib, changes);
         }
         catch (ScenarioException ex)
         {
@@ -129,11 +138,17 @@ public sealed class ApplyProposalCommand : IExternalCommand
         }
 
         var sb = new StringBuilder($"\n重算結果：減碳率 {r.CFR:P2}、{r.Grade}");
-        if (p.Expected is { } x && Math.Abs(x.Cfr - r.CFR) > 0.0005)
+        if (ps.Count == 1 && ps[0].Expected is { } x && Math.Abs(x.Cfr - r.CFR) > 0.0005)
             sb.Append($"（控制台試算 {x.Cfr:P2}，數字不同，請確認模型數量是否已變動）");
 
-        var done = Task.Run(() => client.MarkAppliedAsync(p.Id, new ProposalResult(r.CFR, r.Grade, r.EEC))).GetAwaiter().GetResult();
-        sb.Append($"\n{done.Message}。可再按「上傳到控制台」留一份套用後的快照。");
+        var result = new ProposalResult(r.CFR, r.Grade, r.EEC);
+        var failed = ps
+            .Select(p => (p, done: Task.Run(() => client.MarkAppliedAsync(p.Id, result)).GetAwaiter().GetResult()))
+            .Where(x => !x.done.Ok)
+            .ToList();
+        sb.Append(failed.Count == 0
+            ? $"\n已回報控制台（{ps.Count} 份）。可再按「上傳到控制台」留一份套用後的快照。"
+            : "\n回報控制台失敗：" + string.Join("；", failed.Select(f => $"「{f.p.Title}」{f.done.Message}")));
         return sb.ToString();
     }
 }

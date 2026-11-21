@@ -23,7 +23,7 @@
 
 ## 驗證
 
-計算核心用手冊附錄三「高雄市 Z 社會住宅」實例寫成單元測試，連同熱點分級、控制台快照、PDF 摘要內容、情境試算與分析、套用建議等其他測試，66 個測試全部通過：
+計算核心用手冊附錄三「高雄市 Z 社會住宅」實例寫成單元測試，連同熱點分級、控制台快照、PDF 摘要內容、情境試算與分析、套用建議等其他測試，67 個測試全部通過：
 
 | 項目 | 手冊 | 外掛 |
 |---|---|---|
@@ -69,6 +69,18 @@ Revit 相關程式全部集中在 `LebrCarbon.Revit`。手冊改版時只要換 
 需求：**Revit 2026.5 以上**（API 26.5 以 .NET 10 編譯）、可編譯 .NET 10 的 .NET SDK。
 
 > 課程教室環境是 Revit 2024 學生版，本外掛目前只支援 Revit 2026.5，需要在有 Revit 2026 的電腦上執行。
+
+### 直接安裝（免編譯）
+
+到 [Releases 下載 `LebrCarbon-v0.5.0-Revit2026.zip`](https://github.com/ting0909713-web/2026_NCKU_BIM_Course/releases/download/lebr-carbon-v0.5.0/LebrCarbon-v0.5.0-Revit2026.zip)（編譯好的 DLL，不放進 repo）：
+
+1. 關閉 Revit。如果 Windows 封鎖了下載的檔案，先在 zip 上按右鍵 → 內容 → 勾選「解除封鎖」，再解壓。
+2. 把 `LebrCarbon.addin` 和 `LebrCarbon\` 資料夾一起複製到 `%AppData%\Autodesk\Revit\Addins\2026\`。
+3. 開啟 Revit，功能區會出現「LEBR」頁籤。
+
+用 zip 安裝時，「網頁控制台」按鈕找不到 repo 裡的 `console\start.ps1`。需要的話，在 `%AppData%\LebrCarbon\console.json` 加上 `{"consoleDir": "D:\\…\\console"}`，或手動執行 `console\start.ps1`。
+
+### 從原始碼編譯
 
 ```
 cd LebrCarbon

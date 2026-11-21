@@ -4,8 +4,8 @@ using LebrCarbon.Data;
 namespace LebrCarbon.Dashboard;
 
 /// <summary>
-/// 控制台上的一份減碳建議（AI 分析計畫書 6 節）。AI 寫入 proposals.json，使用者在網頁選定，
-/// 外掛「套用控制台建議」取回選定的那份寫回 Revit，再回報已套用。
+/// 控制台上的一份減碳建議（AI 分析計畫書 6 節）。AI 寫入 proposals.json，使用者在網頁選定一份或多份，
+/// 外掛「套用控制台建議」取回選定的全部、合併寫回 Revit，再逐份回報已套用。
 /// Status：proposed → chosen → applied。
 /// </summary>
 public sealed record Proposal
@@ -24,6 +24,18 @@ public sealed record Proposal
 }
 
 public sealed record ProposalResult(double Cfr, string Grade, double? Eec = null);
+
+/// <summary>
+/// 多份選定建議一起套用：依序合併替換，完全相同的只留一個（否則第二次會找不到已被換掉的代碼）。
+/// 後端選定時已擋下會互相衝突的建議，這裡不再判斷衝突。
+/// </summary>
+public static class ProposalMerge
+{
+    public static List<ScenarioChange> Changes(IEnumerable<Proposal> proposals) =>
+        proposals.SelectMany(p => p.Changes)
+            .DistinctBy(c => (c.From.Trim().ToUpperInvariant(), c.To.Trim().ToUpperInvariant(), c.TypeName, c.DropFinish))
+            .ToList();
+}
 
 /// <summary>Revit 中一個有 LEBR_BlccId 的類型。</summary>
 public sealed record TypeBlccIds(long TypeId, string TypeName, string CategoryName, string Value);
